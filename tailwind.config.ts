@@ -2,16 +2,20 @@ import type { Config } from 'tailwindcss';
 
 const config: Config = {
   content: ['./src/**/*.{ts,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        cream: '#FAF7F2',
+        // Semantic tokens driven by CSS variables (see globals.css) so the
+        // whole palette flips in dark mode while alpha utilities keep working.
+        cream: 'rgb(var(--color-bg) / <alpha-value>)',
+        charcoal: 'rgb(var(--color-ink) / <alpha-value>)',
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
         terracotta: {
           DEFAULT: '#E07A5F',
           dark: '#C96547',
           light: '#F2A48D',
         },
-        charcoal: '#2D2D2A',
         olive: {
           DEFAULT: '#81B29A',
           dark: '#6A9A83',
@@ -21,8 +25,8 @@ const config: Config = {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        card: '0 4px 20px rgb(45 45 42 / 0.06)',
-        'card-hover': '0 8px 30px rgb(45 45 42 / 0.10)',
+        card: '0 4px 20px rgb(0 0 0 / 0.06)',
+        'card-hover': '0 8px 30px rgb(0 0 0 / 0.10)',
       },
     },
   },

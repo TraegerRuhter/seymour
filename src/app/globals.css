@@ -2,8 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Semantic palette. Dark mode flips these (class strategy, see lib/theme.ts). */
 :root {
+  --color-bg: 250 247 242; /* warm cream */
+  --color-ink: 45 45 42; /* charcoal */
+  --color-surface: 255 255 255; /* card / control surfaces */
   color-scheme: light;
+}
+
+.dark {
+  --color-bg: 26 24 21; /* warm near-black */
+  --color-ink: 240 235 227; /* warm off-white */
+  --color-surface: 44 40 36; /* elevated warm surface */
+  color-scheme: dark;
 }
 
 body {
@@ -17,16 +28,16 @@ body {
 
 @layer components {
   .glass-card {
-    @apply rounded-2xl border border-white/40 bg-white/70 shadow-card backdrop-blur-md;
+    @apply rounded-2xl border border-white/40 bg-surface/70 shadow-card backdrop-blur-md dark:border-white/10;
   }
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-full bg-terracotta px-5 py-2.5 font-medium text-white shadow-md transition-colors hover:bg-terracotta-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-charcoal/15 bg-white/80 px-5 py-2.5 font-medium text-charcoal shadow-sm transition-colors hover:bg-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-charcoal/15 bg-surface/80 px-5 py-2.5 font-medium text-charcoal shadow-sm transition-colors hover:bg-surface active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
   }
   .input-base {
-    @apply w-full rounded-xl border border-charcoal/15 bg-white/80 px-4 py-2.5 text-charcoal placeholder:text-charcoal/40 focus:border-terracotta;
+    @apply w-full rounded-xl border border-charcoal/15 bg-surface/80 px-4 py-2.5 text-charcoal placeholder:text-charcoal/40 focus:border-terracotta;
   }
 }
 
@@ -47,8 +58,15 @@ body {
   }
 }
 
-/* Print styles: recipe detail becomes a clean recipe card */
+/* Print styles: recipe detail becomes a clean recipe card (always light) */
 @media print {
+  :root,
+  .dark {
+    --color-bg: 255 255 255;
+    --color-ink: 45 45 42;
+    --color-surface: 255 255 255;
+    color-scheme: light;
+  }
   body {
     background: white !important;
   }

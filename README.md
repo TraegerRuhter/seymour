@@ -29,6 +29,9 @@ and works offline as an installable PWA.
 - **Auto re-aggregation** — the list rebuilds whenever the plan or collection changes
   (regenerate, delete, edit…), carrying over checked state and manual edits.
 - **Backup** — Settings offers full JSON export and validated import.
+- **Dark mode** — light / dark / system theme (Settings → Appearance). The palette is driven
+  by CSS variables, the choice persists in localStorage, a pre-hydration script prevents a
+  light flash, and "system" tracks OS changes live. Printing always uses the light palette.
 - **PWA** — installable, offline-capable (library, plan, and list work without network;
   parsing requires connectivity), viewed recipe images are cached.
 

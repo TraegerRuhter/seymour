@@ -77,7 +77,7 @@ function MealTile({
   return (
     <Link
       href={`/recipes/${recipe.id}`}
-      className="flex items-center gap-3 rounded-xl bg-white/60 p-3 transition-colors hover:bg-white"
+      className="flex items-center gap-3 rounded-xl bg-surface/60 p-3 transition-colors hover:bg-surface"
     >
       {recipe.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element

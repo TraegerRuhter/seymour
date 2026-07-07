@@ -3,6 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { exportBundle, importBundle, validateBundle } from '@/lib/actions';
 import { useRecipeStore, useShoppingStore, usePlanStore } from '@/lib/stores';
+import { useTheme, type ThemePreference } from '@/lib/theme';
+
+const THEME_OPTIONS: Array<{ value: ThemePreference; label: string; icon: string }> = [
+  { value: 'light', label: 'Light', icon: '☀️' },
+  { value: 'dark', label: 'Dark', icon: '🌙' },
+  { value: 'system', label: 'System', icon: '💻' },
+];
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -13,6 +20,7 @@ export default function SettingsPage() {
   const fileInput = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  const [theme, setThemePref] = useTheme();
 
   useEffect(() => {
     const onPrompt = (e: Event) => {
@@ -87,6 +95,33 @@ export default function SettingsPage() {
         <div>
           <p className="text-2xl font-bold">{itemCount}</p>
           <p className="text-sm text-charcoal/60">list items</p>
+        </div>
+      </section>
+
+      <section aria-label="Appearance" className="glass-card space-y-3 p-5">
+        <div>
+          <h2 className="text-xl font-semibold">Appearance</h2>
+          <p className="mt-1 text-sm text-charcoal/60">
+            Pick a theme, or follow your device&apos;s setting.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Theme">
+          {THEME_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              aria-pressed={theme === opt.value}
+              onClick={() => setThemePref(opt.value)}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                theme === opt.value
+                  ? 'bg-terracotta text-white'
+                  : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
+              }`}
+            >
+              <span aria-hidden>{opt.icon}</span>
+              {opt.label}
+            </button>
+          ))}
         </div>
       </section>
 

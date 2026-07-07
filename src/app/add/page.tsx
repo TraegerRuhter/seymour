@@ -76,7 +76,7 @@ export default function AddRecipePage() {
         </p>
       </header>
 
-      <div role="tablist" aria-label="Add method" className="inline-flex rounded-full border border-charcoal/15 bg-white/60 p-1">
+      <div role="tablist" aria-label="Add method" className="inline-flex rounded-full border border-charcoal/15 bg-surface/60 p-1">
         {(['url', 'manual'] as const).map((m) => (
           <button
             key={m}

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { MotionConfig } from 'framer-motion';
 import { useAllHydrated, usePlanStore, useRecipeStore } from '@/lib/stores';
 import { regenerateShoppingList } from '@/lib/actions';
+import { applyTheme, getStoredTheme } from '@/lib/theme';
 
 /**
  * Client-side app chrome: waits for IndexedDB rehydration before showing
@@ -20,6 +21,16 @@ export default function AppProviders({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (hydrated) regenerateShoppingList();
   }, [hydrated, plan, recipes]);
+
+  // Follow OS theme changes live while in "system" mode.
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => {
+      if (getStoredTheme() === 'system') applyTheme('system');
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   useEffect(() => {
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
