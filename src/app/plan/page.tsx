@@ -123,7 +123,7 @@ export default function PlanPage() {
       ) : (
         recipeCount > 0 && (
           <div className="rounded-2xl border border-dashed border-charcoal/20 p-10 text-center">
-            <span aria-hidden className="text-5xl">🗓️</span>
+            <span aria-hidden className="animate-float text-5xl">🗓️</span>
             <p className="mt-3 text-charcoal/60">
               No plan yet. Pick your days and meals above, then hit Generate.
             </p>

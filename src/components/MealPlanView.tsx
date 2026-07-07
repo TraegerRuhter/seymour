@@ -7,12 +7,16 @@ import { usePlanStore, useRecipeStore } from '@/lib/stores';
 import { pickSlotRecipe } from '@/lib/actions';
 import { MEAL_TYPE_EMOJI, MEAL_TYPE_LABELS } from '@/lib/plan';
 
-function dayHeading(dateStr: string, index: number): string {
+function localDateString(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function dayHeading(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
   const weekday = date.toLocaleDateString(undefined, { weekday: 'short' });
   const monthDay = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  return index === 0 ? `Today · ${monthDay}` : `${weekday} · ${monthDay}`;
+  return dateStr === localDateString(new Date()) ? `Today · ${monthDay}` : `${weekday} · ${monthDay}`;
 }
 
 /** A single meal tile; empty slots offer a manual picker. */
@@ -106,18 +110,22 @@ export default function MealPlanView() {
   const plan = usePlanStore((s) => s.plan);
   if (!plan || plan.length === 0) return null;
 
+  const todayStr = localDateString(new Date());
+
   return (
     <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 lg:mx-0 lg:grid lg:snap-none lg:grid-cols-3 lg:overflow-visible lg:px-0 xl:grid-cols-4">
       {plan.map((day, dayIndex) => (
         <motion.section
           key={day.date}
-          aria-label={dayHeading(day.date, dayIndex)}
+          aria-label={dayHeading(day.date)}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: Math.min(dayIndex * 0.04, 0.3) }}
-          className="glass-card w-72 shrink-0 snap-start p-4 lg:w-auto"
+          className={`glass-card w-72 shrink-0 snap-start p-4 lg:w-auto ${
+            day.date === todayStr ? 'ring-2 ring-terracotta/60' : ''
+          }`}
         >
-          <h3 className="mb-3 font-semibold">{dayHeading(day.date, dayIndex)}</h3>
+          <h3 className="mb-3 font-semibold">{dayHeading(day.date)}</h3>
           <div className="space-y-2">
             {day.meals.map((_, mealIndex) => (
               <MealTile key={mealIndex} dayIndex={dayIndex} mealIndex={mealIndex} />

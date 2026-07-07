@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useShoppingStore } from '@/lib/stores';
 
 const TABS = [
   { href: '/', label: 'Home', icon: '🏠' },
@@ -13,6 +14,7 @@ const TABS = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const remaining = useShoppingStore((s) => s.items.filter((i) => !i.checked).length);
 
   return (
     <nav
@@ -34,10 +36,18 @@ export default function BottomNav() {
                     : 'text-charcoal/60 hover:text-charcoal'
                 }`}
               >
-                <span aria-hidden className="text-lg lg:text-base">
+                <span aria-hidden className="relative text-lg lg:text-base">
                   {tab.icon}
+                  {tab.href === '/shopping-list' && remaining > 0 && (
+                    <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-terracotta px-1 text-[10px] font-bold leading-none text-white">
+                      {remaining > 99 ? '99+' : remaining}
+                    </span>
+                  )}
                 </span>
                 {tab.label}
+                {tab.href === '/shopping-list' && remaining > 0 && (
+                  <span className="sr-only">, {remaining} items remaining</span>
+                )}
               </Link>
             </li>
           );

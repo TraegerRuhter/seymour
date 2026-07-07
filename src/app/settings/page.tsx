@@ -1,12 +1,34 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { exportBundle, importBundle, validateBundle } from '@/lib/actions';
 import { useRecipeStore, useShoppingStore, usePlanStore } from '@/lib/stores';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 export default function SettingsPage() {
   const fileInput = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const onPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallEvent(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
+  }, []);
+
+  async function handleInstall() {
+    if (!installEvent) return;
+    await installEvent.prompt();
+    const { outcome } = await installEvent.userChoice;
+    if (outcome === 'accepted') setInstallEvent(null);
+  }
   const recipeCount = useRecipeStore((s) => Object.keys(s.recipes).length);
   const planDays = usePlanStore((s) => s.plan?.length ?? 0);
   const itemCount = useShoppingStore((s) => s.items.length);
@@ -104,13 +126,22 @@ export default function SettingsPage() {
         )}
       </section>
 
-      <section aria-label="About" className="glass-card p-5 text-sm text-charcoal/60">
+      <section aria-label="About" className="glass-card space-y-3 p-5 text-sm text-charcoal/60">
         <h2 className="text-base font-semibold text-charcoal">About RecipeBoard</h2>
-        <p className="mt-1">
+        <p>
           A personal recipe collection, randomized meal planner, and smart shopping list. Install it
-          from your browser&apos;s menu (&ldquo;Add to Home Screen&rdquo;) to use it like a native app —
-          your library and list work offline.
+          to your home screen to use it like a native app — your library and list work offline.
         </p>
+        {installEvent ? (
+          <button type="button" onClick={handleInstall} className="btn-secondary text-sm">
+            📲 Install RecipeBoard
+          </button>
+        ) : (
+          <p className="text-xs text-charcoal/40">
+            If you don&apos;t see an install button, use your browser menu&apos;s &ldquo;Add to Home
+            Screen&rdquo; / &ldquo;Install app&rdquo; option (or the app is already installed).
+          </p>
+        )}
       </section>
     </div>
   );

@@ -2,8 +2,14 @@
 
 import Link from 'next/link';
 import { usePlanStore, useRecipeStore, useShoppingStore } from '@/lib/stores';
+import { MEAL_TYPE_EMOJI, MEAL_TYPE_LABELS } from '@/lib/plan';
 import RecipeCard from '@/components/RecipeCard';
 import ShoppingList from '@/components/ShoppingList';
+
+function todayString(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 export default function DashboardPage() {
   const recipes = useRecipeStore((s) => s.recipes);
@@ -14,6 +20,8 @@ export default function DashboardPage() {
     (a, b) => +new Date(b.dateAdded) - +new Date(a.dateAdded),
   );
   const remaining = items.filter((i) => !i.checked).length;
+  const today = plan?.find((d) => d.date === todayString());
+  const todayMeals = today?.meals.filter((m) => m.recipeId && recipes[m.recipeId]) ?? [];
 
   return (
     <div className="space-y-8">
@@ -25,6 +33,47 @@ export default function DashboardPage() {
             : `${recipeList.length} recipe${recipeList.length === 1 ? '' : 's'} in your collection.`}
         </p>
       </header>
+
+      {todayMeals.length > 0 && (
+        <section aria-label="Today's meals">
+          <h2 className="mb-3 text-xl font-semibold">On the menu today</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {todayMeals.map((meal) => {
+              const recipe = recipes[meal.recipeId];
+              return (
+                <Link
+                  key={meal.type}
+                  href={`/recipes/${recipe.id}`}
+                  className="glass-card flex items-center gap-3 p-3 transition-shadow hover:shadow-card-hover"
+                >
+                  {recipe.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={recipe.imageUrl}
+                      alt=""
+                      loading="lazy"
+                      className="h-12 w-12 shrink-0 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <span
+                      aria-hidden
+                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-olive/15 text-xl"
+                    >
+                      {MEAL_TYPE_EMOJI[meal.type]}
+                    </span>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium uppercase tracking-wide text-charcoal/40">
+                      {MEAL_TYPE_LABELS[meal.type]}
+                    </p>
+                    <p className="truncate text-sm font-semibold">{recipe.title}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <section aria-label="Quick actions" className="grid gap-4 sm:grid-cols-2">
         <Link
@@ -55,7 +104,7 @@ export default function DashboardPage() {
 
       {recipeList.length === 0 ? (
         <section className="rounded-2xl border border-dashed border-charcoal/20 p-10 text-center">
-          <span aria-hidden className="text-5xl">👨‍🍳</span>
+          <span aria-hidden className="animate-float text-5xl">👨‍🍳</span>
           <h2 className="mt-3 text-xl font-semibold">Your kitchen is empty</h2>
           <p className="mx-auto mt-1 max-w-sm text-charcoal/60">
             Paste a recipe URL and RecipeBoard will pull out the title, ingredients, and steps for you.

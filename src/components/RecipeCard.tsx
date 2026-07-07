@@ -49,7 +49,9 @@ export default function RecipeCard({
         <Thumb recipe={recipe} className="aspect-[4/3] w-full" rounded={false} />
         <div className="p-4">
           <h3 className="line-clamp-2 text-xl font-semibold leading-snug">{recipe.title}</h3>
-          <p className="mt-1 text-sm text-charcoal/50">Added {added}</p>
+          <p className="mt-1 text-sm text-charcoal/50">
+            {recipe.ingredients.length} ingredient{recipe.ingredients.length === 1 ? '' : 's'} · Added {added}
+          </p>
         </div>
       </Link>
     </motion.div>

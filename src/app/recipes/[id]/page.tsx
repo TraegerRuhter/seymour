@@ -44,6 +44,17 @@ export default function RecipeDetailPage() {
         )}
         <div className="p-6">
           <h1 className="text-3xl font-bold">{recipe.title}</h1>
+          <p className="mt-2 text-sm text-charcoal/50">
+            {recipe.ingredients.length} ingredient{recipe.ingredients.length === 1 ? '' : 's'}
+            {recipe.instructions.length > 0 &&
+              ` · ${recipe.instructions.length} step${recipe.instructions.length === 1 ? '' : 's'}`}
+            {' · added '}
+            {new Date(recipe.dateAdded).toLocaleDateString(undefined, {
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </p>
           <div className="no-print mt-4 flex flex-wrap items-center gap-3">
             {recipe.sourceUrl && (
               <a

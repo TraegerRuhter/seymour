@@ -1,0 +1,96 @@
+/**
+ * Maps normalized ingredient names to grocery-store sections so the shopping
+ * list can be grouped the way you actually walk the aisles.
+ *
+ * Longest keyword wins, so "bell pepper" (Produce) beats "pepper" (Spices)
+ * and "coconut milk" (Pantry) beats "milk" (Dairy).
+ */
+
+export const CATEGORY_ORDER = [
+  'Produce',
+  'Meat & Seafood',
+  'Dairy & Eggs',
+  'Bakery',
+  'Frozen',
+  'Pantry',
+  'Spices & Seasonings',
+  'Other',
+] as const;
+
+export type Category = (typeof CATEGORY_ORDER)[number];
+
+const KEYWORDS: Record<Exclude<Category, 'Other'>, string[]> = {
+  Produce: [
+    'onion', 'garlic', 'tomato', 'bell pepper', 'jalapeño', 'jalapeno', 'chili pepper',
+    'carrot', 'celery', 'potato', 'sweet potato', 'spinach', 'lettuce', 'arugula',
+    'cucumber', 'zucchini', 'broccoli', 'cauliflower', 'mushroom', 'avocado',
+    'lemon', 'lime', 'orange', 'apple', 'banana', 'berry', 'strawberry', 'blueberry',
+    'raspberry', 'grape', 'mango', 'pineapple', 'peach', 'pear', 'melon',
+    'cilantro', 'parsley', 'basil', 'thyme', 'rosemary', 'sage', 'mint', 'dill',
+    'chive', 'scallion', 'ginger', 'kale', 'cabbage', 'corn', 'asparagus',
+    'green bean', 'pea', 'shallot', 'leek', 'eggplant', 'squash', 'radish', 'beet',
+    'lemon juice', 'lime juice', 'lemon zest', 'lime zest', 'salad', 'herb',
+  ],
+  'Meat & Seafood': [
+    'chicken', 'beef', 'pork', 'lamb', 'turkey', 'bacon', 'sausage', 'ham',
+    'prosciutto', 'chorizo', 'fish', 'salmon', 'tuna', 'shrimp', 'prawn', 'cod',
+    'tilapia', 'scallop', 'mussel', 'clam', 'crab', 'lobster', 'steak', 'brisket',
+    'ribs', 'meatball', 'duck', 'anchovy',
+  ],
+  'Dairy & Eggs': [
+    'milk', 'butter', 'cheese', 'cheddar', 'parmesan', 'mozzarella', 'feta',
+    'ricotta', 'gouda', 'brie', 'cream', 'heavy cream', 'sour cream', 'yogurt',
+    'egg', 'buttermilk', 'half-and-half', 'crème fraîche', 'mascarpone',
+  ],
+  Bakery: [
+    'bread', 'tortilla', 'bun', 'roll', 'pita', 'naan', 'baguette', 'croissant',
+    'bagel', 'english muffin', 'brioche',
+  ],
+  Frozen: ['frozen'],
+  Pantry: [
+    'flour', 'sugar', 'brown sugar', 'rice', 'pasta', 'spaghetti', 'penne',
+    'noodle', 'oil', 'olive oil', 'vinegar', 'broth', 'stock', 'soy sauce',
+    'fish sauce', 'tomato sauce', 'tomato paste', 'hot sauce', 'worcestershire',
+    'bean', 'lentil', 'chickpea', 'oat', 'cereal', 'honey', 'maple syrup',
+    'peanut butter', 'jam', 'chocolate', 'chocolate chip', 'cocoa', 'vanilla',
+    'baking powder', 'baking soda', 'yeast', 'cornstarch', 'breadcrumb',
+    'panko', 'coconut milk', 'mustard', 'ketchup', 'mayonnaise', 'mayo',
+    'wine', 'quinoa', 'couscous', 'tahini', 'sesame', 'almond', 'walnut',
+    'pecan', 'cashew', 'peanut', 'raisin', 'date', 'olive', 'caper', 'pickle',
+    'salsa', 'canned', 'nutritional yeast', 'tofu', 'miso',
+  ],
+  'Spices & Seasonings': [
+    'salt', 'black pepper', 'pepper', 'cumin', 'paprika', 'cinnamon', 'oregano',
+    'chili powder', 'curry powder', 'nutmeg', 'turmeric', 'coriander',
+    'cayenne', 'red pepper flake', 'bay leaf', 'garlic powder', 'onion powder',
+    'italian seasoning', 'allspice', 'clove', 'cardamom', 'fennel seed',
+    'mustard seed', 'seasoning', 'spice',
+  ],
+};
+
+/** (keyword, category) pairs sorted longest-first so specific terms win. */
+const LOOKUP: Array<[string, Category]> = (
+  Object.entries(KEYWORDS) as Array<[Category, string[]]>
+).flatMap(([category, words]) => words.map((w): [string, Category] => [w, category]));
+LOOKUP.sort((a, b) => b[0].length - a[0].length);
+
+function containsWord(haystack: string, needle: string): boolean {
+  const i = haystack.indexOf(needle);
+  if (i === -1) return false;
+  const before = i === 0 ? '' : haystack[i - 1];
+  const after = i + needle.length >= haystack.length ? '' : haystack[i + needle.length];
+  const boundary = (c: string) => c === '' || !/[a-z0-9]/.test(c);
+  return boundary(before) && boundary(after);
+}
+
+/** Best-effort store section for a normalized ingredient name. */
+export function categorize(name: string): Category {
+  const n = name.toLowerCase();
+  // Singular keywords should also match plural names ("carrots" → carrot).
+  for (const [keyword, category] of LOOKUP) {
+    if (containsWord(n, keyword) || containsWord(n, keyword + 's') || containsWord(n, keyword + 'es')) {
+      return category;
+    }
+  }
+  return 'Other';
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { MotionConfig } from 'framer-motion';
 import { useAllHydrated, usePlanStore, useRecipeStore } from '@/lib/stores';
 import { regenerateShoppingList } from '@/lib/actions';
 
@@ -41,5 +42,5 @@ export default function AppProviders({ children }: { children: React.ReactNode }
     );
   }
 
-  return <>{children}</>;
+  return <MotionConfig reducedMotion="user">{children}</MotionConfig>;
 }

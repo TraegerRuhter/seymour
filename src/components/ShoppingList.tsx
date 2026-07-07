@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { ShoppingListItem } from '@/lib/types';
 import { useShoppingStore } from '@/lib/stores';
 import { displayUnit, formatQuantity } from '@/lib/units';
+import { categorize, CATEGORY_ORDER, type Category } from '@/lib/categories';
 
 /** Naive pluralizer for unitless counts: "6 egg" → "6 eggs". */
 function pluralizeName(name: string): string {
@@ -24,6 +25,17 @@ function itemLabel(item: ShoppingListItem): string {
       : item.ingredientName;
   return [qty, unit, name].filter(Boolean).join(' ');
 }
+
+const CATEGORY_EMOJI: Record<Category, string> = {
+  Produce: '🥬',
+  'Meat & Seafood': '🥩',
+  'Dairy & Eggs': '🥛',
+  Bakery: '🥖',
+  Frozen: '🧊',
+  Pantry: '🫙',
+  'Spices & Seasonings': '🧂',
+  Other: '🛒',
+};
 
 /**
  * The animated checkbox: on check, an SVG checkmark draws itself while a
@@ -137,6 +149,28 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
   );
 }
 
+/** Animated completion bar shown above the full list. */
+function ProgressBar({ done, total }: { done: number; total: number }) {
+  const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+  return (
+    <div
+      role="progressbar"
+      aria-valuenow={done}
+      aria-valuemin={0}
+      aria-valuemax={total}
+      aria-label={`${done} of ${total} items collected`}
+      className="h-2 w-full overflow-hidden rounded-full bg-charcoal/10"
+    >
+      <motion.div
+        className="h-full rounded-full bg-olive"
+        initial={false}
+        animate={{ width: `${pct}%` }}
+        transition={{ type: 'spring', stiffness: 200, damping: 30 }}
+      />
+    </div>
+  );
+}
+
 export default function ShoppingList({
   limit,
   editable = true,
@@ -150,7 +184,6 @@ export default function ShoppingList({
 
   const unchecked = items.filter((i) => !i.checked);
   const checked = items.filter((i) => i.checked);
-  const visible = limit ? unchecked.slice(0, limit) : unchecked;
 
   if (items.length === 0) {
     return (
@@ -160,22 +193,62 @@ export default function ShoppingList({
     );
   }
 
-  return (
-    <div>
+  // Dashboard preview: compact, ungrouped, first N unchecked items.
+  if (limit) {
+    return (
       <ul className="space-y-2">
         <AnimatePresence initial={false}>
-          {visible.map((item) => (
+          {unchecked.slice(0, limit).map((item) => (
             <Row key={item.id} item={item} editable={editable} />
           ))}
         </AnimatePresence>
-        {limit && unchecked.length > limit && (
+        {unchecked.length > limit && (
           <li className="px-4 py-1 text-sm text-charcoal/50">
             +{unchecked.length - limit} more item{unchecked.length - limit === 1 ? '' : 's'}
           </li>
         )}
+        {unchecked.length === 0 && (
+          <li className="px-4 py-1 text-sm text-charcoal/50">All checked off 🎉</li>
+        )}
       </ul>
+    );
+  }
 
-      {!limit && checked.length > 0 && (
+  // Full list: group unchecked items by store section.
+  const groups = new Map<Category, ShoppingListItem[]>();
+  for (const item of unchecked) {
+    const cat = categorize(item.ingredientName);
+    const list = groups.get(cat);
+    if (list) list.push(item);
+    else groups.set(cat, [item]);
+  }
+
+  return (
+    <div>
+      <div className="mb-5">
+        <ProgressBar done={checked.length} total={items.length} />
+      </div>
+
+      {CATEGORY_ORDER.filter((cat) => groups.has(cat)).map((cat) => (
+        <section key={cat} aria-label={cat} className="mb-5">
+          <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-charcoal/50">
+            <span aria-hidden>{CATEGORY_EMOJI[cat]}</span>
+            {cat}
+            <span className="font-normal normal-case tracking-normal">
+              · {groups.get(cat)!.length}
+            </span>
+          </h2>
+          <ul className="space-y-2">
+            <AnimatePresence initial={false}>
+              {groups.get(cat)!.map((item) => (
+                <Row key={item.id} item={item} editable={editable} />
+              ))}
+            </AnimatePresence>
+          </ul>
+        </section>
+      ))}
+
+      {checked.length > 0 && (
         <section className="mt-6" aria-label="Checked items">
           <button
             type="button"
