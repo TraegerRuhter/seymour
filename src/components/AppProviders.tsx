@@ -5,6 +5,7 @@ import { MotionConfig } from 'framer-motion';
 import { useAllHydrated, usePlanStore, useRecipeStore } from '@/lib/stores';
 import { regenerateShoppingList } from '@/lib/actions';
 import { applyTheme, getStoredTheme } from '@/lib/theme';
+import Logo from './Logo';
 
 /**
  * Client-side app chrome: waits for IndexedDB rehydration before showing
@@ -42,12 +43,10 @@ export default function AppProviders({ children }: { children: React.ReactNode }
 
   if (!hydrated) {
     return (
-      <div className="flex min-h-dvh items-center justify-center" aria-busy="true" aria-label="Loading RecipeBoard">
+      <div className="flex min-h-dvh items-center justify-center" aria-busy="true" aria-label="Loading Seymour">
         <div className="text-center">
-          <span className="text-4xl" role="img" aria-hidden>
-            🍳
-          </span>
-          <p className="mt-3 text-sm text-charcoal/50">Warming up the kitchen…</p>
+          <Logo className="mx-auto h-16 w-16 animate-float" />
+          <p className="mt-3 text-sm text-charcoal/50">Waking Seymour up…</p>
         </div>
       </div>
     );

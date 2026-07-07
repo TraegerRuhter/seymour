@@ -1,5 +1,5 @@
 /*
- * RecipeBoard service worker.
+ * Seymour service worker.
  *
  * Strategy:
  *  - App shell & static assets: stale-while-revalidate (fast loads, silent updates).
@@ -10,9 +10,9 @@
  *  - Recipe images (cross-origin): cache-first once viewed, capped LRU-ish.
  */
 
-const VERSION = 'v1';
-const SHELL_CACHE = `recipeboard-shell-${VERSION}`;
-const IMAGE_CACHE = `recipeboard-images-${VERSION}`;
+const VERSION = 'v2';
+const SHELL_CACHE = `seymour-shell-${VERSION}`;
+const IMAGE_CACHE = `seymour-images-${VERSION}`;
 const IMAGE_LIMIT = 200;
 
 const PRECACHE = ['/', '/recipes', '/plan', '/shopping-list', '/add', '/settings', '/manifest.json', '/icon.svg'];

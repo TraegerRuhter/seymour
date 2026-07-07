@@ -26,10 +26,12 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold">RecipeBoard</h1>
+        <h1 className="text-3xl font-bold">
+          {recipeList.length === 0 ? 'Welcome to Seymour' : 'Feed me, Seymour'}
+        </h1>
         <p className="mt-1 text-charcoal/60">
           {recipeList.length === 0
-            ? 'Save your first recipe to get cooking.'
+            ? 'Save your first recipe and Seymour will do the rest.'
             : `${recipeList.length} recipe${recipeList.length === 1 ? '' : 's'} in your collection.`}
         </p>
       </header>
@@ -76,16 +78,21 @@ export default function DashboardPage() {
       )}
 
       <section aria-label="Quick actions" className="grid gap-4 sm:grid-cols-2">
-        <Link
-          href="/add"
-          className="glass-card flex items-center gap-4 p-5 transition-shadow hover:shadow-card-hover"
-        >
+        <div className="glass-card flex items-center gap-4 p-5">
           <span aria-hidden className="text-3xl">📥</span>
-          <div>
+          <div className="min-w-0">
             <h2 className="text-xl font-semibold">Add recipes</h2>
-            <p className="text-sm text-charcoal/60">Paste URLs or enter one by hand</p>
+            <p className="text-sm text-charcoal/60">
+              <Link href="/add" className="font-medium text-terracotta hover:underline">
+                Paste a URL
+              </Link>{' '}
+              or{' '}
+              <Link href="/add?mode=manual" className="font-medium text-terracotta hover:underline">
+                enter one by hand
+              </Link>
+            </p>
           </div>
-        </Link>
+        </div>
         <Link
           href="/plan"
           className="glass-card flex items-center gap-4 p-5 transition-shadow hover:shadow-card-hover"
@@ -107,11 +114,16 @@ export default function DashboardPage() {
           <span aria-hidden className="animate-float text-5xl">👨‍🍳</span>
           <h2 className="mt-3 text-xl font-semibold">Your kitchen is empty</h2>
           <p className="mx-auto mt-1 max-w-sm text-charcoal/60">
-            Paste a recipe URL and RecipeBoard will pull out the title, ingredients, and steps for you.
+            Paste a recipe URL and Seymour will pull out the title, ingredients, and steps for you.
           </p>
-          <Link href="/add" className="btn-primary mt-4">
-            Add your first recipe
-          </Link>
+          <div className="mt-4 flex flex-wrap justify-center gap-3">
+            <Link href="/add" className="btn-primary">
+              Add from a URL
+            </Link>
+            <Link href="/add?mode=manual" className="btn-secondary">
+              Enter manually
+            </Link>
+          </div>
         </section>
       ) : (
         <div className="grid gap-8 lg:grid-cols-[1fr_minmax(280px,360px)]">

@@ -19,7 +19,7 @@ function makeStorage(storeName: string): StateStorage {
     return { getItem: () => null, setItem: () => {}, removeItem: () => {} };
   }
   const instance = localforage.createInstance({
-    name: 'recipeboard',
+    name: 'seymour',
     storeName,
   });
   return {

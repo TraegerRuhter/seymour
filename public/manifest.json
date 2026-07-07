@@ -1,7 +1,7 @@
 {
-  "name": "RecipeBoard",
-  "short_name": "RecipeBoard",
-  "description": "Personal recipe collection, randomized meal plans, and smart shopping lists.",
+  "name": "Seymour",
+  "short_name": "Seymour",
+  "description": "Feed Seymour your recipes: a personal collection, randomized meal plans, and smart shopping lists.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FAF7F2",

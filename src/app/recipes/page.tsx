@@ -22,9 +22,14 @@ export default function RecipeLibraryPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">Recipes</h1>
-        <Link href="/add" className="btn-primary">
-          + Add
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/add?mode=manual" className="btn-secondary">
+            ✍️ Enter manually
+          </Link>
+          <Link href="/add" className="btn-primary">
+            + Add from URL
+          </Link>
+        </div>
       </header>
 
       <div className="flex items-center gap-3">
@@ -58,9 +63,14 @@ export default function RecipeLibraryPage() {
               : 'No recipes yet — add your first one to get started.'}
           </p>
           {!query && (
-            <Link href="/add" className="btn-primary mt-4">
-              Add a recipe
-            </Link>
+            <div className="mt-4 flex flex-wrap justify-center gap-3">
+              <Link href="/add" className="btn-primary">
+                Add from a URL
+              </Link>
+              <Link href="/add?mode=manual" className="btn-secondary">
+                Enter manually
+              </Link>
+            </div>
           )}
         </div>
       ) : layout === 'grid' ? (

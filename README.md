@@ -1,8 +1,8 @@
-# RecipeBoard 🍳
+# Seymour 🪴
 
-A single-user, browser-first web app that turns online recipes into a structured personal
-collection, generates randomized meal plans, and produces smart, consolidated shopping
-lists with a single tap.
+_"Feed me, Seymour."_ A single-user, browser-first web app that turns online recipes into a
+structured personal collection, generates randomized meal plans, and produces smart,
+consolidated shopping lists with a single tap. Named for the hungriest plant in showbiz.
 
 Everything lives in **your browser** (IndexedDB) — no accounts, no server database, fully
 private. A thin Next.js API route handles recipe parsing; everything else runs client-side
@@ -13,7 +13,8 @@ and works offline as an installable PWA.
 - **Recipe input & parsing** — paste one or more URLs; the `/api/parse` route extracts the
   title, image, ingredients, and instructions from the page's schema.org `Recipe`
   structured data (JSON-LD), with an optional OpenAI GPT-4o-mini fallback for stubborn
-  pages. Manual add/edit is always available.
+  pages. **Manual entry** (`/add?mode=manual`) is always available for unsupported sites,
+  and any saved recipe can be edited by hand.
 - **Recipe library** — glassmorphism card grid or compact list, live title search, detail
   view with print styles, edit and delete (with confirmation).
 - **Meal plan generator** — pick 1–14 days and which meals (breakfast/lunch/dinner/snack);

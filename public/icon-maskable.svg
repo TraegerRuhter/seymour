@@ -1,5 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#E07A5F"/>
-  <circle cx="256" cy="256" r="120" fill="#FAF7F2"/>
-  <circle cx="256" cy="256" r="72" fill="#81B29A"/>
+  <rect width="512" height="512" fill="#81B29A"/>
+  <!-- stem -->
+  <path d="M256 424c-8-44 4-80 20-120" stroke="#4E7A64" stroke-width="24" fill="none" stroke-linecap="round"/>
+  <!-- leaves -->
+  <path d="M252 372c-40-2-66-22-76-54 38-2 66 18 76 54z" fill="#6A9A83"/>
+  <path d="M268 388c40-12 56-36 56-68-34 8-52 32-56 68z" fill="#6A9A83"/>
+  <!-- head -->
+  <g transform="rotate(-16 288 208)">
+    <path d="M188 208a104 86 0 0 1 208 0z" fill="#FAF7F2"/>
+    <path d="M200 208a92 58 0 0 0 184 0z" fill="#EDE7DD"/>
+    <path d="M204 208h176l-14 22c-50 18-98 18-148 0z" fill="#5C2622"/>
+    <path d="M204 208l15 18 15-18 15 18 15-18 15 18 15-18 15 18 15-18 15 18 15-18 15 18 15-18z" fill="#FAF7F2"/>
+    <circle cx="256" cy="150" r="10" fill="#2D2D2A"/>
+    <circle cx="332" cy="150" r="10" fill="#2D2D2A"/>
+  </g>
+  <!-- pot -->
+  <path d="M192 424h128l-13 60a15 15 0 0 1-15 12h-72a15 15 0 0 1-15-12z" fill="#E07A5F"/>
+  <rect x="180" y="406" width="152" height="30" rx="11" fill="#C96547"/>
 </svg>

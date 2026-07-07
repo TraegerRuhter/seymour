@@ -47,7 +47,7 @@ export default function SettingsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `recipeboard-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `seymour-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     setMessage({ kind: 'ok', text: 'Backup downloaded.' });
@@ -60,7 +60,7 @@ export default function SettingsPage() {
     try {
       const data: unknown = JSON.parse(await file.text());
       if (!validateBundle(data)) {
-        setMessage({ kind: 'error', text: 'That file is not a valid RecipeBoard backup.' });
+        setMessage({ kind: 'error', text: 'That file is not a valid Seymour backup.' });
         return;
       }
       const ok = window.confirm(
@@ -162,14 +162,15 @@ export default function SettingsPage() {
       </section>
 
       <section aria-label="About" className="glass-card space-y-3 p-5 text-sm text-charcoal/60">
-        <h2 className="text-base font-semibold text-charcoal">About RecipeBoard</h2>
+        <h2 className="text-base font-semibold text-charcoal">About Seymour</h2>
         <p>
-          A personal recipe collection, randomized meal planner, and smart shopping list. Install it
-          to your home screen to use it like a native app — your library and list work offline.
+          A personal recipe collection, randomized meal planner, and smart shopping list. Feed it
+          recipes and it grows. Install it to your home screen to use it like a native app — your
+          library and list work offline.
         </p>
         {installEvent ? (
           <button type="button" onClick={handleInstall} className="btn-secondary text-sm">
-            📲 Install RecipeBoard
+            📲 Install Seymour
           </button>
         ) : (
           <p className="text-xs text-charcoal/40">

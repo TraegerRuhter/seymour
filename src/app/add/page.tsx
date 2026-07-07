@@ -1,16 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { ParseResult } from '@/lib/types';
 import { recipeFromParsed, saveRecipes } from '@/lib/actions';
 import RecipeForm from '@/components/RecipeForm';
 
 type Mode = 'url' | 'manual';
 
-export default function AddRecipePage() {
+function AddRecipe() {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>('url');
+  const searchParams = useSearchParams();
+  const [mode, setMode] = useState<Mode>(searchParams.get('mode') === 'manual' ? 'manual' : 'url');
   const [urlsText, setUrlsText] = useState('');
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState('');
@@ -70,9 +71,9 @@ export default function AddRecipePage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <header>
-        <h1 className="text-3xl font-bold">Add recipes</h1>
+        <h1 className="text-3xl font-bold">Add a recipe</h1>
         <p className="mt-1 text-charcoal/60">
-          Paste recipe URLs and we&apos;ll extract everything, or enter a recipe by hand.
+          Paste recipe URLs and Seymour will extract everything, or type one in by hand.
         </p>
       </header>
 
@@ -87,7 +88,7 @@ export default function AddRecipePage() {
               mode === m ? 'bg-terracotta text-white' : 'text-charcoal/60 hover:text-charcoal'
             }`}
           >
-            {m === 'url' ? 'From URLs' : 'Manual entry'}
+            {m === 'url' ? 'From a URL' : 'Enter manually'}
           </button>
         ))}
       </div>
@@ -121,23 +122,41 @@ export default function AddRecipePage() {
             </ul>
           )}
 
-          <button type="submit" className="btn-primary" disabled={busy || !urlsText.trim()}>
-            {busy ? (
-              <>
-                <span
-                  aria-hidden
-                  className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                />
-                Parsing…
-              </>
-            ) : (
-              'Parse & save'
-            )}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="submit" className="btn-primary" disabled={busy || !urlsText.trim()}>
+              {busy ? (
+                <>
+                  <span
+                    aria-hidden
+                    className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                  />
+                  Parsing…
+                </>
+              ) : (
+                'Parse & save'
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('manual')}
+              className="text-sm font-medium text-terracotta hover:underline"
+            >
+              or enter it manually
+            </button>
+          </div>
         </form>
       ) : (
         <RecipeForm />
       )}
     </div>
+  );
+}
+
+export default function AddRecipePage() {
+  // useSearchParams requires a Suspense boundary during prerender.
+  return (
+    <Suspense fallback={null}>
+      <AddRecipe />
+    </Suspense>
   );
 }

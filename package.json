@@ -1,8 +1,8 @@
 {
-  "name": "recipeboard",
+  "name": "seymour",
   "version": "0.1.0",
   "private": true,
-  "description": "Personal recipe collection, randomized meal planning, and smart consolidated shopping lists — all in your browser.",
+  "description": "Feed Seymour your recipes: a personal collection, randomized meal planning, and smart consolidated shopping lists — all in your browser.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

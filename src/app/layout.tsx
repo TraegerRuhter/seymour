@@ -1,21 +1,22 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import BottomNav from '@/components/BottomNav';
+import Header from '@/components/Header';
 import AppProviders from '@/components/AppProviders';
 import { THEME_INIT_SCRIPT } from '@/lib/theme-script';
 
 export const metadata: Metadata = {
   title: {
-    default: 'RecipeBoard',
-    template: '%s · RecipeBoard',
+    default: 'Seymour',
+    template: '%s · Seymour',
   },
   description:
-    'Your personal recipe collection, randomized meal plans, and smart consolidated shopping lists.',
+    'Feed Seymour your recipes: a personal collection, randomized meal plans, and smart consolidated shopping lists.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'RecipeBoard',
+    title: 'Seymour',
   },
   icons: {
     icon: '/icon.svg',
@@ -42,7 +43,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-dvh font-sans">
         <AppProviders>
-          <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 lg:px-8 lg:pb-12">
+          <Header />
+          <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-4 lg:px-8 lg:pb-12">
             {children}
           </main>
           <BottomNav />
