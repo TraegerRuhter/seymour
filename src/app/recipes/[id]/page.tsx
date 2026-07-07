@@ -1,0 +1,130 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useRecipeStore } from '@/lib/stores';
+import { deleteRecipe } from '@/lib/actions';
+import { displayUnit, formatQuantity } from '@/lib/units';
+
+export default function RecipeDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const recipe = useRecipeStore((s) => s.recipes[id]);
+  const [confirming, setConfirming] = useState(false);
+
+  if (!recipe) {
+    return (
+      <div className="py-16 text-center">
+        <p className="text-charcoal/60">This recipe doesn&apos;t exist (anymore).</p>
+        <Link href="/recipes" className="btn-secondary mt-4">
+          Back to library
+        </Link>
+      </div>
+    );
+  }
+
+  function handleDelete() {
+    deleteRecipe(recipe.id);
+    router.push('/recipes');
+  }
+
+  return (
+    <article className="mx-auto max-w-3xl print-serif">
+      <div className="no-print mb-4">
+        <Link href="/recipes" className="text-sm font-medium text-terracotta hover:underline">
+          ← Back to library
+        </Link>
+      </div>
+
+      <header className="glass-card overflow-hidden">
+        {recipe.imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={recipe.imageUrl} alt="" className="aspect-[2/1] w-full object-cover" />
+        )}
+        <div className="p-6">
+          <h1 className="text-3xl font-bold">{recipe.title}</h1>
+          <div className="no-print mt-4 flex flex-wrap items-center gap-3">
+            {recipe.sourceUrl && (
+              <a
+                href={recipe.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-secondary px-4 py-1.5 text-sm"
+              >
+                View source ↗
+              </a>
+            )}
+            <Link href={`/recipes/${recipe.id}/edit`} className="btn-secondary px-4 py-1.5 text-sm">
+              Edit
+            </Link>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="btn-secondary px-4 py-1.5 text-sm"
+            >
+              Print
+            </button>
+            {confirming ? (
+              <span className="inline-flex items-center gap-2 rounded-full bg-terracotta/10 px-3 py-1.5 text-sm">
+                Delete this recipe?
+                <button type="button" onClick={handleDelete} className="font-semibold text-terracotta-dark hover:underline">
+                  Yes, delete
+                </button>
+                <button type="button" onClick={() => setConfirming(false)} className="text-charcoal/60 hover:underline">
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirming(true)}
+                className="rounded-full px-4 py-1.5 text-sm font-medium text-terracotta-dark transition-colors hover:bg-terracotta/10"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <section aria-label="Ingredients" className="glass-card mt-6 p-6">
+        <h2 className="text-xl font-semibold">Ingredients</h2>
+        <ul className="mt-3 space-y-2">
+          {recipe.ingredients.map((ing, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-olive" />
+              <span>
+                {ing.originalString}
+                {ing.quantity > 0 && (
+                  <span className="ml-2 whitespace-nowrap rounded-full bg-olive/15 px-2 py-0.5 text-xs text-charcoal/70">
+                    {formatQuantity(ing.quantity)} {displayUnit(ing.unit, ing.quantity) || '×'}
+                  </span>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {recipe.instructions.length > 0 && (
+        <section aria-label="Instructions" className="glass-card mt-6 p-6">
+          <h2 className="text-xl font-semibold">Instructions</h2>
+          <ol className="mt-3 space-y-3">
+            {recipe.instructions.map((step, i) => (
+              <li key={i} className="flex gap-3">
+                <span
+                  aria-hidden
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-terracotta/10 text-sm font-semibold text-terracotta-dark"
+                >
+                  {i + 1}
+                </span>
+                <p className="pt-0.5">{step}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+    </article>
+  );
+}
