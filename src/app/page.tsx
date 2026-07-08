@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { usePlanStore, useRecipeStore, useShoppingStore } from '@/lib/stores';
 import { MEAL_TYPE_EMOJI, MEAL_TYPE_LABELS } from '@/lib/plan';
@@ -16,12 +17,19 @@ export default function DashboardPage() {
   const plan = usePlanStore((s) => s.plan);
   const items = useShoppingStore((s) => s.items);
 
-  const recipeList = Object.values(recipes).sort(
-    (a, b) => +new Date(b.dateAdded) - +new Date(a.dateAdded),
+  const recipeList = useMemo(
+    () =>
+      Object.values(recipes).sort(
+        (a, b) => +new Date(b.dateAdded) - +new Date(a.dateAdded),
+      ),
+    [recipes],
   );
-  const remaining = items.filter((i) => !i.checked).length;
-  const today = plan?.find((d) => d.date === todayString());
-  const todayMeals = today?.meals.filter((m) => m.recipeId && recipes[m.recipeId]) ?? [];
+  const remaining = useMemo(() => items.filter((i) => !i.checked).length, [items]);
+  const today = useMemo(() => plan?.find((d) => d.date === todayString()), [plan]);
+  const todayMeals = useMemo(
+    () => today?.meals.filter((m) => m.recipeId && recipes[m.recipeId]) ?? [],
+    [recipes, today],
+  );
 
   return (
     <div className="space-y-8">
