@@ -9,13 +9,27 @@ import {
 } from '@/lib/scrape';
 
 export const runtime = 'nodejs';
+// Reader-proxy rendering can take 10–20s; raise the function budget above
+// Vercel's 10s default so those requests don't 504. (Multiple URLs are parsed
+// in parallel, so this bounds the slowest single URL, not their sum.)
+export const maxDuration = 60;
 
 const MAX_URLS_PER_REQUEST = 10;
 
-// Optional reader-proxy fallback for sites that block direct server-side
-// fetches (Cloudflare et al.). Set e.g. RECIPE_READER_PROXY=https://r.jina.ai/{url}
-// on the host to enable it. Left unset, Seymour makes no third-party calls.
-const READER_PROXY = process.env.RECIPE_READER_PROXY?.trim() || '';
+// Reader-proxy fallback for sites that block direct server-side fetches
+// (Cloudflare et al. reject datacenter IPs). Defaults to Jina AI Reader, which
+// fetches the page from its own infrastructure and returns the HTML.
+// Override with a custom `{url}` template, or set RECIPE_READER_PROXY=off to
+// disable third-party calls entirely.
+const DEFAULT_READER_PROXY = 'https://r.jina.ai/{url}';
+function resolveReaderProxy(): string {
+  const raw = process.env.RECIPE_READER_PROXY;
+  if (raw === undefined) return DEFAULT_READER_PROXY;
+  const v = raw.trim();
+  if (v === '' || v.toLowerCase() === 'off' || v.toLowerCase() === 'none') return '';
+  return v;
+}
+const READER_PROXY = resolveReaderProxy();
 
 // Simple in-memory rate limit: N parses per IP per minute. Resets on cold
 // start, which is fine for a personal single-user app.
