@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { ParsedRecipeData, ParseResult } from '@/lib/types';
-import { extractRecipeFromHtml, fetchHtml, htmlToText } from '@/lib/scrape';
+import {
+  extractRecipeFromHtml,
+  FetchError,
+  fetchHtml,
+  fetchViaReader,
+  htmlToText,
+} from '@/lib/scrape';
 
 export const runtime = 'nodejs';
 
 const MAX_URLS_PER_REQUEST = 10;
+
+// Optional reader-proxy fallback for sites that block direct server-side
+// fetches (Cloudflare et al.). Set e.g. RECIPE_READER_PROXY=https://r.jina.ai/{url}
+// on the host to enable it. Left unset, Seymour makes no third-party calls.
+const READER_PROXY = process.env.RECIPE_READER_PROXY?.trim() || '';
 
 // Simple in-memory rate limit: N parses per IP per minute. Resets on cold
 // start, which is fine for a personal single-user app.
@@ -79,6 +90,37 @@ async function aiFallback(url: string, html: string): Promise<ParsedRecipeData |
   };
 }
 
+/** Turns a fetch failure into an honest, actionable message for the user. */
+function fetchErrorMessage(e: unknown): string {
+  if (e instanceof FetchError) {
+    switch (e.failure) {
+      case 'blocked':
+        return 'This site blocks automated access, so Seymour can’t read it directly (many big sites like Allrecipes do this). Use “Enter manually” to add it.';
+      case 'notfound':
+        return 'That page wasn’t found (404). Double-check the URL.';
+      case 'timeout':
+        return 'The page took too long to respond. Try again, or add it with “Enter manually”.';
+    }
+  }
+  return 'The page couldn’t be fetched. Try again, or add it with “Enter manually”.';
+}
+
+/** Runs the JSON-LD scraper then the AI fallback against one HTML document. */
+async function extractFrom(
+  html: string,
+  href: string,
+): Promise<{ data: ParsedRecipeData; via: 'scraper' | 'ai' } | null> {
+  const scraped = extractRecipeFromHtml(html, href);
+  if (scraped) return { data: scraped, via: 'scraper' };
+  try {
+    const ai = await aiFallback(href, html);
+    if (ai) return { data: ai, via: 'ai' };
+  } catch {
+    // fall through
+  }
+  return null;
+}
+
 async function parseOne(url: string): Promise<ParseResult> {
   let target: URL;
   try {
@@ -90,30 +132,38 @@ async function parseOne(url: string): Promise<ParseResult> {
     return { status: 'error', url, message: 'Not a valid http(s) URL.' };
   }
 
-  let html: string;
+  // 1) Direct fetch, then extract.
+  let directError: unknown;
   try {
-    html = await fetchHtml(target.href);
+    const html = await fetchHtml(target.href);
+    const result = await extractFrom(html, target.href);
+    if (result) return { status: 'success', url, data: result.data, via: result.via };
   } catch (e) {
-    const reason = e instanceof Error && e.name === 'AbortError' ? 'timed out' : 'could not be fetched';
-    return { status: 'error', url, message: `The page ${reason}. Check the URL or add the recipe manually.` };
+    directError = e;
   }
 
-  const scraped = extractRecipeFromHtml(html, target.href);
-  if (scraped) return { status: 'success', url, data: scraped, via: 'scraper' };
-
-  try {
-    const ai = await aiFallback(target.href, html);
-    if (ai) return { status: 'success', url, data: ai, via: 'ai' };
-  } catch {
-    // fall through to the generic error below
+  // 2) Reader-proxy fallback (only if configured) — covers pages that block a
+  // direct fetch or serve a bot shell with no recipe data.
+  if (READER_PROXY) {
+    try {
+      const html = await fetchViaReader(target.href, READER_PROXY);
+      const result = await extractFrom(html, target.href);
+      if (result) return { status: 'success', url, data: result.data, via: result.via };
+    } catch (e) {
+      if (!directError) directError = e;
+    }
   }
 
+  // 3) Nothing worked — report the most useful reason.
+  if (directError) {
+    return { status: 'error', url, message: fetchErrorMessage(directError) };
+  }
   return {
     status: 'error',
     url,
     message: process.env.OPENAI_API_KEY
-      ? 'No recipe could be extracted from this page. You can add it manually.'
-      : 'No structured recipe data found on this page (AI fallback is not configured). You can add it manually.',
+      ? 'No recipe could be extracted from this page. You can add it with “Enter manually”.'
+      : 'No structured recipe data found on this page. You can add it with “Enter manually”.',
   };
 }
 

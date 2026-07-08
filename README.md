@@ -56,11 +56,23 @@ npm run build && npm start
 
 ### Environment variables
 
-| Variable         | Required | Purpose                                                        |
-| ---------------- | -------- | -------------------------------------------------------------- |
-| `OPENAI_API_KEY` | No       | Enables the AI fallback in `/api/parse` when structured-data scraping fails. Server-side only; never reaches the client. |
+| Variable              | Required | Purpose                                                        |
+| --------------------- | -------- | -------------------------------------------------------------- |
+| `OPENAI_API_KEY`      | No       | Enables the AI fallback in `/api/parse` when structured-data scraping fails. Server-side only; never reaches the client. |
+| `RECIPE_READER_PROXY` | No       | Reader-proxy fallback for sites that block direct server-side fetches (Cloudflare-protected sites like Allrecipes reject datacenter IPs). URL template with a `{url}` placeholder, e.g. `https://r.jina.ai/{url}`. Unset = no third-party calls. |
 
-Copy `.env.example` to `.env.local` and fill in the key if you want the fallback.
+Copy `.env.example` to `.env.local` and fill in whichever you want.
+
+#### Why some recipes fail without `RECIPE_READER_PROXY`
+
+Big recipe sites (Allrecipes, NYT Cooking, Serious Eats…) sit behind Cloudflare,
+which blocks requests from datacenter IPs — including the ones Vercel's servers
+run on — regardless of how browser-like the request looks. A direct fetch gets
+a `403`, so there's nothing to parse. Setting `RECIPE_READER_PROXY` routes those
+blocked pages through a reader service that fetches them from residential-grade
+infrastructure and returns the HTML, which Seymour then parses normally. It's
+only used as a fallback when a direct fetch is blocked or yields no recipe, so
+reachable sites never touch the proxy. Manual entry always works regardless.
 
 ### Tests
 
@@ -104,10 +116,14 @@ feature won't work there because it has no server to run the parser.
    repo. Vercel auto-detects Next.js — no build settings to change
    (build: `next build`, output handled automatically, API route runs as a
    serverless function).
-3. *(Optional)* Under **Settings → Environment Variables**, add
-   `OPENAI_API_KEY` to enable the AI fallback for pages without schema.org
-   recipe data. Without it, scraping still works on the majority of recipe
-   sites; unsupported pages fall back to manual entry.
+3. *(Optional)* Under **Settings → Environment Variables**, add:
+   - `RECIPE_READER_PROXY=https://r.jina.ai/{url}` — **recommended** so
+     Cloudflare-protected sites (Allrecipes, NYT Cooking…) work instead of
+     failing with "this site blocks automated access." Without it, those big
+     sites can only be added via manual entry.
+   - `OPENAI_API_KEY` — enables the AI fallback for pages that have no
+     schema.org recipe data at all. Optional; scraping already works on most
+     sites without it.
 4. **Deploy.** Every push to `main` redeploys; branches get preview URLs.
 
 Data stays in each visitor's browser (IndexedDB) — there's no server database

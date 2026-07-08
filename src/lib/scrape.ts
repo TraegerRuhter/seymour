@@ -10,7 +10,29 @@ import type { ParsedRecipeData } from './types';
  * Fallback path (route-level): OpenAI extraction from the page text.
  */
 
-const FETCH_TIMEOUT_MS = 10_000;
+const FETCH_TIMEOUT_MS = 12_000;
+
+/** Why a fetch failed, so the API can give an honest, actionable message. */
+export type FetchFailure = 'timeout' | 'blocked' | 'notfound' | 'network';
+
+export class FetchError extends Error {
+  constructor(
+    public failure: FetchFailure,
+    public status?: number,
+  ) {
+    super(`fetch ${failure}${status ? ` (HTTP ${status})` : ''}`);
+    this.name = 'FetchError';
+  }
+}
+
+function classifyStatus(status: number): FetchFailure {
+  if (status === 404 || status === 410) return 'notfound';
+  // 401/403 = forbidden, 406 = UA rejected, 429 = rate-limited, 503 = Cloudflare challenge
+  if (status === 401 || status === 403 || status === 406 || status === 429 || status === 503) {
+    return 'blocked';
+  }
+  return 'network';
+}
 
 // Precompile regexes at module level to avoid recompilation on every call
 const JSON_LD_REGEX = /<script[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
@@ -26,21 +48,80 @@ const FOOTER_REGEX = /<footer[\s\S]*?<\/footer>/gi;
 const SPACE_REGEX = /[ \t]+/g;
 const NEWLINE_REGEX = /\n\s*\n+/g;
 
+// A realistic, current desktop-Chrome header set. Many recipe sites do light
+// bot-checking on the User-Agent / Accept headers; sending a plausible browser
+// fingerprint gets us past a meaningful share of them. (Cloudflare-grade bot
+// protection — e.g. Allrecipes, NYT — still can't be defeated this way.)
+const BROWSER_HEADERS: Record<string, string> = {
+  'User-Agent':
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Sec-Ch-Ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+  'Sec-Ch-Ua-Mobile': '?0',
+  'Sec-Ch-Ua-Platform': '"macOS"',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1',
+  'Upgrade-Insecure-Requests': '1',
+};
+
 export async function fetchHtml(url: string): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(url, {
       signal: controller.signal,
+      headers: BROWSER_HEADERS,
+      redirect: 'follow',
+    });
+    if (!res.ok) throw new FetchError(classifyStatus(res.status), res.status);
+    return await res.text();
+  } catch (e) {
+    if (e instanceof FetchError) throw e;
+    if (e instanceof Error && e.name === 'AbortError') throw new FetchError('timeout');
+    throw new FetchError('network');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Reader proxies render/fetch a page from their own infrastructure and hand
+// back the HTML, which sidesteps datacenter-IP blocks (Cloudflare et al.) that
+// stop a direct server-side fetch. Rendering is slower, so allow more time.
+const READER_TIMEOUT_MS = 25_000;
+
+/**
+ * Fetches a page through a configured reader proxy. `template` is a URL with a
+ * `{url}` placeholder (e.g. `https://r.jina.ai/{url}`); if it has no
+ * placeholder the target URL is appended. Returns HTML for the normal
+ * JSON-LD/AI extraction path to consume.
+ */
+export async function fetchViaReader(url: string, template: string): Promise<string> {
+  // The target URL is inserted raw (Jina and most readers use path-style
+  // append, e.g. https://r.jina.ai/https://site.com/recipe).
+  const proxied = template.includes('{url}') ? template.replace('{url}', url) : template + url;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), READER_TIMEOUT_MS);
+  try {
+    const res = await fetch(proxied, {
+      signal: controller.signal,
       headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36 Seymour/1.0',
-        Accept: 'text/html,application/xhtml+xml',
+        'User-Agent': BROWSER_HEADERS['User-Agent'],
+        Accept: 'text/html,application/xhtml+xml,*/*;q=0.8',
+        // Jina Reader honors this to return raw HTML (so the JSON-LD scraper
+        // works); harmless to proxies that ignore it.
+        'X-Return-Format': 'html',
       },
       redirect: 'follow',
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new FetchError(classifyStatus(res.status), res.status);
     return await res.text();
+  } catch (e) {
+    if (e instanceof FetchError) throw e;
+    if (e instanceof Error && e.name === 'AbortError') throw new FetchError('timeout');
+    throw new FetchError('network');
   } finally {
     clearTimeout(timer);
   }
