@@ -10,13 +10,18 @@ export default function RecipeLibraryPage() {
   const [query, setQuery] = useState('');
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
 
+  const sortedRecipes = useMemo(
+    () =>
+      Object.values(recipes).sort(
+        (a, b) => +new Date(b.dateAdded) - +new Date(a.dateAdded),
+      ),
+    [recipes],
+  );
+
   const filtered = useMemo(() => {
-    const all = Object.values(recipes).sort(
-      (a, b) => +new Date(b.dateAdded) - +new Date(a.dateAdded),
-    );
     const q = query.trim().toLowerCase();
-    return q ? all.filter((r) => r.title.toLowerCase().includes(q)) : all;
-  }, [recipes, query]);
+    return q ? sortedRecipes.filter((r) => r.title.toLowerCase().includes(q)) : sortedRecipes;
+  }, [sortedRecipes, query]);
 
   return (
     <div className="space-y-6">
