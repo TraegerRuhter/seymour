@@ -91,5 +91,24 @@ conversion/formatting, the aggregation engine, and the seeded plan generator.
 
 ## Deployment
 
-Deploys as a standard Next.js app (e.g. Vercel): connect the repo, set
-`OPENAI_API_KEY` (optional), done. Data stays in each visitor's browser.
+Seymour is a standard Next.js app with one server-side API route (`/api/parse`
+for URL scraping + the optional AI fallback), so it needs a host that runs
+Node — **Vercel** is the path of least resistance. A purely static host (e.g.
+GitHub Pages) can serve everything else, but the "paste a URL to import"
+feature won't work there because it has no server to run the parser.
+
+### Deploy to Vercel
+
+1. Push to GitHub (already done — the default branch is `main`).
+2. At [vercel.com/new](https://vercel.com/new), **Import** the `TraegerRuhter/seymour`
+   repo. Vercel auto-detects Next.js — no build settings to change
+   (build: `next build`, output handled automatically, API route runs as a
+   serverless function).
+3. *(Optional)* Under **Settings → Environment Variables**, add
+   `OPENAI_API_KEY` to enable the AI fallback for pages without schema.org
+   recipe data. Without it, scraping still works on the majority of recipe
+   sites; unsupported pages fall back to manual entry.
+4. **Deploy.** Every push to `main` redeploys; branches get preview URLs.
+
+Data stays in each visitor's browser (IndexedDB) — there's no server database
+to provision.

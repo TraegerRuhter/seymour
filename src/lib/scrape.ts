@@ -98,8 +98,8 @@ const NAMED_ENTITIES: Record<string, string> = {
   amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
   frac12: '½', frac14: '¼', frac34: '¾',
   frac13: '⅓', frac23: '⅔', frac18: '⅛', frac38: '⅜', frac58: '⅝', frac78: '⅞',
-  deg: '°', ndash: '–', mdash: '—', rsquo: ''', lsquo: ''',
-  rdquo: '"', ldquo: '"', hellip: '…', eacute: 'é', egrave: 'è',
+  deg: '°', ndash: '–', mdash: '—', rsquo: '’', lsquo: '‘',
+  rdquo: '”', ldquo: '“', hellip: '…', eacute: 'é', egrave: 'è',
 };
 
 function decodeBasicEntities(s: string): string {
