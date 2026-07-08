@@ -12,7 +12,7 @@ import type {
 import { parseIngredientLines } from './ingredient-parser';
 import { buildShoppingList, mergeShoppingList } from './aggregate';
 import { generateMealPlan, newSeed, planLabel } from './plan';
-import { usePlanStore, useRecipeStore, useShoppingStore } from './stores';
+import { usePlanStore, useRecipeStore, useSettingsStore, useShoppingStore } from './stores';
 
 /**
  * Cross-store orchestration lives here so individual stores stay decoupled.
@@ -33,8 +33,9 @@ export function regenerateShoppingList(): void {
   debounceTimeout = setTimeout(() => {
     const { plan } = usePlanStore.getState();
     const { recipes } = useRecipeStore.getState();
+    const { unitSystem } = useSettingsStore.getState();
     const shopping = useShoppingStore.getState();
-    const next = buildShoppingList(plan, recipes);
+    const next = buildShoppingList(plan, recipes, unitSystem);
     shopping.setItems(mergeShoppingList(next, shopping.items));
     debounceTimeout = null;
   }, 50);

@@ -120,46 +120,75 @@ function round2(v: number): number {
   return Math.round(v * 100) / 100;
 }
 
-/** True when a value formats as a whole number or a nice unicode fraction. */
-function landsOnNiceValue(value: number): boolean {
-  const frac = value - Math.floor(value + 1e-9);
-  if (frac < 0.04) return true;
-  return NICE_FRACTIONS.some(([f]) => Math.abs(frac - f) < 0.04);
+/** The user's preferred measurement system for computed (shopping) amounts. */
+export type UnitSystem = 'imperial' | 'metric';
+
+/** Rounds a value UP to the nearest multiple of `step` (24 for 23.3 at step 1). */
+function roundUpTo(value: number, step: number): number {
+  // A *relative* epsilon absorbs the small inconsistencies between our
+  // conversion constants (e.g. tbsp isn't exactly 1/16 cup), which otherwise
+  // accumulate when a recipe is scaled up — 168 tbsp is 10.5 cups, not 10.75.
+  // 0.01% is far below one real step, so an amount genuinely past a boundary
+  // still rounds up.
+  const n = value / step;
+  const eps = Math.max(1e-9, Math.abs(n) * 1e-4);
+  return Math.ceil(n - eps) * step;
 }
 
 /**
- * Converts an aggregated base-unit total back to the most human-readable
- * unit for a shopping list.
+ * Converts an aggregated base-unit total into a single, consistent unit for the
+ * chosen system, rounded up to a sensible shopping amount (never a fiddly
+ * "340.19 g" — always the next tidy step up).
  *
- * Volume: ≥ 2 cups → cups; ≥ 1 tbsp → tbsp; otherwise tsp.
- * Weight: ≥ 1 lb → lb; ≥ 28 g stays in g under 1 kg for metric-friendliness,
- *         but oz reads better between 1 oz and 1 lb for imperial recipes,
- *         so: ≥ 453.592 g → lb; ≥ 100 g → g; ≥ 28.35 g → oz; else g.
+ * Imperial weight: lb (≥1 lb) / oz, rounded up to ¼.
+ * Metric weight:   kg (≥1 kg) / g, rounded up to 0.05 kg / 5 g / 1 g.
+ * Imperial volume: cups (≥¼ cup) / tbsp / tsp, rounded up to ¼ or ½.
+ * Metric volume:   L (≥1 L) / mL, rounded up to 0.05 L / 10 mL / 5 mL.
  */
-export function toReadable(baseQuantity: number, baseUnit: 'ml' | 'g'): { quantity: number; unit: string } {
-  if (baseUnit === 'ml') {
-    if (baseQuantity >= 236.588 / 4) {
-      const cups = baseQuantity / 236.588;
-      const tbsp = baseQuantity / 14.7868;
-      // "9 tbsp" reads better than "0.56 cup" — prefer tbsp when the cup
-      // amount is awkward but the tbsp amount is clean, below 1 cup.
-      if (cups < 1 && !landsOnNiceValue(cups) && landsOnNiceValue(tbsp)) {
-        return { quantity: tbsp, unit: 'tbsp' };
-      }
-      return { quantity: cups, unit: 'cup' };
+export function toReadable(
+  baseQuantity: number,
+  baseUnit: 'ml' | 'g',
+  system: UnitSystem = 'imperial',
+): { quantity: number; unit: string } {
+  if (baseUnit === 'g') {
+    if (system === 'metric') {
+      if (baseQuantity >= 1000) return { quantity: roundUpTo(baseQuantity / 1000, 0.05), unit: 'kg' };
+      if (baseQuantity >= 100) return { quantity: roundUpTo(baseQuantity, 5), unit: 'g' };
+      return { quantity: roundUpTo(baseQuantity, 1), unit: 'g' };
     }
-    if (baseQuantity >= 14.7868) return { quantity: baseQuantity / 14.7868, unit: 'tbsp' };
-    return { quantity: baseQuantity / 4.92892, unit: 'tsp' };
+    if (baseQuantity >= 453.592) return { quantity: roundUpTo(baseQuantity / 453.592, 0.25), unit: 'lb' };
+    return { quantity: roundUpTo(baseQuantity / 28.3495, 0.25), unit: 'oz' };
   }
-  if (baseQuantity >= 453.592) return { quantity: baseQuantity / 453.592, unit: 'lb' };
-  if (baseQuantity >= 100) return { quantity: baseQuantity, unit: 'g' };
-  if (baseQuantity >= 28.3495) return { quantity: baseQuantity / 28.3495, unit: 'oz' };
-  return { quantity: baseQuantity, unit: 'g' };
+
+  // volume (base mL)
+  if (system === 'metric') {
+    if (baseQuantity >= 1000) return { quantity: roundUpTo(baseQuantity / 1000, 0.05), unit: 'l' };
+    if (baseQuantity >= 100) return { quantity: roundUpTo(baseQuantity, 10), unit: 'ml' };
+    return { quantity: roundUpTo(baseQuantity, 5), unit: 'ml' };
+  }
+  if (baseQuantity >= 236.588 / 4) return { quantity: roundUpTo(baseQuantity / 236.588, 0.25), unit: 'cup' };
+  if (baseQuantity >= 14.7868) return { quantity: roundUpTo(baseQuantity / 14.7868, 0.5), unit: 'tbsp' };
+  return { quantity: roundUpTo(baseQuantity / 4.92892, 0.25), unit: 'tsp' };
 }
 
-/** Pluralizes a display unit when the quantity calls for it. */
+/** Units shown as plain numbers (metric); everything else uses nice fractions. */
+const PLAIN_NUMBER_UNITS = new Set(['g', 'kg', 'ml', 'l']);
+
+/**
+ * Formats a computed amount: plain trimmed decimals for metric units
+ * (24 g, 1.8 kg, 250 mL), friendly fractions for imperial/counts (1¾, ½).
+ */
+export function formatAmount(quantity: number, unit: string): string {
+  if (quantity === 0) return '';
+  if (PLAIN_NUMBER_UNITS.has(unit)) return String(round2(quantity));
+  return formatQuantity(quantity);
+}
+
+/** Pluralizes / cases a display unit for the given quantity. */
 export function displayUnit(unit: string, quantity: number): string {
   if (!unit) return '';
+  if (unit === 'ml') return 'mL';
+  if (unit === 'l') return 'L';
   const plural: Record<string, string> = {
     cup: 'cups', pint: 'pints', quart: 'quarts', gallon: 'gallons',
     clove: 'cloves', pinch: 'pinches', dash: 'dashes', can: 'cans',

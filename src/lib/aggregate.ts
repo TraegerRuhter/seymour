@@ -1,5 +1,5 @@
 import type { Ingredient, MealPlanDay, Recipe, ShoppingListItem } from './types';
-import { toBase, toReadable, unitKind } from './units';
+import { toBase, toReadable, unitKind, type UnitSystem } from './units';
 
 interface Bucket {
   name: string;
@@ -20,7 +20,10 @@ interface Bucket {
  * units collapse into a single base-unit bucket per name; non-convertible
  * units ("clove", "pinch") stay separate so unlike things are never summed.
  */
-export function aggregateIngredients(ingredients: Ingredient[]): ShoppingListItem[] {
+export function aggregateIngredients(
+  ingredients: Ingredient[],
+  system: UnitSystem = 'imperial',
+): ShoppingListItem[] {
   const buckets = new Map<string, Bucket>();
 
   for (const ing of ingredients) {
@@ -62,7 +65,7 @@ export function aggregateIngredients(ingredients: Ingredient[]): ShoppingListIte
     let quantity = bucket.total;
     let unit = bucket.displayUnit;
     if (bucket.baseUnit && bucket.total > 0) {
-      const readable = toReadable(bucket.total, bucket.baseUnit);
+      const readable = toReadable(bucket.total, bucket.baseUnit, system);
       quantity = readable.quantity;
       unit = readable.unit;
     }
@@ -91,6 +94,7 @@ export function aggregateIngredients(ingredients: Ingredient[]): ShoppingListIte
 export function buildShoppingList(
   plan: MealPlanDay[] | null,
   recipes: Record<string, Recipe>,
+  system: UnitSystem = 'imperial',
 ): ShoppingListItem[] {
   if (!plan) return [];
   const all: Ingredient[] = [];
@@ -100,7 +104,7 @@ export function buildShoppingList(
       if (recipe) all.push(...recipe.ingredients);
     }
   }
-  return aggregateIngredients(all);
+  return aggregateIngredients(all, system);
 }
 
 /**

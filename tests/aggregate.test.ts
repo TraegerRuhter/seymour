@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { aggregateIngredients, mergeShoppingList } from '../src/lib/aggregate.ts';
 import { parseIngredient } from '../src/lib/ingredient-parser.ts';
-import { formatQuantity, toReadable } from '../src/lib/units.ts';
+import { formatAmount, formatQuantity, toReadable } from '../src/lib/units.ts';
 
 test('sums same ingredient with same unit', () => {
   const items = aggregateIngredients([
@@ -44,14 +44,25 @@ test('does not sum unlike units (cloves vs cups)', () => {
   assert.equal(items.length, 2);
 });
 
-test('weight converts to readable pounds', () => {
-  const items = aggregateIngredients([
-    parseIngredient('500 g ground beef'),
-    parseIngredient('300 g ground beef'),
-  ]);
+test('weight converts to readable pounds (imperial, rounded up to ¼)', () => {
+  const items = aggregateIngredients(
+    [parseIngredient('500 g ground beef'), parseIngredient('300 g ground beef')],
+    'imperial',
+  );
   assert.equal(items.length, 1);
   assert.equal(items[0].unit, 'lb');
-  assert.ok(Math.abs(items[0].totalQuantity - 800 / 453.592) < 0.01);
+  // 800 g = 1.76 lb → rounds up to 2 lb
+  assert.equal(items[0].totalQuantity, 2);
+});
+
+test('metric system keeps grams and never mixes units', () => {
+  const items = aggregateIngredients(
+    [parseIngredient('500 g ground beef'), parseIngredient('300 g ground beef')],
+    'metric',
+  );
+  assert.equal(items.length, 1);
+  assert.equal(items[0].unit, 'g');
+  assert.equal(items[0].totalQuantity, 800);
 });
 
 test('unquantified items appear once without quantity', () => {
@@ -84,13 +95,38 @@ test('formatQuantity renders friendly fractions', () => {
   assert.equal(formatQuantity(1 / 3), '⅓');
 });
 
-test('toReadable picks sensible units', () => {
-  // 473 mL ≈ 2 cups
-  const vol = toReadable(473.176, 'ml');
+test('toReadable picks sensible imperial units', () => {
+  const vol = toReadable(473.176, 'ml', 'imperial'); // 2 cups
   assert.equal(vol.unit, 'cup');
-  assert.ok(Math.abs(vol.quantity - 2) < 0.01);
-  // 800 g ≈ 1.76 lb
-  const wt = toReadable(800, 'g');
+  assert.equal(vol.quantity, 2);
+  const wt = toReadable(800, 'g', 'imperial'); // 1.76 lb → 2 lb
   assert.equal(wt.unit, 'lb');
-  assert.ok(Math.abs(wt.quantity - 1.76) < 0.01);
+  assert.equal(wt.quantity, 2);
+});
+
+test('toReadable rounds up to a tidy amount, never fiddly decimals', () => {
+  // metric: 23.3 g → 24 g (the reported "340.19 g" class of problem)
+  const g = toReadable(23.3, 'g', 'metric');
+  assert.equal(g.unit, 'g');
+  assert.equal(g.quantity, 24);
+  // metric ≥1 kg switches to kg, rounded up to 0.05
+  const kg = toReadable(1763.7, 'g', 'metric');
+  assert.equal(kg.unit, 'kg');
+  assert.equal(kg.quantity, 1.8);
+  // metric volume ≥1 L switches to L
+  const l = toReadable(1200, 'ml', 'metric');
+  assert.equal(l.unit, 'l');
+  assert.ok(l.quantity >= 1.2 && l.quantity <= 1.25);
+  // an amount that displayed as "340.19 g" before now reads cleanly
+  const oz = toReadable(340.19, 'g', 'imperial');
+  assert.equal(oz.unit, 'oz');
+  assert.equal(oz.quantity, 12);
+});
+
+test('formatAmount: metric plain numbers, imperial fractions', () => {
+  assert.equal(formatAmount(24, 'g'), '24');
+  assert.equal(formatAmount(1.8, 'kg'), '1.8');
+  assert.equal(formatAmount(250, 'ml'), '250');
+  assert.equal(formatAmount(1.75, 'lb'), '1¾');
+  assert.equal(formatAmount(0.5, 'cup'), '½');
 });

@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { MotionConfig } from 'framer-motion';
-import { useAllHydrated, usePlanStore, useRecipeStore } from '@/lib/stores';
+import { useAllHydrated, usePlanStore, useRecipeStore, useSettingsStore } from '@/lib/stores';
 import { regenerateShoppingList } from '@/lib/actions';
 import { applyTheme, getStoredTheme } from '@/lib/theme';
 import Logo from './Logo';
@@ -16,12 +16,13 @@ export default function AppProviders({ children }: { children: React.ReactNode }
   const hydrated = useAllHydrated();
   const plan = usePlanStore((s) => s.plan);
   const recipes = useRecipeStore((s) => s.recipes);
+  const unitSystem = useSettingsStore((s) => s.unitSystem);
 
-  // Re-derive the shopping list whenever the plan or the recipe collection
-  // changes (covers edits made on other pages and imported data).
+  // Re-derive the shopping list whenever the plan, the recipe collection, or
+  // the unit system changes (covers edits on other pages and imported data).
   useEffect(() => {
     if (hydrated) regenerateShoppingList();
-  }, [hydrated, plan, recipes]);
+  }, [hydrated, plan, recipes, unitSystem]);
 
   // Follow OS theme changes live while in "system" mode.
   useEffect(() => {
