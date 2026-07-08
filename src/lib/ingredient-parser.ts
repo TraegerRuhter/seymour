@@ -19,6 +19,8 @@ const MIXED_NUMBER_REGEX = /^(\d+)\s+(\d+)\s*\/\s*(\d+)$/;
 const FRACTION_REGEX = /^(\d+)\s*\/\s*(\d+)$/;
 const GLUED_FRACTION_REGEX = /^(\d+)([¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/;
 const RANGE_SEPARATOR_REGEX = /^\s*(?:-|–|—|to)\s*/;
+const LEADING_NUMBER_REGEX = new RegExp(`^${NUMBER_RE.source}`);
+const LEADING_RANGE_REGEX = new RegExp(`${RANGE_SEPARATOR_REGEX.source}${NUMBER_RE.source}`);
 const TWO_WORD_UNIT_REGEX = /^([a-zA-Z]+\.?\s+[a-zA-Z]+\.?)\s+/;
 const ONE_WORD_UNIT_REGEX = /^([a-zA-Z]+\.?)(\s+|$)/;
 const OF_FILLER_REGEX = /^of\s+/i;
@@ -57,7 +59,7 @@ function matchLeadingQuantity(text: string): QuantityMatch | null {
     first = parseInt(glued[1], 10) + UNICODE_FRACTIONS[glued[2]];
     consumed = glued[0].length;
   } else {
-    const m = text.match(new RegExp(`^${NUMBER_RE.source}`));
+    const m = text.match(LEADING_NUMBER_REGEX);
     if (!m) return null;
     first = parseNumberToken(m[0]);
     consumed = m[0].length;
@@ -65,7 +67,7 @@ function matchLeadingQuantity(text: string): QuantityMatch | null {
 
   // range: "- 2", "– 2", "to 2"
   const rest = text.slice(consumed);
-  const rangeMatch = rest.match(new RegExp(`${RANGE_SEPARATOR_REGEX.source}${NUMBER_RE.source}`));
+  const rangeMatch = rest.match(LEADING_RANGE_REGEX);
   if (rangeMatch) {
     const second = parseNumberToken(rangeMatch[1]);
     if (!Number.isNaN(second) && second >= first) {

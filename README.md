@@ -84,6 +84,16 @@ npm test
 Unit tests (Node's built-in runner via `tsx`) cover the ingredient parser, unit
 conversion/formatting, the aggregation engine, and the seeded plan generator.
 
+For the full pre-merge validation suite, run:
+
+```bash
+npm run check
+```
+
+That command runs the unit tests, TypeScript type checking, and a production
+Next.js build. The same command runs in GitHub Actions for pushes to `main` and
+pull requests.
+
 ## Architecture notes
 
 - **Thin backend, rich client** — the only server code is `/api/parse`. All state lives in
