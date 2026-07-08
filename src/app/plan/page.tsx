@@ -2,134 +2,124 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { AnimatePresence, motion } from 'framer-motion';
 import { usePlanStore, useRecipeStore } from '@/lib/stores';
-import { generatePlan, regeneratePlan } from '@/lib/actions';
-import { MEAL_TYPE_LABELS } from '@/lib/plan';
-import { MEAL_TYPES, type MealType } from '@/lib/types';
+import { archiveCurrentPlan, clearCurrentPlan, regeneratePlan } from '@/lib/actions';
 import MealPlanView from '@/components/MealPlanView';
-
-const DAY_CHOICES = [1, 2, 3, 5, 7, 10, 14];
+import PlanGenerator from '@/components/PlanGenerator';
+import ArchivedPlans from '@/components/ArchivedPlans';
 
 export default function PlanPage() {
   const recipeCount = useRecipeStore((s) => Object.keys(s.recipes).length);
   const plan = usePlanStore((s) => s.plan);
-  const config = usePlanStore((s) => s.config);
 
-  const [days, setDays] = useState(config?.days ?? 7);
-  const [mealTypes, setMealTypes] = useState<MealType[]>(
-    config?.mealTypes ?? ['breakfast', 'lunch', 'dinner'],
-  );
-
-  const canGenerate = recipeCount > 0 && mealTypes.length > 0;
-
-  function toggleMealType(t: MealType) {
-    setMealTypes((current) =>
-      current.includes(t) ? current.filter((x) => x !== t) : [...MEAL_TYPES.filter((m) => current.includes(m) || m === t)],
-    );
-  }
+  // Generator is tucked away when a plan exists so the plan itself is what you
+  // see; "New plan" reveals it.
+  const [showGenerator, setShowGenerator] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-3xl font-bold">Meal plan</h1>
-        <p className="mt-1 text-charcoal/60">
-          Random picks from your {recipeCount} recipe{recipeCount === 1 ? '' : 's'} — no repeats within a day.
-        </p>
-      </header>
-
-      <section aria-label="Plan configuration" className="glass-card space-y-4 p-5">
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="mb-2 text-sm font-medium">How many days?</h2>
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Number of days">
-            {DAY_CHOICES.map((d) => (
-              <button
-                key={d}
-                type="button"
-                aria-pressed={days === d}
-                onClick={() => setDays(d)}
-                className={`min-w-11 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                  days === d
-                    ? 'bg-terracotta text-white'
-                    : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
-                }`}
-              >
-                {d}
-              </button>
-            ))}
-          </div>
+          <h1 className="text-3xl font-bold">Meal plan</h1>
+          <p className="mt-1 text-charcoal/60">
+            {plan
+              ? `${plan.length} day${plan.length === 1 ? '' : 's'} planned`
+              : `Random picks from your ${recipeCount} recipe${recipeCount === 1 ? '' : 's'} — no repeats within a day.`}
+          </p>
         </div>
-
-        <div>
-          <h2 className="mb-2 text-sm font-medium">Which meals?</h2>
-          <div className="flex flex-wrap gap-2">
-            {MEAL_TYPES.map((t) => {
-              const on = mealTypes.includes(t);
-              return (
-                <label
-                  key={t}
-                  className={`inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                    on
-                      ? 'bg-olive text-white'
-                      : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={on}
-                    onChange={() => toggleMealType(t)}
-                    className="sr-only"
-                  />
-                  {MEAL_TYPE_LABELS[t]}
-                </label>
-              );
-            })}
-          </div>
-          {mealTypes.length === 0 && (
-            <p className="mt-2 text-sm text-terracotta-dark" role="alert">
-              Pick at least one meal type.
-            </p>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-3 pt-1">
+        {plan && (
           <button
             type="button"
-            onClick={() => generatePlan(days, mealTypes)}
-            disabled={!canGenerate}
-            className="btn-primary"
+            onClick={() => setShowGenerator((v) => !v)}
+            aria-expanded={showGenerator}
+            className={showGenerator ? 'btn-secondary' : 'btn-primary'}
           >
-            {plan ? 'Generate new plan' : 'Generate plan'}
+            {showGenerator ? 'Close' : '＋ New plan'}
           </button>
-          {plan && (
-            <button type="button" onClick={regeneratePlan} className="btn-secondary">
-              🔀 Shuffle
-            </button>
-          )}
-        </div>
+        )}
+      </header>
 
-        {recipeCount === 0 && (
-          <p className="text-sm text-charcoal/60">
+      {recipeCount === 0 ? (
+        <div className="rounded-2xl border border-dashed border-charcoal/20 p-10 text-center">
+          <span aria-hidden className="animate-float text-5xl">🗓️</span>
+          <p className="mt-3 text-charcoal/60">
             You need some recipes first —{' '}
             <Link href="/add" className="font-medium text-terracotta hover:underline">
               add a few
             </Link>{' '}
             and come back.
           </p>
-        )}
-      </section>
-
-      {plan ? (
-        <MealPlanView />
+        </div>
+      ) : !plan ? (
+        // No plan yet: generator is the main event.
+        <PlanGenerator />
       ) : (
-        recipeCount > 0 && (
-          <div className="rounded-2xl border border-dashed border-charcoal/20 p-10 text-center">
-            <span aria-hidden className="animate-float text-5xl">🗓️</span>
-            <p className="mt-3 text-charcoal/60">
-              No plan yet. Pick your days and meals above, then hit Generate.
-            </p>
+        <>
+          {/* Plan actions */}
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={regeneratePlan} className="btn-secondary px-4 py-2 text-sm">
+              🔀 Shuffle
+            </button>
+            <button
+              type="button"
+              onClick={archiveCurrentPlan}
+              className="btn-secondary px-4 py-2 text-sm"
+            >
+              🗄️ Archive
+            </button>
+            {confirmClear ? (
+              <span className="inline-flex items-center gap-2 rounded-full bg-terracotta/10 px-3 py-1.5 text-sm">
+                Delete this plan?
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearCurrentPlan();
+                    setConfirmClear(false);
+                  }}
+                  className="font-semibold text-terracotta-dark hover:underline"
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmClear(false)}
+                  className="text-charcoal/60 hover:underline"
+                >
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmClear(true)}
+                className="rounded-full px-4 py-2 text-sm font-medium text-terracotta-dark transition-colors hover:bg-terracotta/10"
+              >
+                🗑️ Delete
+              </button>
+            )}
           </div>
-        )
+
+          {/* Collapsible generator */}
+          <AnimatePresence initial={false}>
+            {showGenerator && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <PlanGenerator hasExistingPlan onGenerated={() => setShowGenerator(false)} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <MealPlanView />
+        </>
       )}
+
+      <ArchivedPlans />
     </div>
   );
 }

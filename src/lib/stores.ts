@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import localforage from 'localforage';
 import type {
+  ArchivedPlan,
   MealPlanConfig,
   MealPlanDay,
   Recipe,
@@ -34,62 +35,35 @@ function makeStorage(storeName: string): StateStorage {
 interface RecipeState {
   recipes: Record<string, Recipe>;
   hasHydrated: boolean;
-  // Cache of recipe IDs to avoid repeated Object.keys() calls
-  _recipeIdCache: string[];
   addRecipe: (recipe: Recipe) => void;
   addRecipes: (recipes: Recipe[]) => void;
   updateRecipe: (recipe: Recipe) => void;
   removeRecipe: (id: string) => void;
   replaceAll: (recipes: Record<string, Recipe>) => void;
-  // Selector to get recipe IDs without unnecessary re-renders
-  getRecipeIds: () => string[];
 }
 
 export const useRecipeStore = create<RecipeState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       recipes: {},
       hasHydrated: false,
-      _recipeIdCache: [],
       addRecipe: (recipe) =>
-        set((s) => {
-          const next = { ...s.recipes, [recipe.id]: recipe };
-          return { 
-            recipes: next,
-            _recipeIdCache: Object.keys(next),
-          };
-        }),
+        set((s) => ({ recipes: { ...s.recipes, [recipe.id]: recipe } })),
       addRecipes: (list) =>
         set((s) => {
           const next = { ...s.recipes };
           for (const r of list) next[r.id] = r;
-          return { 
-            recipes: next,
-            _recipeIdCache: Object.keys(next),
-          };
+          return { recipes: next };
         }),
       updateRecipe: (recipe) =>
-        set((s) => {
-          const next = { ...s.recipes, [recipe.id]: recipe };
-          return { 
-            recipes: next,
-            _recipeIdCache: Object.keys(next),
-          };
-        }),
+        set((s) => ({ recipes: { ...s.recipes, [recipe.id]: recipe } })),
       removeRecipe: (id) =>
         set((s) => {
           const next = { ...s.recipes };
           delete next[id];
-          return { 
-            recipes: next,
-            _recipeIdCache: Object.keys(next),
-          };
+          return { recipes: next };
         }),
-      replaceAll: (recipes) => set({ 
-        recipes,
-        _recipeIdCache: Object.keys(recipes),
-      }),
-      getRecipeIds: () => get()._recipeIdCache,
+      replaceAll: (recipes) => set({ recipes }),
     }),
     {
       name: 'recipes',
@@ -104,12 +78,21 @@ export const useRecipeStore = create<RecipeState>()(
 interface PlanState {
   config: MealPlanConfig | null;
   plan: MealPlanDay[] | null;
+  archivedPlans: ArchivedPlan[];
   hasHydrated: boolean;
   setPlan: (config: MealPlanConfig, plan: MealPlanDay[]) => void;
   clearPlan: () => void;
   setSlot: (dayIndex: number, mealIndex: number, recipeId: string) => void;
   clearRecipeFromPlan: (recipeId: string) => void;
-  replaceAll: (config: MealPlanConfig | null, plan: MealPlanDay[] | null) => void;
+  /** Adds an entry to the archive (most recent first). */
+  pushArchived: (entry: ArchivedPlan) => void;
+  deleteArchived: (id: string) => void;
+  clearArchived: () => void;
+  replaceAll: (
+    config: MealPlanConfig | null,
+    plan: MealPlanDay[] | null,
+    archivedPlans?: ArchivedPlan[],
+  ) => void;
 }
 
 export const usePlanStore = create<PlanState>()(
@@ -117,9 +100,15 @@ export const usePlanStore = create<PlanState>()(
     (set) => ({
       config: null,
       plan: null,
+      archivedPlans: [],
       hasHydrated: false,
       setPlan: (config, plan) => set({ config, plan }),
       clearPlan: () => set({ config: null, plan: null }),
+      pushArchived: (entry) =>
+        set((s) => ({ archivedPlans: [entry, ...s.archivedPlans] })),
+      deleteArchived: (id) =>
+        set((s) => ({ archivedPlans: s.archivedPlans.filter((a) => a.id !== id) })),
+      clearArchived: () => set({ archivedPlans: [] }),
       setSlot: (dayIndex, mealIndex, recipeId) =>
         set((s) => {
           if (!s.plan) return s;
@@ -146,12 +135,13 @@ export const usePlanStore = create<PlanState>()(
           }));
           return { plan };
         }),
-      replaceAll: (config, plan) => set({ config, plan }),
+      replaceAll: (config, plan, archivedPlans) =>
+        set((s) => ({ config, plan, archivedPlans: archivedPlans ?? s.archivedPlans })),
     }),
     {
       name: 'meal-plan',
       storage: createJSONStorage(() => makeStorage('meal_plan')),
-      partialize: (s) => ({ config: s.config, plan: s.plan }),
+      partialize: (s) => ({ config: s.config, plan: s.plan, archivedPlans: s.archivedPlans }),
     },
   ),
 );

@@ -2,6 +2,7 @@
 
 import { nanoid } from 'nanoid';
 import type {
+  ArchivedPlan,
   ExportBundle,
   MealPlanConfig,
   MealType,
@@ -10,7 +11,7 @@ import type {
 } from './types';
 import { parseIngredientLines } from './ingredient-parser';
 import { buildShoppingList, mergeShoppingList } from './aggregate';
-import { generateMealPlan, newSeed } from './plan';
+import { generateMealPlan, newSeed, planLabel } from './plan';
 import { usePlanStore, useRecipeStore, useShoppingStore } from './stores';
 
 /**
@@ -74,8 +75,10 @@ export function generatePlan(days: number, mealTypes: MealType[], seed?: number)
     mealTypes,
     seed: seed ?? newSeed(),
   };
-  // Use cached recipe IDs to avoid Object.keys() call on every plan generation
-  const recipeIds = useRecipeStore.getState().getRecipeIds();
+  // Read ids straight from the source of truth. (An earlier cache optimization
+  // broke this: the cache isn't persisted, so after a fresh page load it was
+  // empty and every generated slot came out unfilled.)
+  const recipeIds = Object.keys(useRecipeStore.getState().recipes);
   const plan = generateMealPlan(recipeIds, config);
   usePlanStore.getState().setPlan(config, plan);
   regenerateShoppingList();
@@ -93,11 +96,74 @@ export function pickSlotRecipe(dayIndex: number, mealIndex: number, recipeId: st
   regenerateShoppingList();
 }
 
+// --- Plan archive ---
+
+/** Moves the current plan into the archive and clears the active slot. */
+export function archiveCurrentPlan(): void {
+  const { config, plan } = usePlanStore.getState();
+  if (!config || !plan) return;
+  const entry: ArchivedPlan = {
+    id: nanoid(),
+    archivedAt: new Date().toISOString(),
+    label: planLabel(plan, config),
+    config,
+    plan,
+  };
+  usePlanStore.getState().pushArchived(entry);
+  usePlanStore.getState().clearPlan();
+  regenerateShoppingList();
+}
+
+/** Makes an archived plan the active one again (and removes it from the archive). */
+export function restoreArchivedPlan(id: string): void {
+  const entry = usePlanStore.getState().archivedPlans.find((a) => a.id === id);
+  if (!entry) return;
+  usePlanStore.getState().setPlan(entry.config, entry.plan);
+  usePlanStore.getState().deleteArchived(id);
+  regenerateShoppingList();
+}
+
+export function deleteArchivedPlan(id: string): void {
+  usePlanStore.getState().deleteArchived(id);
+}
+
+export function clearArchivedPlans(): void {
+  usePlanStore.getState().clearArchived();
+}
+
+/** Deletes the current plan without archiving it. */
+export function clearCurrentPlan(): void {
+  usePlanStore.getState().clearPlan();
+  regenerateShoppingList();
+}
+
+// --- Bulk data management ---
+
+/** Removes every recipe and clears the current plan (its slots would be empty). */
+export function deleteAllRecipes(): void {
+  useRecipeStore.getState().replaceAll({});
+  usePlanStore.getState().clearPlan();
+  regenerateShoppingList();
+}
+
+/** Rebuilds the shopping list from the current plan, dropping checks and edits. */
+export function resetShoppingList(): void {
+  useShoppingStore.getState().replaceAll([]);
+  regenerateShoppingList();
+}
+
+/** Wipes all data: recipes, current + archived plans, and shopping list. */
+export function resetEverything(): void {
+  useRecipeStore.getState().replaceAll({});
+  usePlanStore.getState().replaceAll(null, null, []);
+  useShoppingStore.getState().replaceAll([]);
+}
+
 // --- Export / Import ---
 
 export function exportBundle(): ExportBundle {
   const { recipes } = useRecipeStore.getState();
-  const { config, plan } = usePlanStore.getState();
+  const { config, plan, archivedPlans } = usePlanStore.getState();
   const { items } = useShoppingStore.getState();
   return {
     version: 1,
@@ -106,6 +172,7 @@ export function exportBundle(): ExportBundle {
     mealPlan: plan,
     mealPlanConfig: config,
     shoppingList: items,
+    archivedPlans,
   };
 }
 
@@ -120,12 +187,13 @@ export function validateBundle(data: unknown): data is ExportBundle {
   }
   if (b.mealPlan !== null && !Array.isArray(b.mealPlan)) return false;
   if (!Array.isArray(b.shoppingList)) return false;
+  if (b.archivedPlans !== undefined && !Array.isArray(b.archivedPlans)) return false;
   return true;
 }
 
 /** Replaces the entire database with an imported bundle. */
 export function importBundle(bundle: ExportBundle): void {
   useRecipeStore.getState().replaceAll(bundle.recipes);
-  usePlanStore.getState().replaceAll(bundle.mealPlanConfig, bundle.mealPlan);
+  usePlanStore.getState().replaceAll(bundle.mealPlanConfig, bundle.mealPlan, bundle.archivedPlans ?? []);
   useShoppingStore.getState().replaceAll(bundle.shoppingList);
 }
