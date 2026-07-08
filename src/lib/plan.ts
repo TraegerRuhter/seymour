@@ -110,3 +110,21 @@ export const MEAL_TYPE_EMOJI: Record<MealType, string> = {
   dinner: '🍽️',
   snack: '🍎',
 };
+
+function formatMonthDay(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+/** Human summary of a plan for the archive list, e.g. "3 days · Jul 7–9 · Dinner". */
+export function planLabel(plan: MealPlanDay[], config: MealPlanConfig): string {
+  const dayCount = `${plan.length} day${plan.length === 1 ? '' : 's'}`;
+  const dates =
+    plan.length === 0
+      ? ''
+      : plan.length === 1
+        ? formatMonthDay(plan[0].date)
+        : `${formatMonthDay(plan[0].date)}–${formatMonthDay(plan[plan.length - 1].date)}`;
+  const meals = config.mealTypes.map((t) => MEAL_TYPE_LABELS[t]).join(', ');
+  return [dayCount, dates, meals].filter(Boolean).join(' · ');
+}

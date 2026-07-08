@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { exportBundle, importBundle, validateBundle } from '@/lib/actions';
 import { useRecipeStore, useShoppingStore, usePlanStore } from '@/lib/stores';
 import { useTheme, type ThemePreference } from '@/lib/theme';
+import DangerZone from '@/components/DangerZone';
 
 const THEME_OPTIONS: Array<{ value: ThemePreference; label: string; icon: string }> = [
   { value: 'light', label: 'Light', icon: '☀️' },
@@ -160,6 +161,8 @@ export default function SettingsPage() {
           </p>
         )}
       </section>
+
+      <DangerZone />
 
       <section aria-label="About" className="glass-card space-y-3 p-5 text-sm text-charcoal/60">
         <h2 className="text-base font-semibold text-charcoal">About Seymour</h2>

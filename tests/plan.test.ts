@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { generateMealPlan, mulberry32, seededShuffle } from '../src/lib/plan.ts';
+import { generateMealPlan, mulberry32, planLabel, seededShuffle } from '../src/lib/plan.ts';
 import type { MealPlanConfig } from '../src/lib/types.ts';
 
 const ids = (n: number) => Array.from({ length: n }, (_, i) => `r${i}`);
@@ -57,4 +57,23 @@ test('seededShuffle is deterministic and a permutation', () => {
   const b = seededShuffle([1, 2, 3, 4, 5], rand2);
   assert.deepEqual(a, b);
   assert.deepEqual([...a].sort(), [1, 2, 3, 4, 5]);
+});
+
+test('planLabel summarizes days, dates, and meals', () => {
+  const config: MealPlanConfig = { days: 3, mealTypes: ['dinner'], seed: 1 };
+  const start = new Date(2026, 6, 7); // Jul 7 2026
+  const plan = generateMealPlan(ids(5), config, start);
+  const label = planLabel(plan, config);
+  assert.match(label, /^3 days · /);
+  assert.match(label, /Dinner$/);
+  assert.ok(label.includes('–'), 'multi-day label shows a date range');
+});
+
+test('planLabel handles a single day (no range dash)', () => {
+  const config: MealPlanConfig = { days: 1, mealTypes: ['breakfast', 'lunch'], seed: 2 };
+  const plan = generateMealPlan(ids(3), config, new Date(2026, 6, 7));
+  const label = planLabel(plan, config);
+  assert.match(label, /^1 day · /);
+  assert.ok(!label.includes('–'), 'single-day label has no range dash');
+  assert.match(label, /Breakfast, Lunch$/);
 });

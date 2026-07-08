@@ -46,6 +46,16 @@ export interface MealPlanConfig {
   seed: number;
 }
 
+/** A meal plan saved to history so it can be looked back on or restored. */
+export interface ArchivedPlan {
+  id: string; // nanoid
+  archivedAt: string; // ISO 8601
+  /** Human-readable summary, e.g. "3 days · Jul 7–9 · Dinner". */
+  label: string;
+  config: MealPlanConfig;
+  plan: MealPlanDay[];
+}
+
 // --- Shopping List Domain ---
 
 export interface ShoppingListItem {
@@ -83,4 +93,6 @@ export interface ExportBundle {
   mealPlan: MealPlanDay[] | null;
   mealPlanConfig: MealPlanConfig | null;
   shoppingList: ShoppingListItem[];
+  /** Optional (added later); older backups won't have it. */
+  archivedPlans?: ArchivedPlan[];
 }
