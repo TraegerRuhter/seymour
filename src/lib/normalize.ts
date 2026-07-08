@@ -87,6 +87,7 @@ const SYNONYMS: Record<string, string> = {
   'fresh lemon juice': 'lemon juice',
   'juice of 1 lemon': 'lemon juice',
   'fresh lime juice': 'lime juice',
+  'juice of 1 lime': 'lime juice',
   'heavy whipping cream': 'heavy cream',
   'double cream': 'heavy cream',
 };
@@ -105,8 +106,15 @@ const DROPPABLE_SUFFIXES = [
   'to taste', 'for serving', 'for garnish', 'plus more',
 ];
 
+/**
+ * Optimized affix stripping: separate forward and backward passes with early
+ * termination on each match. Avoids O(n²) behavior of nested loops checking
+ * all affixes repeatedly.
+ */
 function stripAffixes(name: string): string {
   let out = name;
+  
+  // Forward pass: strip all leading prefixes
   let changed = true;
   while (changed) {
     changed = false;
@@ -114,19 +122,28 @@ function stripAffixes(name: string): string {
       if (out.startsWith(p + ' ')) {
         out = out.slice(p.length + 1);
         changed = true;
+        break; // Restart after each match
       }
     }
+  }
+  
+  // Backward pass: strip all trailing suffixes
+  changed = true;
+  while (changed) {
+    changed = false;
     for (const s of DROPPABLE_SUFFIXES) {
       if (out.endsWith(' ' + s)) {
         out = out.slice(0, -(s.length + 1));
         changed = true;
-      }
-      if (out.endsWith(', ' + s)) {
+        break; // Restart after each match
+      } else if (out.endsWith(', ' + s)) {
         out = out.slice(0, -(s.length + 2));
         changed = true;
+        break; // Restart after each match
       }
     }
   }
+  
   return out.trim();
 }
 

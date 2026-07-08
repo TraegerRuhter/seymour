@@ -12,6 +12,20 @@ import type { ParsedRecipeData } from './types';
 
 const FETCH_TIMEOUT_MS = 10_000;
 
+// Precompile regexes at module level to avoid recompilation on every call
+const JSON_LD_REGEX = /<script[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+const INVALID_JSON_CLEANUP_REGEX = /,\s*([}\]])/g;
+const BR_REGEX = /<br\s*\/?>/gi;
+const END_P_REGEX = /<\/p>/gi;
+const TAG_REGEX = /<[^>]+>/g;
+const STEP_NUMBER_REGEX = /^\s*(?:step\s*)?\d+[.):]\s*/i;
+const SCRIPT_REGEX = /<script[\s\S]*?<\/script>/gi;
+const STYLE_REGEX = /<style[\s\S]*?<\/style>/gi;
+const NAV_REGEX = /<nav[\s\S]*?<\/nav>/gi;
+const FOOTER_REGEX = /<footer[\s\S]*?<\/footer>/gi;
+const SPACE_REGEX = /[ \t]+/g;
+const NEWLINE_REGEX = /\n\s*\n+/g;
+
 export async function fetchHtml(url: string): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -35,9 +49,10 @@ export async function fetchHtml(url: string): Promise<string> {
 /** Pulls the contents of every <script type="application/ld+json"> block. */
 function extractJsonLdBlocks(html: string): unknown[] {
   const blocks: unknown[] = [];
-  const re = /<script[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  // Reset regex state for global flag
+  JSON_LD_REGEX.lastIndex = 0;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(html)) !== null) {
+  while ((m = JSON_LD_REGEX.exec(html)) !== null) {
     const raw = m[1].trim();
     try {
       blocks.push(JSON.parse(raw));
@@ -45,7 +60,7 @@ function extractJsonLdBlocks(html: string): unknown[] {
       // Some sites embed invalid JSON (trailing commas, HTML comments); try a
       // light cleanup before giving up on the block.
       try {
-        blocks.push(JSON.parse(raw.replace(/,\s*([}\]])/g, '$1')));
+        blocks.push(JSON.parse(raw.replace(INVALID_JSON_CLEANUP_REGEX, '$1')));
       } catch {
         /* skip block */
       }
@@ -83,8 +98,8 @@ const NAMED_ENTITIES: Record<string, string> = {
   amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
   frac12: '½', frac14: '¼', frac34: '¾',
   frac13: '⅓', frac23: '⅔', frac18: '⅛', frac38: '⅜', frac58: '⅝', frac78: '⅞',
-  deg: '°', ndash: '–', mdash: '—', rsquo: '’', lsquo: '‘',
-  rdquo: '”', ldquo: '“', hellip: '…', eacute: 'é', egrave: 'è',
+  deg: '°', ndash: '–', mdash: '—', rsquo: ''', lsquo: ''',
+  rdquo: '"', ldquo: '"', hellip: '…', eacute: 'é', egrave: 'è',
 };
 
 function decodeBasicEntities(s: string): string {
@@ -96,7 +111,7 @@ function decodeBasicEntities(s: string): string {
 
 function decodeEntities(s: string): string {
   return decodeBasicEntities(s)
-    .replace(/<[^>]+>/g, '')
+    .replace(TAG_REGEX, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -124,7 +139,7 @@ function extractInstructions(value: unknown, depth = 0): string[] {
     // Single blob: split on newlines / numbered steps.
     return decodeEntitiesMultiline(value)
       .split(/\n+/)
-      .map((s) => s.replace(/^\s*(?:step\s*)?\d+[.):]\s*/i, '').trim())
+      .map((s) => s.replace(STEP_NUMBER_REGEX, '').trim())
       .filter(Boolean);
   }
   if (Array.isArray(value)) {
@@ -148,15 +163,18 @@ function extractInstructions(value: unknown, depth = 0): string[] {
 function decodeEntitiesMultiline(s: string): string {
   return decodeBasicEntities(
     s
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n')
-      .replace(/<[^>]+>/g, ''),
+      .replace(BR_REGEX, '\n')
+      .replace(END_P_REGEX, '\n')
+      .replace(TAG_REGEX, ''),
   );
 }
 
 /**
  * Attempts structured-data extraction from a page's HTML.
  * Returns null when no usable schema.org Recipe is present.
+ * 
+ * Exits early after finding the first valid recipe to avoid parsing
+ * unnecessary JSON-LD blocks.
  */
 export function extractRecipeFromHtml(html: string, sourceUrl: string): ParsedRecipeData | null {
   for (const block of extractJsonLdBlocks(html)) {
@@ -187,16 +205,16 @@ export function extractRecipeFromHtml(html: string, sourceUrl: string): ParsedRe
 export function htmlToText(html: string, maxChars = 24_000): string {
   const text = decodeBasicEntities(
     html
-      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<nav[\s\S]*?<\/nav>/gi, ' ')
-      .replace(/<footer[\s\S]*?<\/footer>/gi, ' ')
-      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(SCRIPT_REGEX, ' ')
+      .replace(STYLE_REGEX, ' ')
+      .replace(NAV_REGEX, ' ')
+      .replace(FOOTER_REGEX, ' ')
+      .replace(BR_REGEX, '\n')
       .replace(/<\/(p|li|h[1-6]|div|tr)>/gi, '\n')
-      .replace(/<[^>]+>/g, ' '),
+      .replace(TAG_REGEX, ' '),
   )
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n\s*\n+/g, '\n')
+    .replace(SPACE_REGEX, ' ')
+    .replace(NEWLINE_REGEX, '\n')
     .trim();
   return text.slice(0, maxChars);
 }

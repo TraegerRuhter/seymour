@@ -41,12 +41,17 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+/**
+ * Trims cache using iterative approach instead of recursion.
+ * Prevents stack overflow and excessive await chains.
+ */
 async function trimCache(name, limit) {
   const cache = await caches.open(name);
   const keys = await cache.keys();
+  // Delete all excess entries in a single pass
   if (keys.length > limit) {
-    await cache.delete(keys[0]);
-    return trimCache(name, limit);
+    const toDelete = keys.slice(0, keys.length - limit);
+    await Promise.all(toDelete.map((k) => cache.delete(k)));
   }
 }
 

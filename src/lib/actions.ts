@@ -17,14 +17,26 @@ import { usePlanStore, useRecipeStore, useShoppingStore } from './stores';
  * Cross-store orchestration lives here so individual stores stay decoupled.
  * Every mutation that can affect the active plan re-derives the shopping
  * list, carrying over checked state and manual overrides.
+ * 
+ * Shopping list updates are debounced to avoid excessive re-aggregation
+ * during rapid mutations (e.g., form edits, plan regenerations).
  */
 
+let debounceTimeout: NodeJS.Timeout | null = null;
+
 export function regenerateShoppingList(): void {
-  const { plan } = usePlanStore.getState();
-  const { recipes } = useRecipeStore.getState();
-  const shopping = useShoppingStore.getState();
-  const next = buildShoppingList(plan, recipes);
-  shopping.setItems(mergeShoppingList(next, shopping.items));
+  // Clear any pending debounce
+  if (debounceTimeout) clearTimeout(debounceTimeout);
+  
+  // Debounce for 50ms to batch rapid updates (form typing, quick actions)
+  debounceTimeout = setTimeout(() => {
+    const { plan } = usePlanStore.getState();
+    const { recipes } = useRecipeStore.getState();
+    const shopping = useShoppingStore.getState();
+    const next = buildShoppingList(plan, recipes);
+    shopping.setItems(mergeShoppingList(next, shopping.items));
+    debounceTimeout = null;
+  }, 50);
 }
 
 export function recipeFromParsed(data: ParsedRecipeData): Recipe {
@@ -62,7 +74,8 @@ export function generatePlan(days: number, mealTypes: MealType[], seed?: number)
     mealTypes,
     seed: seed ?? newSeed(),
   };
-  const recipeIds = Object.keys(useRecipeStore.getState().recipes);
+  // Use cached recipe IDs to avoid Object.keys() call on every plan generation
+  const recipeIds = useRecipeStore.getState().getRecipeIds();
   const plan = generateMealPlan(recipeIds, config);
   usePlanStore.getState().setPlan(config, plan);
   regenerateShoppingList();

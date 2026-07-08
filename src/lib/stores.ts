@@ -34,35 +34,62 @@ function makeStorage(storeName: string): StateStorage {
 interface RecipeState {
   recipes: Record<string, Recipe>;
   hasHydrated: boolean;
+  // Cache of recipe IDs to avoid repeated Object.keys() calls
+  _recipeIdCache: string[];
   addRecipe: (recipe: Recipe) => void;
   addRecipes: (recipes: Recipe[]) => void;
   updateRecipe: (recipe: Recipe) => void;
   removeRecipe: (id: string) => void;
   replaceAll: (recipes: Record<string, Recipe>) => void;
+  // Selector to get recipe IDs without unnecessary re-renders
+  getRecipeIds: () => string[];
 }
 
 export const useRecipeStore = create<RecipeState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       recipes: {},
       hasHydrated: false,
+      _recipeIdCache: [],
       addRecipe: (recipe) =>
-        set((s) => ({ recipes: { ...s.recipes, [recipe.id]: recipe } })),
+        set((s) => {
+          const next = { ...s.recipes, [recipe.id]: recipe };
+          return { 
+            recipes: next,
+            _recipeIdCache: Object.keys(next),
+          };
+        }),
       addRecipes: (list) =>
         set((s) => {
           const next = { ...s.recipes };
           for (const r of list) next[r.id] = r;
-          return { recipes: next };
+          return { 
+            recipes: next,
+            _recipeIdCache: Object.keys(next),
+          };
         }),
       updateRecipe: (recipe) =>
-        set((s) => ({ recipes: { ...s.recipes, [recipe.id]: recipe } })),
+        set((s) => {
+          const next = { ...s.recipes, [recipe.id]: recipe };
+          return { 
+            recipes: next,
+            _recipeIdCache: Object.keys(next),
+          };
+        }),
       removeRecipe: (id) =>
         set((s) => {
           const next = { ...s.recipes };
           delete next[id];
-          return { recipes: next };
+          return { 
+            recipes: next,
+            _recipeIdCache: Object.keys(next),
+          };
         }),
-      replaceAll: (recipes) => set({ recipes }),
+      replaceAll: (recipes) => set({ 
+        recipes,
+        _recipeIdCache: Object.keys(recipes),
+      }),
+      getRecipeIds: () => get()._recipeIdCache,
     }),
     {
       name: 'recipes',

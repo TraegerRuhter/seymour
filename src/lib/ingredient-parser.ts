@@ -14,13 +14,23 @@ const UNICODE_FRACTIONS: Record<string, number> = {
 /** Matches a number: unicode fraction, ascii fraction, decimal, or integer. */
 const NUMBER_RE = /(\d+\s+\d+\s*\/\s*\d+|\d+\s*\/\s*\d+|\d*\.\d+|\d+|[¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/;
 
+// Precompile regexes for better performance
+const MIXED_NUMBER_REGEX = /^(\d+)\s+(\d+)\s*\/\s*(\d+)$/;
+const FRACTION_REGEX = /^(\d+)\s*\/\s*(\d+)$/;
+const GLUED_FRACTION_REGEX = /^(\d+)([¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/;
+const RANGE_SEPARATOR_REGEX = /^\s*(?:-|–|—|to)\s*/;
+const TWO_WORD_UNIT_REGEX = /^([a-zA-Z]+\.?\s+[a-zA-Z]+\.?)\s+/;
+const ONE_WORD_UNIT_REGEX = /^([a-zA-Z]+\.?)(\s+|$)/;
+const OF_FILLER_REGEX = /^of\s+/i;
+const PAREN_REGEX = /^\(([^)]*)\)\s*/;
+
 function parseNumberToken(token: string): number {
   token = token.trim();
   if (token in UNICODE_FRACTIONS) return UNICODE_FRACTIONS[token];
   // mixed number "1 1/2"
-  const mixed = token.match(/^(\d+)\s+(\d+)\s*\/\s*(\d+)$/);
+  const mixed = token.match(MIXED_NUMBER_REGEX);
   if (mixed) return parseInt(mixed[1], 10) + parseInt(mixed[2], 10) / parseInt(mixed[3], 10);
-  const frac = token.match(/^(\d+)\s*\/\s*(\d+)$/);
+  const frac = token.match(FRACTION_REGEX);
   if (frac) return parseInt(frac[1], 10) / parseInt(frac[2], 10);
   return parseFloat(token);
 }
@@ -40,7 +50,7 @@ interface QuantityMatch {
  */
 function matchLeadingQuantity(text: string): QuantityMatch | null {
   // integer immediately followed by a unicode fraction: "1½"
-  const glued = text.match(new RegExp(`^(\\d+)([¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])`));
+  const glued = text.match(GLUED_FRACTION_REGEX);
   let first: number;
   let consumed: number;
   if (glued) {
@@ -55,11 +65,11 @@ function matchLeadingQuantity(text: string): QuantityMatch | null {
 
   // range: "- 2", "– 2", "to 2"
   const rest = text.slice(consumed);
-  const range = rest.match(new RegExp(`^\\s*(?:-|–|—|to)\\s*${NUMBER_RE.source}`));
-  if (range) {
-    const second = parseNumberToken(range[1]);
+  const rangeMatch = rest.match(new RegExp(`${RANGE_SEPARATOR_REGEX.source}${NUMBER_RE.source}`));
+  if (rangeMatch) {
+    const second = parseNumberToken(rangeMatch[1]);
     if (!Number.isNaN(second) && second >= first) {
-      return { value: (first + second) / 2, length: consumed + range[0].length };
+      return { value: (first + second) / 2, length: consumed + rangeMatch[0].length };
     }
   }
   return { value: first, length: consumed };
@@ -83,24 +93,24 @@ export function parseIngredient(originalString: string): Ingredient {
 
   if (quantity > 0) {
     // Optional unit token right after the quantity. Try two-word units first ("fl oz", "fluid ounces").
-    const twoWord = rest.match(/^([a-zA-Z]+\.?\s+[a-zA-Z]+\.?)\s+/);
+    const twoWord = rest.match(TWO_WORD_UNIT_REGEX);
     if (twoWord && canonicalUnit(twoWord[1].replace(/\./g, ''))) {
       unit = canonicalUnit(twoWord[1].replace(/\./g, ''))!;
       rest = rest.slice(twoWord[0].length).trim();
     } else {
-      const oneWord = rest.match(/^([a-zA-Z]+\.?)(\s+|$)/);
+      const oneWord = rest.match(ONE_WORD_UNIT_REGEX);
       if (oneWord && canonicalUnit(oneWord[1])) {
         unit = canonicalUnit(oneWord[1])!;
         rest = rest.slice(oneWord[0].length).trim();
       }
     }
     // Skip filler like "of" — "2 cups of flour"
-    rest = rest.replace(/^of\s+/i, '');
+    rest = rest.replace(OF_FILLER_REGEX, '');
     // Parenthetical right after quantity/unit, e.g. "1 (15 oz) can black beans"
-    const paren = rest.match(/^\(([^)]*)\)\s*/);
+    const paren = rest.match(PAREN_REGEX);
     if (paren) {
       rest = rest.slice(paren[0].length);
-      const innerUnit = rest.match(/^([a-zA-Z]+)\s+/);
+      const innerUnit = rest.match(ONE_WORD_UNIT_REGEX);
       if (!unit && innerUnit && canonicalUnit(innerUnit[1])) {
         unit = canonicalUnit(innerUnit[1])!;
         rest = rest.slice(innerUnit[0].length).trim();
