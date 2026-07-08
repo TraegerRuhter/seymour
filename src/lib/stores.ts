@@ -10,6 +10,7 @@ import type {
   Recipe,
   ShoppingListItem,
 } from './types';
+import type { UnitSystem } from './units';
 
 /**
  * IndexedDB-backed storage for zustand's persist middleware.
@@ -192,11 +193,34 @@ export const useShoppingStore = create<ShoppingState>()(
   ),
 );
 
+// --- Settings ---
+
+interface SettingsState {
+  unitSystem: UnitSystem;
+  hasHydrated: boolean;
+  setUnitSystem: (system: UnitSystem) => void;
+}
+
+export const useSettingsStore = create<SettingsState>()(
+  persist(
+    (set) => ({
+      unitSystem: 'imperial',
+      hasHydrated: false,
+      setUnitSystem: (unitSystem) => set({ unitSystem }),
+    }),
+    {
+      name: 'settings',
+      storage: createJSONStorage(() => makeStorage('settings')),
+      partialize: (s) => ({ unitSystem: s.unitSystem }),
+    },
+  ),
+);
+
 // --- Hydration tracking ---
 // Persist rehydrates asynchronously from IndexedDB; pages gate rendering on
 // this so persisted state never flashes in as empty.
 
-const hydrationFlags = { recipes: false, plan: false, shopping: false };
+const hydrationFlags = { recipes: false, plan: false, shopping: false, settings: false };
 
 function markHydrated(key: keyof typeof hydrationFlags, store: { setState: (s: { hasHydrated: boolean }) => void }) {
   hydrationFlags[key] = true;
@@ -207,16 +231,19 @@ if (typeof window !== 'undefined') {
   useRecipeStore.persist.onFinishHydration(() => markHydrated('recipes', useRecipeStore));
   usePlanStore.persist.onFinishHydration(() => markHydrated('plan', usePlanStore));
   useShoppingStore.persist.onFinishHydration(() => markHydrated('shopping', useShoppingStore));
+  useSettingsStore.persist.onFinishHydration(() => markHydrated('settings', useSettingsStore));
   // If rehydration already finished before listeners attached:
   if (useRecipeStore.persist.hasHydrated()) markHydrated('recipes', useRecipeStore);
   if (usePlanStore.persist.hasHydrated()) markHydrated('plan', usePlanStore);
   if (useShoppingStore.persist.hasHydrated()) markHydrated('shopping', useShoppingStore);
+  if (useSettingsStore.persist.hasHydrated()) markHydrated('settings', useSettingsStore);
 }
 
-/** True once all three stores have rehydrated from IndexedDB. */
+/** True once all stores have rehydrated from IndexedDB. */
 export function useAllHydrated(): boolean {
   const a = useRecipeStore((s) => s.hasHydrated);
   const b = usePlanStore((s) => s.hasHydrated);
   const c = useShoppingStore((s) => s.hasHydrated);
-  return a && b && c;
+  const d = useSettingsStore((s) => s.hasHydrated);
+  return a && b && c && d;
 }

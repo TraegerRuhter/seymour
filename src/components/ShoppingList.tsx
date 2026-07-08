@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ShoppingListItem } from '@/lib/types';
 import { useShoppingStore } from '@/lib/stores';
-import { displayUnit, formatQuantity } from '@/lib/units';
+import { displayUnit, formatAmount } from '@/lib/units';
 import { categorize, CATEGORY_ORDER, type Category } from '@/lib/categories';
 
 /** Naive pluralizer for unitless counts: "6 egg" → "6 eggs". */
@@ -17,7 +17,7 @@ function pluralizeName(name: string): string {
 
 function itemLabel(item: ShoppingListItem): string {
   if (item.manualOverride) return item.manualOverride;
-  const qty = formatQuantity(item.totalQuantity);
+  const qty = formatAmount(item.totalQuantity, item.unit);
   const unit = displayUnit(item.unit, item.totalQuantity);
   const name =
     !item.unit && item.totalQuantity > 1

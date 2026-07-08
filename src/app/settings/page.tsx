@@ -2,9 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { exportBundle, importBundle, validateBundle } from '@/lib/actions';
-import { useRecipeStore, useShoppingStore, usePlanStore } from '@/lib/stores';
+import { useRecipeStore, useShoppingStore, usePlanStore, useSettingsStore } from '@/lib/stores';
 import { useTheme, type ThemePreference } from '@/lib/theme';
+import type { UnitSystem } from '@/lib/units';
 import DangerZone from '@/components/DangerZone';
+
+const UNIT_OPTIONS: Array<{ value: UnitSystem; label: string; hint: string }> = [
+  { value: 'imperial', label: 'Imperial', hint: 'cups, oz, lb' },
+  { value: 'metric', label: 'Metric', hint: 'mL, g, kg' },
+];
 
 const THEME_OPTIONS: Array<{ value: ThemePreference; label: string; icon: string }> = [
   { value: 'light', label: 'Light', icon: '☀️' },
@@ -22,6 +28,8 @@ export default function SettingsPage() {
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [theme, setThemePref] = useTheme();
+  const unitSystem = useSettingsStore((s) => s.unitSystem);
+  const setUnitSystem = useSettingsStore((s) => s.setUnitSystem);
 
   useEffect(() => {
     const onPrompt = (e: Event) => {
@@ -121,6 +129,37 @@ export default function SettingsPage() {
             >
               <span aria-hidden>{opt.icon}</span>
               {opt.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section aria-label="Units" className="glass-card space-y-3 p-5">
+        <div>
+          <h2 className="text-xl font-semibold">Units</h2>
+          <p className="mt-1 text-sm text-charcoal/60">
+            Your shopping list is shown in one system, rounded up to tidy amounts.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Measurement system">
+          {UNIT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              aria-pressed={unitSystem === opt.value}
+              onClick={() => setUnitSystem(opt.value)}
+              className={`inline-flex items-baseline gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                unitSystem === opt.value
+                  ? 'bg-terracotta text-white'
+                  : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
+              }`}
+            >
+              {opt.label}
+              <span
+                className={`text-xs ${unitSystem === opt.value ? 'text-white/70' : 'text-charcoal/40'}`}
+              >
+                {opt.hint}
+              </span>
             </button>
           ))}
         </div>
