@@ -14,7 +14,12 @@ and works offline as an installable PWA.
   title, image, ingredients, and instructions from the page's schema.org `Recipe`
   structured data (JSON-LD), with an optional OpenAI GPT-4o-mini fallback for stubborn
   pages. **Manual entry** (`/add?mode=manual`) is always available for unsupported sites,
-  and any saved recipe can be edited by hand.
+  and any saved recipe can be edited by hand. When even that fails — a page that's
+  paywalled, requires login, or is blocked outright — **paste the page's text** (select-all,
+  copy, paste) and `/api/parse-text` pulls out the title/ingredients/steps to pre-fill the
+  manual form: the AI extracts it when `OPENAI_API_KEY` is set, otherwise a dependency-free
+  heading-based heuristic (looks for "Ingredients"/"Instructions" sections) does its best.
+  Either way you review and edit before saving.
 - **Recipe library** — glassmorphism card grid or compact list, live title search, detail
   view with print styles, edit and delete (with confirmation).
 - **Meal plan generator** — pick 1–14 days and which meals (breakfast/lunch/dinner/snack);

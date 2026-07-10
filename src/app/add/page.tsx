@@ -4,7 +4,8 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { ParseResult } from '@/lib/types';
 import { recipeFromParsed, saveRecipes } from '@/lib/actions';
-import RecipeForm from '@/components/RecipeForm';
+import RecipeForm, { type RecipeFormInitialValues } from '@/components/RecipeForm';
+import PasteImport from '@/components/PasteImport';
 
 type Mode = 'url' | 'manual';
 
@@ -16,6 +17,10 @@ function AddRecipe() {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState('');
   const [errors, setErrors] = useState<Array<{ url: string; message: string }>>([]);
+  const [pastePrefill, setPastePrefill] = useState<RecipeFormInitialValues | undefined>();
+  // Bumped on every successful paste-extraction to force RecipeForm to
+  // remount with the new prefill values (it only reads them on mount).
+  const [formKey, setFormKey] = useState(0);
 
   async function handleParse(e: React.FormEvent) {
     e.preventDefault();
@@ -146,7 +151,15 @@ function AddRecipe() {
           </div>
         </form>
       ) : (
-        <RecipeForm />
+        <div className="space-y-4">
+          <PasteImport
+            onExtracted={(values) => {
+              setPastePrefill(values);
+              setFormKey((k) => k + 1);
+            }}
+          />
+          <RecipeForm key={formKey} initialValues={pastePrefill} />
+        </div>
       )}
     </div>
   );
