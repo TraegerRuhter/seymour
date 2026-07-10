@@ -29,7 +29,7 @@ export default function BottomNav() {
       aria-label="Primary"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-charcoal/10 bg-surface/80 backdrop-blur-md lg:inset-x-auto lg:left-1/2 lg:bottom-4 lg:w-auto lg:-translate-x-1/2 lg:rounded-full lg:border lg:shadow-card"
     >
-      <ul className="mx-auto flex max-w-md items-stretch justify-around lg:gap-1 lg:px-2">
+      <ul className="mx-auto flex max-w-md items-stretch justify-around lg:max-w-none lg:gap-1 lg:px-2">
         {TABS.map((tab) => {
           const active =
             tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);
