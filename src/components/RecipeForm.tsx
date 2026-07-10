@@ -7,20 +7,38 @@ import type { Recipe } from '@/lib/types';
 import { parseIngredientLines } from '@/lib/ingredient-parser';
 import { saveRecipe } from '@/lib/actions';
 
+/** Pre-fill values for a fresh (non-edit) form, e.g. from the paste-text importer. */
+export interface RecipeFormInitialValues {
+  title?: string;
+  sourceUrl?: string;
+  imageUrl?: string;
+  ingredientsText?: string;
+  instructionsText?: string;
+}
+
 /**
  * Manual add / edit form. Ingredients and instructions are edited as plain
  * multiline text (one entry per line); structured parsing happens on save.
+ * Pass `existing` to edit a saved recipe, or `initialValues` to pre-fill a new
+ * one (e.g. after extracting from pasted text) — `existing` takes precedence
+ * if both are somehow given.
  */
-export default function RecipeForm({ existing }: { existing?: Recipe }) {
+export default function RecipeForm({
+  existing,
+  initialValues,
+}: {
+  existing?: Recipe;
+  initialValues?: RecipeFormInitialValues;
+}) {
   const router = useRouter();
-  const [title, setTitle] = useState(existing?.title ?? '');
-  const [sourceUrl, setSourceUrl] = useState(existing?.sourceUrl ?? '');
-  const [imageUrl, setImageUrl] = useState(existing?.imageUrl ?? '');
+  const [title, setTitle] = useState(existing?.title ?? initialValues?.title ?? '');
+  const [sourceUrl, setSourceUrl] = useState(existing?.sourceUrl ?? initialValues?.sourceUrl ?? '');
+  const [imageUrl, setImageUrl] = useState(existing?.imageUrl ?? initialValues?.imageUrl ?? '');
   const [ingredientsText, setIngredientsText] = useState(
-    existing?.ingredients.map((i) => i.originalString).join('\n') ?? '',
+    existing?.ingredients.map((i) => i.originalString).join('\n') ?? initialValues?.ingredientsText ?? '',
   );
   const [instructionsText, setInstructionsText] = useState(
-    existing?.instructions.join('\n') ?? '',
+    existing?.instructions.join('\n') ?? initialValues?.instructionsText ?? '',
   );
   const [error, setError] = useState('');
 
