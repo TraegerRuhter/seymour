@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { Recipe } from '@/lib/types';
+import { BowlIcon } from './icons';
 
 export default function RecipeCard({
   recipe,
@@ -84,9 +85,9 @@ function Thumb({
   return (
     <div
       aria-hidden
-      className={`${className} flex items-center justify-center bg-olive/15 text-3xl`}
+      className={`${className} flex items-center justify-center bg-olive/15`}
     >
-      🍲
+      <BowlIcon className="h-1/2 w-1/2 max-h-12 max-w-12 opacity-80" />
     </div>
   );
 }

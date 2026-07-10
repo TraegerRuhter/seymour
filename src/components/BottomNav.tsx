@@ -3,14 +3,22 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useShoppingStore } from '@/lib/stores';
+import {
+  HomeIcon,
+  RecipesIcon,
+  PlanIcon,
+  ShoppingIcon,
+  SettingsIcon,
+  type IconComponent,
+} from './icons';
 
-const TABS = [
-  { href: '/', label: 'Home', icon: '🏠' },
-  { href: '/recipes', label: 'Recipes', icon: '📖' },
-  { href: '/plan', label: 'Plan', icon: '🗓️' },
-  { href: '/shopping-list', label: 'Shopping', icon: '🛒' },
-  { href: '/settings', label: 'Settings', icon: '⚙️' },
-] as const;
+const TABS: Array<{ href: string; label: string; Icon: IconComponent }> = [
+  { href: '/', label: 'Home', Icon: HomeIcon },
+  { href: '/recipes', label: 'Recipes', Icon: RecipesIcon },
+  { href: '/plan', label: 'Plan', Icon: PlanIcon },
+  { href: '/shopping-list', label: 'Shopping', Icon: ShoppingIcon },
+  { href: '/settings', label: 'Settings', Icon: SettingsIcon },
+];
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -36,8 +44,8 @@ export default function BottomNav() {
                     : 'text-charcoal/60 hover:text-charcoal'
                 }`}
               >
-                <span aria-hidden className="relative text-lg lg:text-base">
-                  {tab.icon}
+                <span className="relative">
+                  <tab.Icon className="h-6 w-6 lg:h-5 lg:w-5" />
                   {tab.href === '/shopping-list' && remaining > 0 && (
                     <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-terracotta px-1 text-[10px] font-bold leading-none text-white">
                       {remaining > 99 ? '99+' : remaining}

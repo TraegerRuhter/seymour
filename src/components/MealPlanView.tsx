@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { usePlanStore, useRecipeStore } from '@/lib/stores';
 import { pickSlotRecipe } from '@/lib/actions';
-import { MEAL_TYPE_EMOJI, MEAL_TYPE_LABELS } from '@/lib/plan';
+import { MEAL_TYPE_LABELS } from '@/lib/plan';
+import { MEAL_TYPE_ICON } from './icons';
 
 function localDateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -37,8 +38,12 @@ function MealTile({
   if (!recipe) {
     return (
       <div className="rounded-xl border border-dashed border-charcoal/20 p-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-charcoal/40">
-          {MEAL_TYPE_EMOJI[slot.type]} {MEAL_TYPE_LABELS[slot.type]}
+        <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/40">
+          {(() => {
+            const Icon = MEAL_TYPE_ICON[slot.type];
+            return <Icon className="h-4 w-4" />;
+          })()}
+          {MEAL_TYPE_LABELS[slot.type]}
         </p>
         {picking ? (
           <select
@@ -88,8 +93,11 @@ function MealTile({
           className="h-11 w-11 shrink-0 rounded-lg object-cover"
         />
       ) : (
-        <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-olive/15">
-          {MEAL_TYPE_EMOJI[slot.type]}
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-olive/15">
+          {(() => {
+            const Icon = MEAL_TYPE_ICON[slot.type];
+            return <Icon className="h-6 w-6" />;
+          })()}
         </span>
       )}
       <div className="min-w-0">

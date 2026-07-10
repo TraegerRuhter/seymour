@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePlanStore } from '@/lib/stores';
 import { clearArchivedPlans, deleteArchivedPlan, restoreArchivedPlan } from '@/lib/actions';
+import { TrashIcon } from './icons';
 
 /** Collapsible list of archived plans with restore / delete. */
 export default function ArchivedPlans() {
@@ -63,7 +64,7 @@ export default function ArchivedPlans() {
                     aria-label={`Delete archived plan: ${a.label}`}
                     className="rounded-full p-1.5 text-charcoal/40 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
                   >
-                    🗑️
+                    <TrashIcon className="h-5 w-5" />
                   </button>
                 </motion.li>
               ))}

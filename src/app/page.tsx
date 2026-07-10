@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePlanStore, useRecipeStore, useShoppingStore } from '@/lib/stores';
-import { MEAL_TYPE_EMOJI, MEAL_TYPE_LABELS } from '@/lib/plan';
+import { MEAL_TYPE_LABELS } from '@/lib/plan';
 import RecipeCard from '@/components/RecipeCard';
 import ShoppingList from '@/components/ShoppingList';
+import { InboxIcon, DiceIcon, ChefPlantIcon, MEAL_TYPE_ICON } from '@/components/icons';
 
 function todayString(): string {
   const d = new Date();
@@ -57,11 +58,11 @@ export default function DashboardPage() {
                       className="h-12 w-12 shrink-0 rounded-xl object-cover"
                     />
                   ) : (
-                    <span
-                      aria-hidden
-                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-olive/15 text-xl"
-                    >
-                      {MEAL_TYPE_EMOJI[meal.type]}
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-olive/15">
+                      {(() => {
+                        const Icon = MEAL_TYPE_ICON[meal.type];
+                        return <Icon className="h-6 w-6" />;
+                      })()}
                     </span>
                   )}
                   <div className="min-w-0">
@@ -79,7 +80,7 @@ export default function DashboardPage() {
 
       <section aria-label="Quick actions" className="grid gap-4 sm:grid-cols-2">
         <div className="glass-card flex items-center gap-4 p-5">
-          <span aria-hidden className="text-3xl">📥</span>
+          <InboxIcon className="h-9 w-9 shrink-0" />
           <div className="min-w-0">
             <h2 className="text-xl font-semibold">Add recipes</h2>
             <p className="text-sm text-charcoal/60">
@@ -97,7 +98,7 @@ export default function DashboardPage() {
           href="/plan"
           className="glass-card flex items-center gap-4 p-5 transition-shadow hover:shadow-card-hover"
         >
-          <span aria-hidden className="text-3xl">🎲</span>
+          <DiceIcon className="h-9 w-9 shrink-0" />
           <div>
             <h2 className="text-xl font-semibold">
               {plan ? 'View meal plan' : 'Generate meal plan'}
@@ -111,7 +112,7 @@ export default function DashboardPage() {
 
       {recipeList.length === 0 ? (
         <section className="rounded-2xl border border-dashed border-charcoal/20 p-10 text-center">
-          <span aria-hidden className="animate-float text-5xl">👨‍🍳</span>
+          <ChefPlantIcon className="animate-float mx-auto h-16 w-16" />
           <h2 className="mt-3 text-xl font-semibold">Your kitchen is empty</h2>
           <p className="mx-auto mt-1 max-w-sm text-charcoal/60">
             Paste a recipe URL and Seymour will pull out the title, ingredients, and steps for you.

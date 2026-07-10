@@ -104,12 +104,6 @@ export const MEAL_TYPE_LABELS: Record<MealType, string> = {
   snack: 'Snack',
 };
 
-export const MEAL_TYPE_EMOJI: Record<MealType, string> = {
-  breakfast: '🍳',
-  lunch: '🥪',
-  dinner: '🍽️',
-  snack: '🍎',
-};
 
 function formatMonthDay(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);

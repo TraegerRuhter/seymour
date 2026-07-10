@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRecipeStore } from '@/lib/stores';
 import RecipeCard from '@/components/RecipeCard';
+import { PencilIcon, PlateIcon, GridIcon, ListIcon } from '@/components/icons';
 
 export default function RecipeLibraryPage() {
   const recipes = useRecipeStore((s) => s.recipes);
@@ -24,7 +25,7 @@ export default function RecipeLibraryPage() {
         <h1 className="text-3xl font-bold">Recipes</h1>
         <div className="flex gap-2">
           <Link href="/add?mode=manual" className="btn-secondary">
-            ✍️ Enter manually
+            <PencilIcon className="h-5 w-5" /> Enter manually
           </Link>
           <Link href="/add" className="btn-primary">
             + Add from URL
@@ -50,13 +51,13 @@ export default function RecipeLibraryPage() {
           aria-label={`Switch to ${layout === 'grid' ? 'list' : 'grid'} view`}
           className="btn-secondary px-4"
         >
-          {layout === 'grid' ? '☰' : '▦'}
+          {layout === 'grid' ? <ListIcon className="h-5 w-5" /> : <GridIcon className="h-5 w-5" />}
         </button>
       </div>
 
       {filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-charcoal/20 p-10 text-center">
-          <span aria-hidden className="animate-float text-5xl">🍽️</span>
+          <PlateIcon className="animate-float mx-auto h-16 w-16" />
           <p className="mt-3 text-charcoal/60">
             {query
               ? `No recipes match “${query}”.`
