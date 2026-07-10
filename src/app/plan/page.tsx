@@ -8,6 +8,7 @@ import { archiveCurrentPlan, clearCurrentPlan, regeneratePlan } from '@/lib/acti
 import MealPlanView from '@/components/MealPlanView';
 import PlanGenerator from '@/components/PlanGenerator';
 import ArchivedPlans from '@/components/ArchivedPlans';
+import { PlanIcon, ShuffleIcon, ArchiveIcon, TrashIcon } from '@/components/icons';
 
 export default function PlanPage() {
   const recipeCount = useRecipeStore((s) => Object.keys(s.recipes).length);
@@ -43,7 +44,7 @@ export default function PlanPage() {
 
       {recipeCount === 0 ? (
         <div className="rounded-2xl border border-dashed border-charcoal/20 p-10 text-center">
-          <span aria-hidden className="animate-float text-5xl">🗓️</span>
+          <PlanIcon className="animate-float mx-auto h-16 w-16" />
           <p className="mt-3 text-charcoal/60">
             You need some recipes first —{' '}
             <Link href="/add" className="font-medium text-terracotta hover:underline">
@@ -60,14 +61,14 @@ export default function PlanPage() {
           {/* Plan actions */}
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={regeneratePlan} className="btn-secondary px-4 py-2 text-sm">
-              🔀 Shuffle
+              <ShuffleIcon className="h-4 w-4" /> Shuffle
             </button>
             <button
               type="button"
               onClick={archiveCurrentPlan}
               className="btn-secondary px-4 py-2 text-sm"
             >
-              🗄️ Archive
+              <ArchiveIcon className="h-4 w-4" /> Archive
             </button>
             {confirmClear ? (
               <span className="inline-flex items-center gap-2 rounded-full bg-terracotta/10 px-3 py-1.5 text-sm">
@@ -94,9 +95,9 @@ export default function PlanPage() {
               <button
                 type="button"
                 onClick={() => setConfirmClear(true)}
-                className="rounded-full px-4 py-2 text-sm font-medium text-terracotta-dark transition-colors hover:bg-terracotta/10"
+                className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-terracotta-dark transition-colors hover:bg-terracotta/10"
               >
-                🗑️ Delete
+                <TrashIcon className="h-4 w-4" /> Delete
               </button>
             )}
           </div>

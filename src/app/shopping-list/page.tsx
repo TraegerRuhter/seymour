@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePlanStore, useShoppingStore } from '@/lib/stores';
 import ShoppingList from '@/components/ShoppingList';
+import { SparkleIcon } from '@/components/icons';
 
 export default function ShoppingListPage() {
   const items = useShoppingStore((s) => s.items);
@@ -17,12 +18,13 @@ export default function ShoppingListPage() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">Shopping list</h1>
-          <p className="mt-1 text-charcoal/60" aria-live="polite">
+          <p className="mt-1 flex items-center gap-1.5 text-charcoal/60" aria-live="polite">
             {items.length === 0
               ? 'Nothing here yet.'
               : remaining === 0
-                ? 'All done — happy cooking! 🎉'
+                ? 'All done — happy cooking!'
                 : `${remaining} of ${items.length} item${items.length === 1 ? '' : 's'} left`}
+            {items.length > 0 && remaining === 0 && <SparkleIcon className="h-4 w-4" />}
           </p>
         </div>
         {checkedCount > 0 && (

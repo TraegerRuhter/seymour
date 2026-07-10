@@ -6,6 +6,19 @@ import type { ShoppingListItem } from '@/lib/types';
 import { useShoppingStore } from '@/lib/stores';
 import { displayUnit, formatAmount } from '@/lib/units';
 import { categorize, CATEGORY_ORDER, type Category } from '@/lib/categories';
+import {
+  ProduceIcon,
+  MeatIcon,
+  DairyIcon,
+  BakeryIcon,
+  FrozenIcon,
+  PantryIcon,
+  SpicesIcon,
+  BasketIcon,
+  PencilIcon,
+  SparkleIcon,
+  type IconComponent,
+} from './icons';
 
 /** Naive pluralizer for unitless counts: "6 egg" → "6 eggs". */
 function pluralizeName(name: string): string {
@@ -26,15 +39,15 @@ function itemLabel(item: ShoppingListItem): string {
   return [qty, unit, name].filter(Boolean).join(' ');
 }
 
-const CATEGORY_EMOJI: Record<Category, string> = {
-  Produce: '🥬',
-  'Meat & Seafood': '🥩',
-  'Dairy & Eggs': '🥛',
-  Bakery: '🥖',
-  Frozen: '🧊',
-  Pantry: '🫙',
-  'Spices & Seasonings': '🧂',
-  Other: '🛒',
+const CATEGORY_ICON: Record<Category, IconComponent> = {
+  Produce: ProduceIcon,
+  'Meat & Seafood': MeatIcon,
+  'Dairy & Eggs': DairyIcon,
+  Bakery: BakeryIcon,
+  Frozen: FrozenIcon,
+  Pantry: PantryIcon,
+  'Spices & Seasonings': SpicesIcon,
+  Other: BasketIcon,
 };
 
 /**
@@ -142,7 +155,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
           aria-label={`Edit ${item.ingredientName}`}
           className="rounded-full p-1.5 text-charcoal/40 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
         >
-          ✏️
+          <PencilIcon className="h-5 w-5" />
         </button>
       )}
     </motion.li>
@@ -208,7 +221,9 @@ export default function ShoppingList({
           </li>
         )}
         {unchecked.length === 0 && (
-          <li className="px-4 py-1 text-sm text-charcoal/50">All checked off 🎉</li>
+          <li className="flex items-center gap-1.5 px-4 py-1 text-sm text-charcoal/50">
+            All checked off <SparkleIcon className="h-4 w-4" />
+          </li>
         )}
       </ul>
     );
@@ -232,7 +247,10 @@ export default function ShoppingList({
       {CATEGORY_ORDER.filter((cat) => groups.has(cat)).map((cat) => (
         <section key={cat} aria-label={cat} className="mb-5">
           <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-charcoal/50">
-            <span aria-hidden>{CATEGORY_EMOJI[cat]}</span>
+            {(() => {
+              const Icon = CATEGORY_ICON[cat];
+              return <Icon className="h-5 w-5" />;
+            })()}
             {cat}
             <span className="font-normal normal-case tracking-normal">
               · {groups.get(cat)!.length}

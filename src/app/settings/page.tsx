@@ -6,16 +6,17 @@ import { useRecipeStore, useShoppingStore, usePlanStore, useSettingsStore } from
 import { useTheme, type ThemePreference } from '@/lib/theme';
 import type { UnitSystem } from '@/lib/units';
 import DangerZone from '@/components/DangerZone';
+import { SunIcon, MoonIcon, SystemIcon, InstallIcon, type IconComponent } from '@/components/icons';
 
 const UNIT_OPTIONS: Array<{ value: UnitSystem; label: string; hint: string }> = [
   { value: 'imperial', label: 'Imperial', hint: 'cups, oz, lb' },
   { value: 'metric', label: 'Metric', hint: 'mL, g, kg' },
 ];
 
-const THEME_OPTIONS: Array<{ value: ThemePreference; label: string; icon: string }> = [
-  { value: 'light', label: 'Light', icon: '☀️' },
-  { value: 'dark', label: 'Dark', icon: '🌙' },
-  { value: 'system', label: 'System', icon: '💻' },
+const THEME_OPTIONS: Array<{ value: ThemePreference; label: string; Icon: IconComponent }> = [
+  { value: 'light', label: 'Light', Icon: SunIcon },
+  { value: 'dark', label: 'Dark', Icon: MoonIcon },
+  { value: 'system', label: 'System', Icon: SystemIcon },
 ];
 
 interface BeforeInstallPromptEvent extends Event {
@@ -127,7 +128,7 @@ export default function SettingsPage() {
                   : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
               }`}
             >
-              <span aria-hidden>{opt.icon}</span>
+              <opt.Icon className="h-5 w-5" />
               {opt.label}
             </button>
           ))}
@@ -212,7 +213,7 @@ export default function SettingsPage() {
         </p>
         {installEvent ? (
           <button type="button" onClick={handleInstall} className="btn-secondary text-sm">
-            📲 Install Seymour
+            <InstallIcon className="h-5 w-5" /> Install Seymour
           </button>
         ) : (
           <p className="text-xs text-charcoal/40">
