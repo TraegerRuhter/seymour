@@ -8,6 +8,16 @@
   --color-ink: 45 45 42; /* charcoal */
   --color-surface: 255 255 255; /* card / control surfaces */
   color-scheme: light;
+
+  /* iOS safe-area insets — 0 in a normal browser tab / on non-notched
+     devices, the notch & home-indicator gaps in an installed PWA. Exposed as
+     variables so components can compose them into padding (and so tests can
+     override them). Only non-zero when viewport-fit=cover is set, which the
+     viewport export in layout.tsx does. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
 }
 
 .dark {
