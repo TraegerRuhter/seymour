@@ -129,7 +129,28 @@ export function parseIngredient(originalString: string): Ingredient {
     notes = rest.slice(comma + 1).trim() || undefined;
   }
 
+  // Countable unit word *after* the name ("2 garlic cloves") rather than
+  // before it ("2 cloves garlic") — without this, the unit word gets
+  // swallowed into the name and the two phrasings bucket differently at
+  // aggregation time even though they mean the same thing.
+  if (!unit) {
+    const words = name.split(/\s+/).filter(Boolean);
+    if (words.length > 1) {
+      const trailingUnit = canonicalUnit(words[words.length - 1]);
+      if (trailingUnit) {
+        unit = trailingUnit;
+        name = words.slice(0, -1).join(' ');
+      }
+    }
+  }
+
   name = normalizeIngredientName(name);
+
+  // A bare garlic count ("2 garlic") conventionally means cloves — nobody
+  // writing an ingredient list means a whole head — so default the unit to
+  // keep every garlic phrasing ("1 garlic", "2 garlic cloves", "3 cloves
+  // garlic") bucketing together instead of splitting the shopping list.
+  if (name === 'garlic' && !unit && quantity > 0) unit = 'clove';
 
   return {
     name: name || normalizeIngredientName(text),

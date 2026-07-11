@@ -44,6 +44,26 @@ test('does not sum unlike units (cloves vs cups)', () => {
   assert.equal(items.length, 2);
 });
 
+test('combines every garlic phrasing into a single clove total', () => {
+  const items = aggregateIngredients([
+    parseIngredient('1 garlic'),
+    parseIngredient('2 garlic cloves'),
+    parseIngredient('3 cloves garlic'),
+  ]);
+  assert.equal(items.length, 1);
+  assert.equal(items[0].ingredientName, 'garlic');
+  assert.equal(items[0].unit, 'clove');
+  assert.equal(items[0].totalQuantity, 6);
+});
+
+test('a head of garlic does not merge into the clove total', () => {
+  const items = aggregateIngredients([
+    parseIngredient('2 garlic cloves'),
+    parseIngredient('1 head garlic'),
+  ]);
+  assert.equal(items.length, 2);
+});
+
 test('weight converts to readable pounds (imperial, rounded up to ¼)', () => {
   const items = aggregateIngredients(
     [parseIngredient('500 g ground beef'), parseIngredient('300 g ground beef')],
