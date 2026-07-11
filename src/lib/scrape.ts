@@ -282,6 +282,97 @@ export function extractRecipeFromHtml(html: string, sourceUrl: string): ParsedRe
   return null;
 }
 
+// --- Microdata (schema.org itemprop) fallback ---
+// Some sites — mostly older or hand-built WordPress themes — mark up their
+// recipe with HTML microdata (itemscope/itemprop) instead of JSON-LD, or
+// alongside a JSON-LD block that only carries a title/rating for rich
+// snippets and omits the ingredients/instructions entirely (seen in the
+// wild: a "recipe" JSON-LD node with just name/image/aggregateRating, while
+// the real ingredient list lives in itemprop="recipeIngredient" <li>s
+// further down the page). Regex-based like the rest of this module — it
+// doesn't balance nested tags, so it can't safely bound an itemscope's outer
+// extent, but a recipe card is normally a flat block, which this covers.
+const MICRODATA_RECIPE_TYPE_RE = /itemtype\s*=\s*["'](?:https?:)?\/\/schema\.org\/Recipe["']/i;
+
+function tagsWithAttr(html: string, tagPattern: string): string[] {
+  const re = new RegExp(`<(?:${tagPattern})\\b[^>]*>`, 'gi');
+  return html.match(re) ?? [];
+}
+
+function extractMicrodataImage(html: string): string | undefined {
+  for (const tag of tagsWithAttr(html, 'img')) {
+    if (!/itemprop\s*=\s*["'][^"']*\bimage\b[^"']*["']/i.test(tag)) continue;
+    const src = tag.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
+    if (src) return src[1];
+  }
+  return undefined;
+}
+
+/** Elements individually tagged with `itemprop="<prop> ..."` (space-separated values are valid microdata). */
+function microdataPropElements(html: string, prop: string): string[] {
+  const re = new RegExp(
+    `<(li|p|span|div)\\b[^>]*\\bitemprop\\s*=\\s*["'][^"']*\\b${prop}\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/\\1>`,
+    'gi',
+  );
+  const out: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    const text = decodeEntities(m[2]);
+    if (text) out.push(text);
+  }
+  return out;
+}
+
+function extractMicrodataIngredients(html: string): string[] {
+  return microdataPropElements(html, 'recipeIngredient');
+}
+
+/**
+ * `itemprop="recipeInstructions"` is used two ways in the wild: on each
+ * individual step, or on a single wrapping container whose <ol>/<ul> holds
+ * the real steps. `microdataPropElements` handles the first case; a
+ * container match yields exactly one (garbled, all-steps-mashed-together)
+ * "element" for it to find, so a result length of 1 signals the second case
+ * and we fall back to reading the first list found after that point.
+ */
+function extractMicrodataInstructions(html: string): string[] {
+  const direct = microdataPropElements(html, 'recipeInstructions');
+  if (direct.length > 1) return direct;
+
+  const container = /\bitemprop\s*=\s*["'][^"']*\brecipeInstructions\b[^"']*["']/i.exec(html);
+  if (!container) return direct;
+  const list = /<(ol|ul)\b[^>]*>([\s\S]*?)<\/\1>/i.exec(html.slice(container.index));
+  if (!list) return direct;
+
+  const steps: string[] = [];
+  const liRe = /<li\b[^>]*>([\s\S]*?)<\/li>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = liRe.exec(list[2])) !== null) {
+    const text = decodeEntities(m[1]);
+    if (text) steps.push(text);
+  }
+  return steps.length ? steps : direct;
+}
+
+/** Attempts schema.org Recipe extraction from HTML microdata. Returns null when no usable itemprop="recipeIngredient" data is present. */
+export function extractRecipeFromMicrodata(html: string, sourceUrl: string): ParsedRecipeData | null {
+  if (!MICRODATA_RECIPE_TYPE_RE.test(html)) return null;
+
+  const ingredientLines = extractMicrodataIngredients(html);
+  if (ingredientLines.length === 0) return null;
+
+  const nameMatch = /<[^>]+\bitemprop\s*=\s*["'][^"']*\bname\b[^"']*["'][^>]*>([\s\S]*?)<\//i.exec(html);
+  const title = nameMatch ? decodeEntities(nameMatch[1]) : '';
+
+  return {
+    title: title || 'Untitled recipe',
+    sourceUrl,
+    imageUrl: extractMicrodataImage(html),
+    ingredientLines,
+    instructions: extractMicrodataInstructions(html),
+  };
+}
+
 /** Rough HTML → text for the AI fallback prompt (keeps token usage sane). */
 export function htmlToText(html: string, maxChars = 24_000): string {
   const text = decodeBasicEntities(

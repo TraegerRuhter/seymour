@@ -12,8 +12,12 @@ and works offline as an installable PWA.
 
 - **Recipe input & parsing** — paste one or more URLs; the `/api/parse` route extracts the
   title, image, ingredients, and instructions from the page's schema.org `Recipe`
-  structured data (JSON-LD), with an optional OpenAI GPT-4o-mini fallback for stubborn
-  pages. **Manual entry** (`/add?mode=manual`) is always available for unsupported sites,
+  structured data. Most sites publish this as JSON-LD, which is tried first; a handful of
+  (usually older or custom-built) sites instead — or additionally — mark it up as HTML
+  microdata (`itemscope`/`itemprop`), including sites whose JSON-LD is a stub with just a
+  title/rating for rich snippets and no actual ingredients, so the microdata fallback covers
+  those too. An optional OpenAI GPT-4o-mini fallback handles pages with no structured data
+  at all. **Manual entry** (`/add?mode=manual`) is always available for unsupported sites,
   and any saved recipe can be edited by hand. When even that fails — a page that's
   paywalled, requires login, or is blocked outright — **paste the page's text** (select-all,
   copy, paste) and `/api/parse-text` pulls out the title/ingredients/steps to pre-fill the
