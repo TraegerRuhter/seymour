@@ -389,20 +389,28 @@ export function PlateIcon(p: IconProps) {
 export function ChefPlantIcon(p: IconProps) {
   return (
     <Svg {...p}>
-      {/* hat */}
-      <path d="M8 5.2a2.6 2.6 0 0 1 4.9-.6 2.4 2.4 0 0 1 3.2 3.2c.4.7.3 1.7-.4 2.3H8.3c-.7-.6-.8-1.6-.4-2.3A2.6 2.6 0 0 1 8 5.2z" fill={K} stroke={O} strokeWidth=".8" />
-      <rect x="8.4" y="9.6" width="7.2" height="2.2" rx=".6" fill={K} stroke={O} strokeWidth=".7" />
-      {/* jaws — same wide-mouth silhouette and dark maw as the Logo mascot */}
-      <path d="M6.2 14a5.8 4.6 0 0 1 11.6 0z" fill={O} />
-      <path d="M6.2 14a5.8 3.2 0 0 0 11.6 0z" fill={OD} />
-      <path d="M7.1 14h9.8l-1 1.4c-2.6 1.1-5.2 1.1-7.8 0z" fill={M} />
-      <path d="M7.1 14 8.4 15.1l1.3-1.1 1.3 1.1 1.3-1.1 1.3 1.1 1.3-1.1 1.1 1.1z" fill={K} />
-      <circle cx="9.5" cy="12.4" r=".85" fill={C} />
-      <circle cx="14.5" cy="12.4" r=".85" fill={C} />
+      {/* Head assembly shifted up so a longer neck fits underneath without
+          crowding the pot — was sitting almost directly on it. */}
+      <g transform="translate(0,-1.1)">
+        {/* hat */}
+        <path d="M8 5.2a2.6 2.6 0 0 1 4.9-.6 2.4 2.4 0 0 1 3.2 3.2c.4.7.3 1.7-.4 2.3H8.3c-.7-.6-.8-1.6-.4-2.3A2.6 2.6 0 0 1 8 5.2z" fill={K} stroke={O} strokeWidth=".8" />
+        <rect x="8.4" y="9.6" width="7.2" height="2.2" rx=".6" fill={K} stroke={O} strokeWidth=".7" />
+        {/* jaws — same wide-mouth silhouette and dark maw as the Logo mascot */}
+        <path d="M6.2 14a5.8 4.6 0 0 1 11.6 0z" fill={O} />
+        <path d="M6.2 14a5.8 3.2 0 0 0 11.6 0z" fill={OD} />
+        <path d="M7.1 14h9.8l-1 1.4c-2.6 1.1-5.2 1.1-7.8 0z" fill={M} />
+        {/* teeth: 4 even segments spanning the full 7.1–16.9 mouth width so
+            the zigzag closes on a flat top edge — the old path ended on a
+            "valley" point, so its closing line cut across diagonally and
+            made the last tooth look like a lopsided wedge. */}
+        <path d="M7.1 14l1.23 1.1 1.22-1.1 1.23 1.1 1.22-1.1 1.23 1.1 1.22-1.1 1.23 1.1 1.22-1.1z" fill={K} />
+        <circle cx="9.5" cy="12.4" r=".85" fill={C} />
+        <circle cx="14.5" cy="12.4" r=".85" fill={C} />
+      </g>
       {/* stem + leaves — bridges head to pot so it reads as a plant, like the Logo */}
-      <path d="M12 17.2c-.5.7-.6 1.2-.3 1.7" stroke={OD} strokeWidth="1.1" fill="none" strokeLinecap="round" />
-      <path d="M11.7 18.6c-1.6-.1-2.6-.8-3-2 1.7-.1 2.7.7 3 2z" fill={O} />
-      <path d="M12.3 18.8c1.6-.3 2.4-1.2 2.4-2.5-1.5.2-2.2 1.1-2.4 2.5z" fill={O} />
+      <path d="M12 16.3c-.5.9-.6 1.6-.3 2.2" stroke={OD} strokeWidth="1.1" fill="none" strokeLinecap="round" />
+      <path d="M11.6 17.9c-1.6-.1-2.6-.8-3-2 1.7-.1 2.7.7 3 2z" fill={O} />
+      <path d="M12.4 18.1c1.6-.3 2.4-1.2 2.4-2.5-1.5.2-2.2 1.1-2.4 2.5z" fill={O} />
       {/* pot */}
       <path d="M9 19h6l-.7 2.2a1 1 0 0 1-1 .8h-2.6a1 1 0 0 1-1-.8z" fill={T} />
       <rect x="8.3" y="18" width="7.4" height="1.8" rx=".7" fill={TD} />
