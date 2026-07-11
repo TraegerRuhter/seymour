@@ -53,6 +53,19 @@ test('extracts notes after comma', () => {
   assert.equal(ing.notes, 'finely diced');
 });
 
+test('strips a leading (comma-less) prep-word adjective: "1 cup chopped onion"', () => {
+  const ing = parseIngredient('1 cup chopped onion');
+  assert.equal(ing.unit, 'cup');
+  assert.equal(ing.name, 'onion');
+});
+
+test('"chopped onion" and "minced onion" normalize to the same name', () => {
+  const a = parseIngredient('1/2 cup chopped onion');
+  const b = parseIngredient('1 cup minced onion');
+  assert.equal(a.name, 'onion');
+  assert.equal(b.name, 'onion');
+});
+
 test('unquantified line keeps quantity 0', () => {
   const ing = parseIngredient('salt to taste');
   assert.equal(ing.quantity, 0);

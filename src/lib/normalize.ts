@@ -92,11 +92,20 @@ const SYNONYMS: Record<string, string> = {
   'double cream': 'heavy cream',
 };
 
-/** Leading descriptors that rarely change what you buy. */
+/**
+ * Leading descriptors that rarely change what you buy. Includes prep/
+ * technique words (chopped, minced, ...) so "1 cup chopped onion" and "1/2
+ * cup minced onion" both normalize to "onion" and merge on the shopping
+ * list — DROPPABLE_SUFFIXES already stripped these when they trailed the
+ * name after a comma ("onion, chopped"), but a bare leading adjective like
+ * "chopped onion" fell through untouched.
+ */
 const DROPPABLE_PREFIXES = [
   'fresh', 'freshly', 'large', 'medium', 'small', 'ripe', 'raw', 'cold',
   'warm', 'room temperature', 'organic', 'good quality', 'good-quality',
   'finely', 'roughly', 'thinly', 'coarsely', 'lightly',
+  'chopped', 'diced', 'minced', 'sliced', 'grated', 'shredded', 'peeled',
+  'crushed', 'melted', 'softened', 'beaten',
 ];
 
 /** Trailing preparation words that describe technique, not the item. */

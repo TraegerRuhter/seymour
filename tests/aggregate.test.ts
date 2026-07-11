@@ -36,6 +36,19 @@ test('normalizes synonyms: yellow onion + onion merge', () => {
   assert.equal(items[0].totalQuantity, 3);
 });
 
+test('normalizes leading prep-word adjectives: chopped onion + minced onion merge', () => {
+  // Real-world case: "1/2 cup chopped onion" and "1 cup minced onion" from
+  // two different recipes should read as one "onion" line, not two.
+  const items = aggregateIngredients([
+    parseIngredient('1/2 cup chopped onion'),
+    parseIngredient('1 cup minced onion'),
+  ]);
+  assert.equal(items.length, 1);
+  assert.equal(items[0].ingredientName, 'onion');
+  assert.equal(items[0].unit, 'cup');
+  assert.ok(Math.abs(items[0].totalQuantity - 1.5) < 0.01);
+});
+
 test('does not sum unlike units (cloves vs cups)', () => {
   const items = aggregateIngredients([
     parseIngredient('2 cloves garlic'),
