@@ -8,6 +8,7 @@ import { archiveCurrentPlan, clearCurrentPlan, regeneratePlan } from '@/lib/acti
 import MealPlanView from '@/components/MealPlanView';
 import PlanGenerator from '@/components/PlanGenerator';
 import ArchivedPlans from '@/components/ArchivedPlans';
+import { collapse, enter } from '@/lib/motion';
 import { PlanIcon, ShuffleIcon, ArchiveIcon, TrashIcon } from '@/components/icons';
 
 export default function PlanPage() {
@@ -106,9 +107,11 @@ export default function PlanPage() {
           <AnimatePresence initial={false}>
             {showGenerator && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
+                variants={collapse}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={enter}
                 className="overflow-hidden"
               >
                 <PlanGenerator hasExistingPlan onGenerated={() => setShowGenerator(false)} />

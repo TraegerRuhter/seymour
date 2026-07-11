@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { usePlanStore, useRecipeStore } from '@/lib/stores';
 import { pickSlotRecipe } from '@/lib/actions';
 import { MEAL_TYPE_LABELS } from '@/lib/plan';
+import { enter, fadeRise } from '@/lib/motion';
 import { MEAL_TYPE_ICON } from './icons';
 
 function localDateString(d: Date): string {
@@ -126,9 +127,10 @@ export default function MealPlanView() {
         <motion.section
           key={day.date}
           aria-label={dayHeading(day.date)}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: Math.min(dayIndex * 0.04, 0.3) }}
+          variants={fadeRise}
+          initial="initial"
+          animate="animate"
+          transition={{ ...enter, delay: Math.min(dayIndex * 0.04, 0.3) }}
           className={`glass-card w-72 shrink-0 snap-start p-4 lg:w-auto ${
             day.date === todayStr ? 'ring-2 ring-terracotta/60' : ''
           }`}

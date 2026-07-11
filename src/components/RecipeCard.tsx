@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { Recipe } from '@/lib/types';
+import { cardExit, enter, fadeRise, layoutSpring } from '@/lib/motion';
 import { BowlIcon } from './icons';
 
 export default function RecipeCard({
@@ -20,7 +21,14 @@ export default function RecipeCard({
 
   if (layout === 'list') {
     return (
-      <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <motion.div
+        layout
+        variants={fadeRise}
+        initial="initial"
+        animate="animate"
+        exit={cardExit}
+        transition={{ ...enter, layout: layoutSpring }}
+      >
         <Link
           href={`/recipes/${recipe.id}`}
           className="glass-card flex items-center gap-3 p-3 transition-shadow hover:shadow-card-hover"
@@ -38,14 +46,18 @@ export default function RecipeCard({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -3 }}
-      transition={{ duration: 0.2 }}
+      variants={fadeRise}
+      initial="initial"
+      animate="animate"
+      exit={cardExit}
+      transition={{ ...enter, layout: layoutSpring }}
     >
+      {/* Hover-lift lives in CSS, not a framer `whileHover`, so it never
+          fights the `layout` projection over the transform (that conflict
+          made cards jump when the grid reflowed during a hover). */}
       <Link
         href={`/recipes/${recipe.id}`}
-        className="glass-card block overflow-hidden transition-shadow hover:shadow-card-hover"
+        className="glass-card block overflow-hidden transition-[transform,box-shadow] duration-200 will-change-transform hover:-translate-y-1 hover:shadow-card-hover"
       >
         <Thumb recipe={recipe} className="aspect-[4/3] w-full" rounded={false} />
         <div className="p-4">
