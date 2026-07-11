@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#FAF7F2"/>
+  <!-- Seymour's head, zoomed to fill the frame so it reads at favicon size.
+       Upright (no tilt) so it sits balanced in the square. -->
+  <g transform="translate(-247 -18) scale(1.72)">
+    <!-- upper jaw -->
+    <path d="M180 176a112 92 0 0 1 224 0z" fill="#81B29A"/>
+    <!-- lower jaw -->
+    <path d="M192 176a100 62 0 0 0 200 0z" fill="#6A9A83"/>
+    <!-- mouth gap (dark maw) -->
+    <path d="M196 176h192l-16 24c-56 20-104 20-160 0z" fill="#5C2622"/>
+    <!-- interlocking teeth -->
+    <path d="M196 176l16 20 16-20 16 20 16-20 16 20 16-20 16 20 16-20 16 20 16-20 16 20 16-20z" fill="#FAF7F2"/>
+    <!-- eyes -->
+    <circle cx="250" cy="112" r="12" fill="#2D2D2A"/>
+    <circle cx="334" cy="112" r="12" fill="#2D2D2A"/>
+  </g>
+</svg>
