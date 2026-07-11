@@ -19,8 +19,12 @@ export const metadata: Metadata = {
     title: 'Seymour',
   },
   icons: {
-    icon: '/icon.svg',
-    apple: '/icon.svg',
+    // Browser tab: a zoomed-in crop of Seymour's face — the full potted
+    // plant is an illegible speck at 16–32px, but the toothy head reads.
+    icon: '/favicon.svg',
+    // Home-screen icon: must be a PNG — iOS silently ignores an SVG
+    // apple-touch-icon and falls back to a page screenshot.
+    apple: '/apple-icon.png',
   },
 };
 
