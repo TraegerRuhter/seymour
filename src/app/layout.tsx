@@ -31,6 +31,11 @@ export const viewport: Viewport = {
   ],
   width: 'device-width',
   initialScale: 1,
+  // Extend the page into the notch / home-indicator area so it fills the
+  // screen edge-to-edge as an installed PWA — and, crucially, so the
+  // env(safe-area-inset-*) values (used by the header and bottom nav) are
+  // populated instead of collapsing to 0.
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -44,7 +49,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-dvh font-sans">
         <AppProviders>
           <Header />
-          <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-4 lg:px-8 lg:pb-12">
+          {/* Bottom padding clears the fixed nav *and* the home-indicator
+              inset the nav now sits above, so the last of the content is never
+              hidden behind it. */}
+          <main className="mx-auto w-full max-w-6xl px-4 pb-[calc(7rem_+_var(--safe-bottom))] pt-4 lg:px-8 lg:pb-12">
             {children}
           </main>
           <BottomNav />

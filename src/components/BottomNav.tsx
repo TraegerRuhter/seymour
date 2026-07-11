@@ -27,7 +27,10 @@ export default function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-charcoal/10 bg-surface/80 backdrop-blur-md lg:inset-x-auto lg:left-1/2 lg:bottom-4 lg:w-auto lg:-translate-x-1/2 lg:rounded-full lg:border lg:shadow-card"
+      // pb var extends the translucent bar down through the home-indicator
+      // inset so the tab labels aren't jammed against the physical edge; reset
+      // to 0 for the desktop floating pill, which already floats above bottom-4.
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-charcoal/10 bg-surface/80 pb-[var(--safe-bottom)] backdrop-blur-md lg:inset-x-auto lg:left-1/2 lg:bottom-4 lg:w-auto lg:-translate-x-1/2 lg:rounded-full lg:border lg:pb-0 lg:shadow-card"
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-around lg:max-w-none lg:gap-1 lg:px-2">
         {TABS.map((tab) => {
