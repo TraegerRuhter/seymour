@@ -86,3 +86,32 @@ test('parenthetical size: "1 (15 oz) can black beans"', () => {
   assert.equal(ing.unit, 'can');
   assert.equal(ing.name, 'black bean');
 });
+
+test('trailing unit word: "2 garlic cloves" (unit after the name)', () => {
+  const ing = parseIngredient('2 garlic cloves');
+  assert.equal(ing.quantity, 2);
+  assert.equal(ing.unit, 'clove');
+  assert.equal(ing.name, 'garlic');
+});
+
+test('bare garlic count defaults to cloves: "1 garlic"', () => {
+  const ing = parseIngredient('1 garlic');
+  assert.equal(ing.quantity, 1);
+  assert.equal(ing.unit, 'clove');
+  assert.equal(ing.name, 'garlic');
+});
+
+test('a head of garlic stays distinct from cloves: "1 head garlic"', () => {
+  const ing = parseIngredient('1 head garlic');
+  assert.equal(ing.quantity, 1);
+  assert.equal(ing.unit, 'head');
+  assert.equal(ing.name, 'garlic');
+});
+
+test('trailing unit word elsewhere: "2 butter sticks" matches "1 stick butter"', () => {
+  const a = parseIngredient('2 butter sticks');
+  const b = parseIngredient('1 stick butter');
+  assert.equal(a.unit, 'stick');
+  assert.equal(a.name, 'butter');
+  assert.deepEqual([a.unit, a.name], [b.unit, b.name]);
+});

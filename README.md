@@ -31,7 +31,10 @@ and works offline as an installable PWA.
   across days only when the collection is small). Shuffle re-rolls with a new seed; empty
   slots offer a manual picker.
 - **Smart shopping list** — ingredients from all planned meals are normalized (synonym map
-  + plural stemming: "yellow onion" ≡ "onions"), converted to base units (mL/g), summed,
+  + plural stemming: "yellow onion" ≡ "onions"), with countable units recognized on either
+  side of the name ("2 cloves garlic" ≡ "2 garlic cloves") and a sensible default unit for
+  ambiguous bare counts ("1 garlic" is read as 1 clove, not 1 head), converted to base units
+  (mL/g), summed,
   and converted back to human-readable amounts with unicode fractions ("½ cup", "1¾ lb").
   Unconvertible units (cloves, pinches) never sum with unlike units. Checking off an item
   plays a drawn-checkmark + strikethrough animation and moves it to a collapsible Checked
