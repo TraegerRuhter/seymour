@@ -18,8 +18,12 @@ and works offline as an installable PWA.
   paywalled, requires login, or is blocked outright — **paste the page's text** (select-all,
   copy, paste) and `/api/parse-text` pulls out the title/ingredients/steps to pre-fill the
   manual form: the AI extracts it when `OPENAI_API_KEY` is set, otherwise a dependency-free
-  heading-based heuristic (looks for "Ingredients"/"Instructions" sections) does its best.
-  Either way you review and edit before saving.
+  heading-based heuristic (looks for "Ingredients"/"Instructions" sections, validated against
+  the content that follows so a nav link literally labeled "Ingredients" can't hijack the
+  real section) does its best. Since plain text can't carry an image, every manual/pasted
+  entry gets an image field that accepts a URL, a pasted clipboard image (⌘/Ctrl+V), a
+  drag-and-drop, or a file picker — pasted/dropped images are stored as data URLs, no
+  server upload needed. Either way you review and edit before saving.
 - **Recipe library** — glassmorphism card grid or compact list, live title search, detail
   view with print styles, edit and delete (with confirmation).
 - **Meal plan generator** — pick 1–14 days and which meals (breakfast/lunch/dinner/snack);

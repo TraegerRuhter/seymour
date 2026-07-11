@@ -104,3 +104,57 @@ test('falls back to "Untitled recipe" when no title-like line precedes the headi
   assert.ok(result);
   assert.equal(result!.title, 'Untitled recipe');
 });
+
+test('ignores a nav link literally labeled "Ingredients" (real-world Allrecipes-style bug)', () => {
+  // Large recipe sites often have a "browse by ingredient" nav category
+  // named exactly "Ingredients" — a naive first-match heading scan locks
+  // onto it and swallows the rest of the nav menu as "ingredients".
+  const navHeavy = [
+    'Allrecipes',
+    'Occasions',
+    'Cuisines',
+    'In the Kitchen',
+    'News',
+    'Community',
+    'Video',
+    'About Us',
+    'GET THE MAGAZINE',
+    'Ingredients',
+    'Meal Types',
+    'Holidays',
+    'World Cuisine',
+    'Kitchen Tips',
+    'Search',
+    'Carolina-Style Whole Hog Barbecue Pork',
+    'Jump to Recipe',
+    'Print Recipe',
+    '★★★★★ 4.7 from 18 votes',
+    'Prep Time: 30 minutes',
+    'Cook Time: 8 hours',
+    'Ingredients',
+    '1 (8 to 10 pound) pork shoulder roast',
+    '2 cups apple cider vinegar',
+    '1 tablespoon salt',
+    '1 teaspoon cayenne pepper',
+    'Instructions',
+    '1. Season the pork shoulder generously with salt.',
+    '2. Smoke the pork over low heat for 8 hours until tender.',
+    '3. Shred the meat and toss with the vinegar sauce.',
+    'Notes',
+    'Serve with white bread and extra sauce on the side.',
+    'Nutrition',
+    'Calories: 410',
+  ].join('\n');
+
+  const result = extractRecipeFromText(navHeavy);
+  assert.ok(result);
+  assert.equal(result!.title, 'Carolina-Style Whole Hog Barbecue Pork');
+  assert.deepEqual(result!.ingredientLines, [
+    '1 (8 to 10 pound) pork shoulder roast',
+    '2 cups apple cider vinegar',
+    '1 tablespoon salt',
+    '1 teaspoon cayenne pepper',
+  ]);
+  assert.equal(result!.instructions.length, 3);
+  assert.ok(!result!.ingredientLines.some((l) => /occasions|cuisines|community|magazine/i.test(l)));
+});
