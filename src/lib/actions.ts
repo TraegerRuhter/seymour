@@ -1,13 +1,14 @@
 'use client';
 
 import { nanoid } from 'nanoid';
-import type {
-  ArchivedPlan,
-  ExportBundle,
-  MealPlanConfig,
-  MealType,
-  ParsedRecipeData,
-  Recipe,
+import {
+  CURRENT_BUNDLE_VERSION,
+  type ArchivedPlan,
+  type ExportBundle,
+  type MealPlanConfig,
+  type MealType,
+  type ParsedRecipeData,
+  type Recipe,
 } from './types';
 import { parseIngredientLines } from './ingredient-parser';
 import { buildShoppingList, mergeShoppingList } from './aggregate';
@@ -167,7 +168,7 @@ export function exportBundle(): ExportBundle {
   const { config, plan, archivedPlans } = usePlanStore.getState();
   const { items } = useShoppingStore.getState();
   return {
-    version: 1,
+    version: CURRENT_BUNDLE_VERSION,
     exportedAt: new Date().toISOString(),
     recipes,
     mealPlan: plan,
@@ -177,10 +178,18 @@ export function exportBundle(): ExportBundle {
   };
 }
 
+/**
+ * A backup a user downloads today might still be sitting in their Downloads
+ * folder years from now, long after ExportBundle's shape has moved on. This
+ * accepts any bundle whose version we recognize (1..CURRENT_BUNDLE_VERSION)
+ * and only rejects something too old to be understood or, more likely,
+ * exported by a *newer* build than this one (can't migrate forward from a
+ * shape we haven't been taught yet).
+ */
 export function validateBundle(data: unknown): data is ExportBundle {
   if (typeof data !== 'object' || data === null) return false;
   const b = data as Partial<ExportBundle>;
-  if (b.version !== 1) return false;
+  if (typeof b.version !== 'number' || b.version < 1 || b.version > CURRENT_BUNDLE_VERSION) return false;
   if (typeof b.recipes !== 'object' || b.recipes === null) return false;
   for (const r of Object.values(b.recipes)) {
     if (typeof r.id !== 'string' || typeof r.title !== 'string') return false;
@@ -192,9 +201,31 @@ export function validateBundle(data: unknown): data is ExportBundle {
   return true;
 }
 
+/**
+ * Upgrades a validated bundle of any known older version to the current
+ * shape, filling sensible defaults for anything added since it was
+ * exported. Add a case here — and never remove an old one — every time
+ * CURRENT_BUNDLE_VERSION bumps, so a backup exported years ago still
+ * imports cleanly instead of dropping data or crashing on a missing field.
+ */
+function migrateBundle(bundle: ExportBundle): ExportBundle {
+  // Only one shape exists so far; this is the identity case that every
+  // future migration chain will fall through to once it reaches version 1.
+  return {
+    version: CURRENT_BUNDLE_VERSION,
+    exportedAt: bundle.exportedAt,
+    recipes: bundle.recipes,
+    mealPlan: bundle.mealPlan,
+    mealPlanConfig: bundle.mealPlanConfig,
+    shoppingList: bundle.shoppingList,
+    archivedPlans: bundle.archivedPlans ?? [],
+  };
+}
+
 /** Replaces the entire database with an imported bundle. */
 export function importBundle(bundle: ExportBundle): void {
-  useRecipeStore.getState().replaceAll(bundle.recipes);
-  usePlanStore.getState().replaceAll(bundle.mealPlanConfig, bundle.mealPlan, bundle.archivedPlans ?? []);
-  useShoppingStore.getState().replaceAll(bundle.shoppingList);
+  const migrated = migrateBundle(bundle);
+  useRecipeStore.getState().replaceAll(migrated.recipes);
+  usePlanStore.getState().replaceAll(migrated.mealPlanConfig, migrated.mealPlan, migrated.archivedPlans ?? []);
+  useShoppingStore.getState().replaceAll(migrated.shoppingList);
 }

@@ -86,8 +86,17 @@ export type ParseResult =
 
 // --- Export / Import ---
 
+/**
+ * Bump whenever ExportBundle's shape changes in a way `migrateBundle` (in
+ * actions.ts) needs to handle — e.g. a field is renamed, restructured, or
+ * made non-optional. Purely additive optional fields (like `archivedPlans`
+ * below) don't strictly need a bump, but adding a migration case anyway
+ * keeps old backups importing with sensible defaults instead of `undefined`.
+ */
+export const CURRENT_BUNDLE_VERSION = 1;
+
 export interface ExportBundle {
-  version: 1;
+  version: number;
   exportedAt: string;
   recipes: Record<string, Recipe>;
   mealPlan: MealPlanDay[] | null;
