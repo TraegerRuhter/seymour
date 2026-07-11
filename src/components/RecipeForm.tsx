@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import type { Recipe } from '@/lib/types';
 import { parseIngredientLines } from '@/lib/ingredient-parser';
 import { saveRecipe } from '@/lib/actions';
+import ImagePicker from './ImagePicker';
 
 /** Pre-fill values for a fresh (non-edit) form, e.g. from the paste-text importer. */
 export interface RecipeFormInitialValues {
@@ -81,34 +82,21 @@ export default function RecipeForm({
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="rf-source" className="mb-1 block text-sm font-medium">
-            Source URL <span className="font-normal text-charcoal/40">(optional)</span>
-          </label>
-          <input
-            id="rf-source"
-            type="url"
-            value={sourceUrl}
-            onChange={(e) => setSourceUrl(e.target.value)}
-            className="input-base"
-            placeholder="https://…"
-          />
-        </div>
-        <div>
-          <label htmlFor="rf-image" className="mb-1 block text-sm font-medium">
-            Image URL <span className="font-normal text-charcoal/40">(optional)</span>
-          </label>
-          <input
-            id="rf-image"
-            type="url"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            className="input-base"
-            placeholder="https://…"
-          />
-        </div>
+      <div>
+        <label htmlFor="rf-source" className="mb-1 block text-sm font-medium">
+          Source URL <span className="font-normal text-charcoal/40">(optional)</span>
+        </label>
+        <input
+          id="rf-source"
+          type="url"
+          value={sourceUrl}
+          onChange={(e) => setSourceUrl(e.target.value)}
+          className="input-base"
+          placeholder="https://…"
+        />
       </div>
+
+      <ImagePicker value={imageUrl} onChange={setImageUrl} />
 
       <div>
         <label htmlFor="rf-ingredients" className="mb-1 block text-sm font-medium">
