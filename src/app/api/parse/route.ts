@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { ParsedRecipeData, ParseResult } from '@/lib/types';
 import {
   extractRecipeFromHtml,
+  extractRecipeFromMicrodata,
   FetchError,
   fetchHtml,
   fetchViaReader,
@@ -49,12 +50,12 @@ function fetchErrorMessage(e: unknown): string {
   return 'The page couldn’t be fetched. Try again, or add it with “Enter manually”.';
 }
 
-/** Runs the JSON-LD scraper then the AI fallback against one HTML document. */
+/** Runs the JSON-LD scraper, then the microdata scraper, then the AI fallback against one HTML document. */
 async function extractFrom(
   html: string,
   href: string,
 ): Promise<{ data: ParsedRecipeData; via: 'scraper' | 'ai' } | null> {
-  const scraped = extractRecipeFromHtml(html, href);
+  const scraped = extractRecipeFromHtml(html, href) ?? extractRecipeFromMicrodata(html, href);
   if (scraped) return { data: scraped, via: 'scraper' };
   try {
     const ai = await extractRecipeViaAI({ text: htmlToText(html), sourceUrl: href });
