@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ShoppingListItem } from '@/lib/types';
 import { useShoppingStore } from '@/lib/stores';
@@ -162,6 +162,80 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
   );
 }
 
+/**
+ * How long a freshly-checked item stays put — still showing the checkmark
+ * draw-in and strikethrough slide — before it relocates to the "Checked"
+ * section. Without this, the item's category-group membership flips on the
+ * very same render that sets `checked: true`, so it unmounts from its
+ * original spot before the affirmation animation ever gets a frame to play;
+ * checking something off just makes it vanish instead of feeling confirmed.
+ */
+const CHECK_LINGER_MS = 650;
+
+/**
+ * Tracks which just-checked item ids should still render in their original
+ * (unchecked) position for `CHECK_LINGER_MS`, so `Row`'s own checkmark/
+ * strikethrough animation has time to play in place before the item moves.
+ * Unchecking (or re-checking during the grace window) is immediate — only
+ * the check→relocate transition needs the pause.
+ */
+function useCheckLinger(items: ShoppingListItem[]): Set<string> {
+  const [pending, setPending] = useState<Set<string>>(() => new Set());
+  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const prevChecked = useRef(new Map<string, boolean>());
+
+  useEffect(() => {
+    const seenIds = new Set<string>();
+    for (const item of items) {
+      seenIds.add(item.id);
+      const was = prevChecked.current.get(item.id);
+      prevChecked.current.set(item.id, item.checked);
+
+      if (item.checked && was === false) {
+        setPending((p) => (p.has(item.id) ? p : new Set(p).add(item.id)));
+        const timer = setTimeout(() => {
+          timers.current.delete(item.id);
+          setPending((p) => {
+            if (!p.has(item.id)) return p;
+            const next = new Set(p);
+            next.delete(item.id);
+            return next;
+          });
+        }, CHECK_LINGER_MS);
+        timers.current.set(item.id, timer);
+      } else if (!item.checked) {
+        const timer = timers.current.get(item.id);
+        if (timer) {
+          clearTimeout(timer);
+          timers.current.delete(item.id);
+        }
+        setPending((p) => {
+          if (!p.has(item.id)) return p;
+          const next = new Set(p);
+          next.delete(item.id);
+          return next;
+        });
+      }
+    }
+    // Drop timers for items no longer in the list (e.g. plan regenerated).
+    for (const [id, timer] of timers.current) {
+      if (!seenIds.has(id)) {
+        clearTimeout(timer);
+        timers.current.delete(id);
+      }
+    }
+  }, [items]);
+
+  useEffect(() => {
+    const timersMap = timers.current;
+    return () => {
+      for (const timer of timersMap.values()) clearTimeout(timer);
+    };
+  }, []);
+
+  return pending;
+}
+
 /** Animated completion bar shown above the full list. */
 function ProgressBar({ done, total }: { done: number; total: number }) {
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
@@ -194,9 +268,10 @@ export default function ShoppingList({
 }) {
   const items = useShoppingStore((s) => s.items);
   const [showChecked, setShowChecked] = useState(true);
+  const lingering = useCheckLinger(items);
 
-  const unchecked = items.filter((i) => !i.checked);
-  const checked = items.filter((i) => i.checked);
+  const unchecked = items.filter((i) => !i.checked || lingering.has(i.id));
+  const checked = items.filter((i) => i.checked && !lingering.has(i.id));
 
   if (items.length === 0) {
     return (

@@ -15,6 +15,7 @@ const O = '#81B29A'; // olive
 const OD = '#6A9A83'; // olive dark
 const C = '#2D2D2A'; // charcoal
 const K = '#FAF7F2'; // cream
+const M = '#5C2622'; // dark maw (matches the header/app-icon mascot's mouth)
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -391,13 +392,17 @@ export function ChefPlantIcon(p: IconProps) {
       {/* hat */}
       <path d="M8 5.2a2.6 2.6 0 0 1 4.9-.6 2.4 2.4 0 0 1 3.2 3.2c.4.7.3 1.7-.4 2.3H8.3c-.7-.6-.8-1.6-.4-2.3A2.6 2.6 0 0 1 8 5.2z" fill={K} stroke={O} strokeWidth=".8" />
       <rect x="8.4" y="9.6" width="7.2" height="2.2" rx=".6" fill={K} stroke={O} strokeWidth=".7" />
-      {/* jaws */}
-      <path d="M6.5 14a5.5 4.5 0 0 1 11 0z" fill={O} />
-      <path d="M6.5 14a5.5 3 0 0 0 11 0z" fill={OD} />
-      <path d="M7.4 14h9.2l-1 1.4c-2.4 1-4.8 1-7.2 0z" fill={TD} />
-      <path d="M7.4 14 8.6 15l1.2-1 1.2 1 1.2-1 1.2 1 1.2-1 1 1z" fill={K} />
-      <circle cx="9.6" cy="12.5" r=".8" fill={C} />
-      <circle cx="14.4" cy="12.5" r=".8" fill={C} />
+      {/* jaws — same wide-mouth silhouette and dark maw as the Logo mascot */}
+      <path d="M6.2 14a5.8 4.6 0 0 1 11.6 0z" fill={O} />
+      <path d="M6.2 14a5.8 3.2 0 0 0 11.6 0z" fill={OD} />
+      <path d="M7.1 14h9.8l-1 1.4c-2.6 1.1-5.2 1.1-7.8 0z" fill={M} />
+      <path d="M7.1 14 8.4 15.1l1.3-1.1 1.3 1.1 1.3-1.1 1.3 1.1 1.3-1.1 1.1 1.1z" fill={K} />
+      <circle cx="9.5" cy="12.4" r=".85" fill={C} />
+      <circle cx="14.5" cy="12.4" r=".85" fill={C} />
+      {/* stem + leaves — bridges head to pot so it reads as a plant, like the Logo */}
+      <path d="M12 17.2c-.5.7-.6 1.2-.3 1.7" stroke={OD} strokeWidth="1.1" fill="none" strokeLinecap="round" />
+      <path d="M11.7 18.6c-1.6-.1-2.6-.8-3-2 1.7-.1 2.7.7 3 2z" fill={O} />
+      <path d="M12.3 18.8c1.6-.3 2.4-1.2 2.4-2.5-1.5.2-2.2 1.1-2.4 2.5z" fill={O} />
       {/* pot */}
       <path d="M9 19h6l-.7 2.2a1 1 0 0 1-1 .8h-2.6a1 1 0 0 1-1-.8z" fill={T} />
       <rect x="8.3" y="18" width="7.4" height="1.8" rx=".7" fill={TD} />

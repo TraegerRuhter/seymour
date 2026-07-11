@@ -31,13 +31,9 @@ test('recipe store migrate passes through old (pre-versioning) data unchanged', 
 });
 
 test('every store migrate degrades malformed/missing persisted data to safe defaults instead of throwing', () => {
-  const cases: Array<[typeof useRecipeStore, unknown]> = [
-    [useRecipeStore, {}],
-    [usePlanStore, {}],
-    [useShoppingStore, {}],
-    [useSettingsStore, {}],
-  ];
-  for (const [store, garbage] of cases) {
+  const stores = [useRecipeStore, usePlanStore, useShoppingStore, useSettingsStore];
+  for (const store of stores) {
+    const garbage = {};
     const opts = store.persist.getOptions();
     assert.doesNotThrow(() => opts.migrate!(garbage, 0));
     assert.doesNotThrow(() => opts.migrate!(null, 0));
