@@ -15,6 +15,18 @@ import type { UnitSystem } from './units';
 /**
  * IndexedDB-backed storage for zustand's persist middleware.
  * On the server (SSR pass) a no-op storage keeps imports safe.
+ *
+ * Versioning: every persist() below carries an explicit `version` and
+ * `migrate`. This matters because of how zustand's persist middleware
+ * behaves on a version mismatch — if `migrate` isn't provided, it doesn't
+ * keep the old data around, it silently discards it and falls back to the
+ * store's default initial state. Concretely: bump `version` the moment a
+ * store's shape changes (a field is renamed, restructured, or made
+ * non-optional) *and* extend `migrate` to transform every prior version
+ * forward, or every existing user's saved recipes/plan/list vanish the next
+ * time they open the app. Purely additive optional fields are the one case
+ * that's safe to skip a bump for, since old data simply won't have the key
+ * and consuming code already needs to treat it as optional.
  */
 function makeStorage(storeName: string): StateStorage {
   if (typeof window === 'undefined') {
@@ -70,6 +82,11 @@ export const useRecipeStore = create<RecipeState>()(
       name: 'recipes',
       storage: createJSONStorage(() => makeStorage('recipes')),
       partialize: (s) => ({ recipes: s.recipes }),
+      version: 1,
+      migrate: (persisted) => {
+        const s = (persisted ?? {}) as Partial<{ recipes: Record<string, Recipe> }>;
+        return { recipes: s.recipes ?? {} };
+      },
     },
   ),
 );
@@ -143,6 +160,19 @@ export const usePlanStore = create<PlanState>()(
       name: 'meal-plan',
       storage: createJSONStorage(() => makeStorage('meal_plan')),
       partialize: (s) => ({ config: s.config, plan: s.plan, archivedPlans: s.archivedPlans }),
+      version: 1,
+      migrate: (persisted) => {
+        const s = (persisted ?? {}) as Partial<{
+          config: MealPlanConfig | null;
+          plan: MealPlanDay[] | null;
+          archivedPlans: ArchivedPlan[];
+        }>;
+        return {
+          config: s.config ?? null,
+          plan: s.plan ?? null,
+          archivedPlans: s.archivedPlans ?? [],
+        };
+      },
     },
   ),
 );
@@ -189,6 +219,11 @@ export const useShoppingStore = create<ShoppingState>()(
       name: 'shopping-list',
       storage: createJSONStorage(() => makeStorage('shopping_list')),
       partialize: (s) => ({ items: s.items }),
+      version: 1,
+      migrate: (persisted) => {
+        const s = (persisted ?? {}) as Partial<{ items: ShoppingListItem[] }>;
+        return { items: s.items ?? [] };
+      },
     },
   ),
 );
@@ -212,6 +247,11 @@ export const useSettingsStore = create<SettingsState>()(
       name: 'settings',
       storage: createJSONStorage(() => makeStorage('settings')),
       partialize: (s) => ({ unitSystem: s.unitSystem }),
+      version: 1,
+      migrate: (persisted) => {
+        const s = (persisted ?? {}) as Partial<{ unitSystem: UnitSystem }>;
+        return { unitSystem: s.unitSystem ?? 'imperial' };
+      },
     },
   ),
 );

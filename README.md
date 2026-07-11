@@ -41,7 +41,10 @@ and works offline as an installable PWA.
   section. Inline edits override aggregation per item. Everything persists across reloads.
 - **Auto re-aggregation** — the list rebuilds whenever the plan or collection changes
   (regenerate, delete, edit…), carrying over checked state and manual edits.
-- **Backup** — Settings offers full JSON export and validated import.
+- **Backup** — Settings offers full JSON export and validated import. Both the exported bundle
+  and the underlying IndexedDB stores carry a schema version and a migration path, so
+  existing recipes/plans and old backup files keep working across app upgrades instead of
+  silently resetting (see `src/lib/stores.ts` and `migrateBundle` in `src/lib/actions.ts`).
 - **Dark mode** — light / dark / system theme (Settings → Appearance). The palette is driven
   by CSS variables, the choice persists in localStorage, a pre-hydration script prevents a
   light flash, and "system" tracks OS changes live. Printing always uses the light palette.
