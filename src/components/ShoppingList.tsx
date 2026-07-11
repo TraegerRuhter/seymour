@@ -6,6 +6,7 @@ import type { ShoppingListItem } from '@/lib/types';
 import { useShoppingStore } from '@/lib/stores';
 import { displayUnit, formatAmount } from '@/lib/units';
 import { categorize, CATEGORY_ORDER, type Category } from '@/lib/categories';
+import { DURATION, EASE, enter, fadeRise, layoutSpring, listRowExit } from '@/lib/motion';
 import {
   ProduceIcon,
   MeatIcon,
@@ -67,10 +68,11 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
   return (
     <motion.li
       layout
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-      transition={{ layout: { type: 'spring', stiffness: 500, damping: 40 } }}
+      variants={fadeRise}
+      initial="initial"
+      animate="animate"
+      exit={listRowExit}
+      transition={{ ...enter, layout: layoutSpring }}
       className="glass-card flex items-center gap-3 px-4 py-3"
     >
       <span className="relative inline-flex h-6 w-6 shrink-0">
@@ -95,7 +97,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
             strokeLinejoin="round"
             initial={false}
             animate={{ pathLength: item.checked ? 1 : 0, opacity: item.checked ? 1 : 0 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            transition={{ duration: DURATION, ease: EASE }}
           />
         </svg>
       </span>
@@ -139,7 +141,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
             aria-hidden
             initial={false}
             animate={{ scaleX: item.checked ? 1 : 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            transition={{ duration: DURATION, ease: EASE }}
             className="absolute left-0 top-1/2 h-0.5 w-full origin-left bg-charcoal/60"
           />
         </label>

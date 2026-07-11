@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePlanStore } from '@/lib/stores';
 import { clearArchivedPlans, deleteArchivedPlan, restoreArchivedPlan } from '@/lib/actions';
+import { enter, fadeRise, layoutSpring, listRowExit } from '@/lib/motion';
 import { TrashIcon } from './icons';
 
 /** Collapsible list of archived plans with restore / delete. */
@@ -36,9 +37,11 @@ export default function ArchivedPlans() {
                 <motion.li
                   key={a.id}
                   layout
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  variants={fadeRise}
+                  initial="initial"
+                  animate="animate"
+                  exit={listRowExit}
+                  transition={{ ...enter, layout: layoutSpring }}
                   className="glass-card flex items-center gap-3 px-4 py-3"
                 >
                   <div className="min-w-0 flex-1">

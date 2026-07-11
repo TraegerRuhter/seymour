@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { AnimatePresence } from 'framer-motion';
 import { useRecipeStore } from '@/lib/stores';
 import RecipeCard from '@/components/RecipeCard';
 import { PencilIcon, PlateIcon, GridIcon, ListIcon } from '@/components/icons';
@@ -80,16 +81,25 @@ export default function RecipeLibraryPage() {
           )}
         </div>
       ) : layout === 'grid' ? (
+        // popLayout pulls an exiting card out of flow so the remaining cards
+        // reflow smoothly as you filter, instead of popping into place.
+        // initial={false} skips the entrance on first mount (the page-level
+        // template already animates it in) so cards only animate on
+        // filter/layout changes, not a double entrance.
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {filtered.map((r) => (
-            <RecipeCard key={r.id} recipe={r} />
-          ))}
+          <AnimatePresence mode="popLayout" initial={false}>
+            {filtered.map((r) => (
+              <RecipeCard key={r.id} recipe={r} />
+            ))}
+          </AnimatePresence>
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map((r) => (
-            <RecipeCard key={r.id} recipe={r} layout="list" />
-          ))}
+          <AnimatePresence mode="popLayout" initial={false}>
+            {filtered.map((r) => (
+              <RecipeCard key={r.id} recipe={r} layout="list" />
+            ))}
+          </AnimatePresence>
         </div>
       )}
     </div>
