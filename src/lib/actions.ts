@@ -12,8 +12,9 @@ import {
 } from './types';
 import { parseIngredientLines } from './ingredient-parser';
 import { buildShoppingList, mergeShoppingList } from './aggregate';
+import { normalizeIngredientName } from './normalize';
 import { generateMealPlan, newSeed, planLabel, recipeFitsMealType } from './plan';
-import { usePlanStore, useRecipeStore, useSettingsStore, useShoppingStore } from './stores';
+import { usePantryStore, usePlanStore, useRecipeStore, useSettingsStore, useShoppingStore } from './stores';
 
 /**
  * Cross-store orchestration lives here so individual stores stay decoupled.
@@ -35,11 +36,27 @@ export function regenerateShoppingList(): void {
     const { plan } = usePlanStore.getState();
     const { recipes } = useRecipeStore.getState();
     const { unitSystem } = useSettingsStore.getState();
+    const { staples } = usePantryStore.getState();
     const shopping = useShoppingStore.getState();
-    const next = buildShoppingList(plan, recipes, unitSystem);
+    const next = buildShoppingList(plan, recipes, unitSystem, new Set(staples));
     shopping.setItems(mergeShoppingList(next, shopping.items));
     debounceTimeout = null;
   }, 50);
+}
+
+// --- Pantry staples ("spice rack") ---
+
+/** Adds a staple (normalized the same way recipe ingredients are) and re-aggregates the list. */
+export function addPantryStaple(raw: string): void {
+  const name = normalizeIngredientName(raw);
+  if (!name) return;
+  usePantryStore.getState().addStaple(name);
+  regenerateShoppingList();
+}
+
+export function removePantryStaple(name: string): void {
+  usePantryStore.getState().removeStaple(name);
+  regenerateShoppingList();
 }
 
 export function recipeFromParsed(data: ParsedRecipeData): Recipe {
@@ -178,11 +195,12 @@ export function resetShoppingList(): void {
   regenerateShoppingList();
 }
 
-/** Wipes all data: recipes, current + archived plans, and shopping list. */
+/** Wipes all data: recipes, current + archived plans, shopping list, and pantry staples. */
 export function resetEverything(): void {
   useRecipeStore.getState().replaceAll({});
   usePlanStore.getState().replaceAll(null, null, []);
   useShoppingStore.getState().replaceAll([]);
+  usePantryStore.getState().replaceAll([]);
 }
 
 // --- Export / Import ---
@@ -191,6 +209,7 @@ export function exportBundle(): ExportBundle {
   const { recipes } = useRecipeStore.getState();
   const { config, plan, archivedPlans } = usePlanStore.getState();
   const { items } = useShoppingStore.getState();
+  const { staples } = usePantryStore.getState();
   return {
     version: CURRENT_BUNDLE_VERSION,
     exportedAt: new Date().toISOString(),
@@ -199,6 +218,7 @@ export function exportBundle(): ExportBundle {
     mealPlanConfig: config,
     shoppingList: items,
     archivedPlans,
+    pantryStaples: staples,
   };
 }
 
@@ -222,6 +242,7 @@ export function validateBundle(data: unknown): data is ExportBundle {
   if (b.mealPlan !== null && !Array.isArray(b.mealPlan)) return false;
   if (!Array.isArray(b.shoppingList)) return false;
   if (b.archivedPlans !== undefined && !Array.isArray(b.archivedPlans)) return false;
+  if (b.pantryStaples !== undefined && !Array.isArray(b.pantryStaples)) return false;
   return true;
 }
 
@@ -243,6 +264,7 @@ function migrateBundle(bundle: ExportBundle): ExportBundle {
     mealPlanConfig: bundle.mealPlanConfig,
     shoppingList: bundle.shoppingList,
     archivedPlans: bundle.archivedPlans ?? [],
+    pantryStaples: bundle.pantryStaples ?? [],
   };
 }
 
@@ -252,4 +274,5 @@ export function importBundle(bundle: ExportBundle): void {
   useRecipeStore.getState().replaceAll(migrated.recipes);
   usePlanStore.getState().replaceAll(migrated.mealPlanConfig, migrated.mealPlan, migrated.archivedPlans ?? []);
   useShoppingStore.getState().replaceAll(migrated.shoppingList);
+  usePantryStore.getState().replaceAll(migrated.pantryStaples ?? []);
 }

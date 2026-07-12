@@ -34,6 +34,14 @@ export default function ShoppingListPage() {
         )}
       </header>
 
+      <p className="text-sm text-charcoal/50">
+        Already stocked on something?{' '}
+        <Link href="/settings#pantry" className="font-medium text-terracotta hover:underline">
+          Add it to your spice rack
+        </Link>{' '}
+        to keep it off this list.
+      </p>
+
       {items.length === 0 && !plan && (
         <p className="text-sm text-charcoal/60">
           The list fills itself from your meal plan —{' '}

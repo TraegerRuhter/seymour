@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { aggregateIngredients, mergeShoppingList } from '../src/lib/aggregate.ts';
+import { aggregateIngredients, buildShoppingList, mergeShoppingList } from '../src/lib/aggregate.ts';
 import { parseIngredient } from '../src/lib/ingredient-parser.ts';
 import { formatAmount, formatQuantity, toReadable } from '../src/lib/units.ts';
+import type { MealPlanDay, Recipe } from '../src/lib/types.ts';
 
 test('sums same ingredient with same unit', () => {
   const items = aggregateIngredients([
@@ -154,6 +155,41 @@ test('toReadable rounds up to a tidy amount, never fiddly decimals', () => {
   const oz = toReadable(340.19, 'g', 'imperial');
   assert.equal(oz.unit, 'oz');
   assert.equal(oz.quantity, 12);
+});
+
+function makeRecipe(id: string, ingredientLines: string[]): Recipe {
+  return {
+    id,
+    title: id,
+    sourceUrl: '',
+    ingredients: ingredientLines.map(parseIngredient),
+    instructions: [],
+    dateAdded: new Date().toISOString(),
+  };
+}
+
+test('buildShoppingList excludes pantry staples entirely', () => {
+  const recipes: Record<string, Recipe> = {
+    r1: makeRecipe('r1', ['1 tsp salt', '2 cups flour']),
+  };
+  const plan: MealPlanDay[] = [
+    { date: '2026-07-07', meals: [{ type: 'dinner', recipeId: 'r1' }] },
+  ];
+  const withoutStaples = buildShoppingList(plan, recipes, 'imperial');
+  assert.equal(withoutStaples.length, 2);
+
+  const withStaples = buildShoppingList(plan, recipes, 'imperial', new Set(['salt']));
+  assert.equal(withStaples.length, 1);
+  assert.equal(withStaples[0].ingredientName, 'flour');
+});
+
+test('buildShoppingList treats an empty staples set the same as none', () => {
+  const recipes: Record<string, Recipe> = { r1: makeRecipe('r1', ['1 tsp salt']) };
+  const plan: MealPlanDay[] = [
+    { date: '2026-07-07', meals: [{ type: 'dinner', recipeId: 'r1' }] },
+  ];
+  const items = buildShoppingList(plan, recipes, 'imperial', new Set());
+  assert.equal(items.length, 1);
 });
 
 test('formatAmount: metric plain numbers, imperial fractions', () => {

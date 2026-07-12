@@ -117,4 +117,6 @@ export interface ExportBundle {
   shoppingList: ShoppingListItem[];
   /** Optional (added later); older backups won't have it. */
   archivedPlans?: ArchivedPlan[];
+  /** Normalized ingredient names the user already has on hand ("spice rack"), excluded from the shopping list. Optional (added later). */
+  pantryStaples?: string[];
 }
