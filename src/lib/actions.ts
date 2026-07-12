@@ -82,10 +82,16 @@ export function generatePlan(days: number, mealTypes: MealType[], seed?: number)
   // empty and every generated slot came out unfilled.)
   const recipes = useRecipeStore.getState().recipes;
   const recipeIds = Object.keys(recipes);
-  const plan = generateMealPlan(recipeIds, config, undefined, (id, type) => {
-    const recipe = recipes[id];
-    return !recipe || recipeFitsMealType(recipe, type);
-  });
+  const plan = generateMealPlan(
+    recipeIds,
+    config,
+    undefined,
+    (id, type) => {
+      const recipe = recipes[id];
+      return !recipe || recipeFitsMealType(recipe, type);
+    },
+    (id) => recipes[id]?.mainIngredient?.trim().toLowerCase() || undefined,
+  );
   usePlanStore.getState().setPlan(config, plan);
   regenerateShoppingList();
 }

@@ -38,7 +38,10 @@ and works offline as an installable PWA.
   across days only when the collection is small). Each meal type draws from its own shuffled
   deck restricted to recipes tagged for it (untagged recipes stay eligible everywhere, and a
   type with zero tagged matches falls back to the full collection, so tagging is opt-in and
-  never blanks out a slot) — so a dessert tagged "snack" won't turn up as a dinner. Shuffle
+  never blanks out a slot) — so a dessert tagged "snack" won't turn up as a dinner. Generation
+  also prefers not to repeat the previous day's main ingredient for the same meal type (so
+  dinner doesn't draw ground-beef recipes two nights running) whenever the collection has
+  enough variety to avoid it — a soft preference that never leaves a slot unfilled. Shuffle
   re-rolls with a new seed; empty slots offer a manual picker, also restricted the same way.
 - **Smart shopping list** — ingredients from all planned meals are normalized (synonym map
   + plural stemming: "yellow onion" ≡ "onions"), with countable units recognized on either
