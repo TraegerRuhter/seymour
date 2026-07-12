@@ -12,7 +12,7 @@ import {
 } from './types';
 import { parseIngredientLines } from './ingredient-parser';
 import { buildShoppingList, mergeShoppingList } from './aggregate';
-import { generateMealPlan, newSeed, planLabel } from './plan';
+import { generateMealPlan, newSeed, planLabel, recipeFitsMealType } from './plan';
 import { usePlanStore, useRecipeStore, useSettingsStore, useShoppingStore } from './stores';
 
 /**
@@ -80,8 +80,12 @@ export function generatePlan(days: number, mealTypes: MealType[], seed?: number)
   // Read ids straight from the source of truth. (An earlier cache optimization
   // broke this: the cache isn't persisted, so after a fresh page load it was
   // empty and every generated slot came out unfilled.)
-  const recipeIds = Object.keys(useRecipeStore.getState().recipes);
-  const plan = generateMealPlan(recipeIds, config);
+  const recipes = useRecipeStore.getState().recipes;
+  const recipeIds = Object.keys(recipes);
+  const plan = generateMealPlan(recipeIds, config, undefined, (id, type) => {
+    const recipe = recipes[id];
+    return !recipe || recipeFitsMealType(recipe, type);
+  });
   usePlanStore.getState().setPlan(config, plan);
   regenerateShoppingList();
 }

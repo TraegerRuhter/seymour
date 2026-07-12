@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { generateMealPlan, mulberry32, planLabel, seededShuffle } from '../src/lib/plan.ts';
-import type { MealPlanConfig } from '../src/lib/types.ts';
+import { generateMealPlan, mulberry32, planLabel, recipeFitsMealType, seededShuffle } from '../src/lib/plan.ts';
+import type { MealPlanConfig, MealType, Recipe } from '../src/lib/types.ts';
 
 const ids = (n: number) => Array.from({ length: n }, (_, i) => `r${i}`);
 
@@ -48,6 +48,48 @@ test('plan has correct shape: days × mealTypes', () => {
     assert.deepEqual(day.meals.map((m) => m.type), ['lunch', 'dinner']);
     assert.match(day.date, /^\d{4}-\d{2}-\d{2}$/);
   }
+});
+
+test('generateMealPlan restricts each meal type to its eligible recipes', () => {
+  // r0-r2 are breakfast-only, r3-r5 are dinner-only.
+  const isEligible = (id: string, type: MealType) =>
+    type === 'breakfast' ? ['r0', 'r1', 'r2'].includes(id) : ['r3', 'r4', 'r5'].includes(id);
+  const plan = generateMealPlan(
+    ids(6),
+    { days: 5, mealTypes: ['breakfast', 'dinner'], seed: 11 },
+    undefined,
+    isEligible,
+  );
+  for (const day of plan) {
+    const breakfast = day.meals.find((m) => m.type === 'breakfast')!;
+    const dinner = day.meals.find((m) => m.type === 'dinner')!;
+    assert.ok(['r0', 'r1', 'r2'].includes(breakfast.recipeId));
+    assert.ok(['r3', 'r4', 'r5'].includes(dinner.recipeId));
+  }
+});
+
+test('generateMealPlan falls back to the full collection when a meal type has zero eligible recipes', () => {
+  // Nothing is tagged "snack" — every recipe is breakfast-only.
+  const isEligible = (_id: string, type: MealType) => type === 'breakfast';
+  const plan = generateMealPlan(ids(3), { days: 2, mealTypes: ['snack'], seed: 5 }, undefined, isEligible);
+  for (const day of plan) {
+    assert.ok(day.meals[0].recipeId, 'snack slot should still be filled');
+  }
+});
+
+test('recipeFitsMealType: untagged recipes fit any meal, tagged recipes are restricted', () => {
+  const base: Recipe = {
+    id: 'x',
+    title: 'Test',
+    sourceUrl: '',
+    ingredients: [],
+    instructions: [],
+    dateAdded: new Date().toISOString(),
+  };
+  assert.equal(recipeFitsMealType(base, 'dinner'), true);
+  assert.equal(recipeFitsMealType({ ...base, mealTypes: [] }, 'dinner'), true);
+  assert.equal(recipeFitsMealType({ ...base, mealTypes: ['breakfast', 'snack'] }, 'dinner'), false);
+  assert.equal(recipeFitsMealType({ ...base, mealTypes: ['dinner'] }, 'dinner'), true);
 });
 
 test('seededShuffle is deterministic and a permutation', () => {
