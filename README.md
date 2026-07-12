@@ -42,7 +42,10 @@ and works offline as an installable PWA.
   also prefers not to repeat the previous day's main ingredient for the same meal type (so
   dinner doesn't draw ground-beef recipes two nights running) whenever the collection has
   enough variety to avoid it — a soft preference that never leaves a slot unfilled. Shuffle
-  re-rolls with a new seed; empty slots offer a manual picker, also restricted the same way.
+  re-rolls the whole plan with a new seed; empty slots offer a manual picker, also restricted
+  the same way. Any already-filled slot can be changed individually too, without regenerating
+  the rest of the plan — a shuffle icon swaps it for a different eligible recipe at random,
+  and a pencil icon opens the same manual picker — and the shopping list updates to match.
 - **Smart shopping list** — ingredients from all planned meals are normalized (synonym map
   + plural stemming: "yellow onion" ≡ "onions"), with countable units recognized on either
   side of the name ("2 cloves garlic" ≡ "2 garlic cloves") and a sensible default unit for
