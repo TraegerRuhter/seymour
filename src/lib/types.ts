@@ -21,6 +21,19 @@ export interface Recipe {
   ingredients: Ingredient[];
   instructions: string[]; // each step as a string
   dateAdded: string; // ISO 8601
+  /**
+   * Which meals this recipe suits (breakfast/lunch/dinner/snack). Undefined
+   * or empty means "fits anywhere" — every recipe saved before this field
+   * existed has no tags, and generation treats that as unrestricted rather
+   * than excluding untagged recipes everywhere.
+   */
+  mealTypes?: MealType[];
+  /** Free-text browsing category, e.g. "Soup", "Salad", "Dessert". */
+  category?: string;
+  /** Free-text primary protein/ingredient, e.g. "chicken", "ground beef" — lets plan generation space out repeats. */
+  mainIngredient?: string;
+  /** Total time to make, in minutes. */
+  cookTimeMinutes?: number;
 }
 
 // --- Meal Plan Domain ---

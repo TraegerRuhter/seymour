@@ -61,6 +61,20 @@ export default function RecipeCard({
       >
         <Thumb recipe={recipe} className="aspect-[4/3] w-full" rounded={false} />
         <div className="p-4">
+          {(recipe.category || recipe.cookTimeMinutes != null) && (
+            <div className="mb-1.5 flex flex-wrap gap-1.5">
+              {recipe.category && (
+                <span className="rounded-full bg-terracotta/10 px-2 py-0.5 text-xs font-medium text-terracotta-dark">
+                  {recipe.category}
+                </span>
+              )}
+              {recipe.cookTimeMinutes != null && (
+                <span className="rounded-full bg-olive/10 px-2 py-0.5 text-xs font-medium text-olive-dark">
+                  {recipe.cookTimeMinutes} min
+                </span>
+              )}
+            </div>
+          )}
           <h3 className="line-clamp-2 text-xl font-semibold leading-snug">{recipe.title}</h3>
           <p className="mt-1 text-sm text-charcoal/50">
             {recipe.ingredients.length} ingredient{recipe.ingredients.length === 1 ? '' : 's'} · Added {added}

@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { nanoid } from 'nanoid';
-import type { Recipe } from '@/lib/types';
+import { MEAL_TYPES, type MealType, type Recipe } from '@/lib/types';
+import { MEAL_TYPE_LABELS } from '@/lib/plan';
 import { parseIngredientLines } from '@/lib/ingredient-parser';
 import { saveRecipe } from '@/lib/actions';
 import ImagePicker from './ImagePicker';
@@ -41,7 +42,17 @@ export default function RecipeForm({
   const [instructionsText, setInstructionsText] = useState(
     existing?.instructions.join('\n') ?? initialValues?.instructionsText ?? '',
   );
+  const [mealTypes, setMealTypes] = useState<MealType[]>(existing?.mealTypes ?? []);
+  const [category, setCategory] = useState(existing?.category ?? '');
+  const [mainIngredient, setMainIngredient] = useState(existing?.mainIngredient ?? '');
+  const [cookTime, setCookTime] = useState(
+    existing?.cookTimeMinutes != null ? String(existing.cookTimeMinutes) : '',
+  );
   const [error, setError] = useState('');
+
+  function toggleMealType(t: MealType) {
+    setMealTypes((current) => (current.includes(t) ? current.filter((x) => x !== t) : [...current, t]));
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -54,6 +65,7 @@ export default function RecipeForm({
       setError('Add at least one ingredient.');
       return;
     }
+    const cookTimeMinutes = cookTime.trim() ? Number(cookTime) : undefined;
     const recipe: Recipe = {
       id: existing?.id ?? nanoid(),
       title: title.trim(),
@@ -62,6 +74,10 @@ export default function RecipeForm({
       ingredients: parseIngredientLines(ingredientLines),
       instructions: instructionsText.split('\n').map((l) => l.trim()).filter(Boolean),
       dateAdded: existing?.dateAdded ?? new Date().toISOString(),
+      mealTypes: mealTypes.length ? mealTypes : undefined,
+      category: category.trim() || undefined,
+      mainIngredient: mainIngredient.trim() || undefined,
+      cookTimeMinutes: cookTimeMinutes != null && !Number.isNaN(cookTimeMinutes) ? cookTimeMinutes : undefined,
     };
     saveRecipe(recipe);
     router.push(`/recipes/${recipe.id}`);
@@ -97,6 +113,74 @@ export default function RecipeForm({
       </div>
 
       <ImagePicker value={imageUrl} onChange={setImageUrl} />
+
+      <div>
+        <h2 className="mb-2 text-sm font-medium">
+          Meals <span className="font-normal text-charcoal/40">(optional — leave blank to fit any meal)</span>
+        </h2>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Meal types">
+          {MEAL_TYPES.map((t) => {
+            const on = mealTypes.includes(t);
+            return (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={on}
+                onClick={() => toggleMealType(t)}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                  on
+                    ? 'bg-olive text-white'
+                    : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
+                }`}
+              >
+                {MEAL_TYPE_LABELS[t]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label htmlFor="rf-category" className="mb-1 block text-sm font-medium">
+            Category <span className="font-normal text-charcoal/40">(optional)</span>
+          </label>
+          <input
+            id="rf-category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="input-base"
+            placeholder="Soup, Salad, Dessert…"
+          />
+        </div>
+        <div>
+          <label htmlFor="rf-main-ingredient" className="mb-1 block text-sm font-medium">
+            Main ingredient <span className="font-normal text-charcoal/40">(optional)</span>
+          </label>
+          <input
+            id="rf-main-ingredient"
+            value={mainIngredient}
+            onChange={(e) => setMainIngredient(e.target.value)}
+            className="input-base"
+            placeholder="Chicken, ground beef…"
+          />
+        </div>
+        <div>
+          <label htmlFor="rf-cook-time" className="mb-1 block text-sm font-medium">
+            Cook time <span className="font-normal text-charcoal/40">(minutes)</span>
+          </label>
+          <input
+            id="rf-cook-time"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            value={cookTime}
+            onChange={(e) => setCookTime(e.target.value)}
+            className="input-base"
+            placeholder="30"
+          />
+        </div>
+      </div>
 
       <div>
         <label htmlFor="rf-ingredients" className="mb-1 block text-sm font-medium">

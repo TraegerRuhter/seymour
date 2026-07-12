@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useRecipeStore } from '@/lib/stores';
 import { deleteRecipe } from '@/lib/actions';
 import { displayUnit, formatQuantity } from '@/lib/units';
+import { MEAL_TYPE_LABELS } from '@/lib/plan';
 
 export default function RecipeDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -44,6 +45,30 @@ export default function RecipeDetailPage() {
         )}
         <div className="p-6">
           <h1 className="text-3xl font-bold">{recipe.title}</h1>
+          {(recipe.category || recipe.mainIngredient || recipe.cookTimeMinutes != null || recipe.mealTypes?.length) && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {recipe.category && (
+                <span className="rounded-full bg-terracotta/10 px-2.5 py-1 text-xs font-medium text-terracotta-dark">
+                  {recipe.category}
+                </span>
+              )}
+              {recipe.mainIngredient && (
+                <span className="rounded-full bg-charcoal/10 px-2.5 py-1 text-xs font-medium text-charcoal/70">
+                  {recipe.mainIngredient}
+                </span>
+              )}
+              {recipe.cookTimeMinutes != null && (
+                <span className="rounded-full bg-olive/10 px-2.5 py-1 text-xs font-medium text-olive-dark">
+                  {recipe.cookTimeMinutes} min
+                </span>
+              )}
+              {recipe.mealTypes?.map((t) => (
+                <span key={t} className="rounded-full bg-olive/10 px-2.5 py-1 text-xs font-medium text-olive-dark">
+                  {MEAL_TYPE_LABELS[t]}
+                </span>
+              ))}
+            </div>
+          )}
           <p className="mt-2 text-sm text-charcoal/50">
             {recipe.ingredients.length} ingredient{recipe.ingredients.length === 1 ? '' : 's'}
             {recipe.instructions.length > 0 &&

@@ -29,7 +29,10 @@ and works offline as an installable PWA.
   drag-and-drop, or a file picker — pasted/dropped images are stored as data URLs, no
   server upload needed. Either way you review and edit before saving.
 - **Recipe library** — glassmorphism card grid or compact list, live title search, detail
-  view with print styles, edit and delete (with confirmation).
+  view with print styles, edit and delete (with confirmation). Recipes can be tagged with
+  which meals they suit (breakfast/lunch/dinner/snack), a free-text category (Soup, Salad,
+  Dessert…), a main ingredient (for the plan generator's variety control), and a cook time —
+  all optional, shown as badges on the card and detail view.
 - **Meal plan generator** — pick 1–14 days and which meals (breakfast/lunch/dinner/snack);
   a seeded Fisher–Yates shuffle fills every slot with no repeats within a day (repeats
   across days only when the collection is small). Shuffle re-rolls with a new seed; empty
