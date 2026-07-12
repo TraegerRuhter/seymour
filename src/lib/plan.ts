@@ -1,4 +1,13 @@
-import type { MealPlanConfig, MealPlanDay, MealSlot, MealType } from './types';
+import type { MealPlanConfig, MealPlanDay, MealSlot, MealType, Recipe } from './types';
+
+/**
+ * Whether a recipe suits a given meal slot. Untagged recipes (no mealTypes,
+ * or an empty list — every recipe saved before this field existed) fit
+ * anywhere, so tagging is opt-in and never silently excludes old recipes.
+ */
+export function recipeFitsMealType(recipe: Recipe, type: MealType): boolean {
+  return !recipe.mealTypes || recipe.mealTypes.length === 0 || recipe.mealTypes.includes(type);
+}
 
 /** Deterministic PRNG (mulberry32). Same seed → same sequence. */
 export function mulberry32(seed: number): () => number {
@@ -41,11 +50,22 @@ function toDateString(d: Date): string {
  * so repeats across different days are allowed. If the collection is smaller
  * than the number of meals in one day, within-day uniqueness is kept as long
  * as possible and only then relaxed (rather than leaving slots empty).
+ *
+ * `isEligible(recipeId, type)`, if given, restricts each meal type's deck to
+ * the recipes eligible for it (e.g. tagged "dinner", or untagged and so
+ * eligible everywhere) — every distinct meal type in `config.mealTypes` gets
+ * its own independently shuffled deck rather than one shared across types,
+ * so a type-restricted collection doesn't starve. If eligibility leaves zero
+ * candidates for a type (e.g. every recipe is tagged but none for
+ * "breakfast"), that type quietly falls back to the full collection rather
+ * than leaving slots empty — an incomplete taxonomy should degrade, not break
+ * generation.
  */
 export function generateMealPlan(
   recipeIds: string[],
   config: MealPlanConfig,
   startDate: Date = new Date(),
+  isEligible?: (recipeId: string, type: MealType) => boolean,
 ): MealPlanDay[] {
   const rand = mulberry32(config.seed);
   const days: MealPlanDay[] = [];
@@ -61,26 +81,35 @@ export function generateMealPlan(
     return days;
   }
 
-  let deck = seededShuffle(recipeIds, rand);
-  let deckPos = 0;
+  // One deck per distinct meal type in this plan, each an independent shuffled
+  // stream over that type's eligible pool (persisting across days, same as the
+  // single shared deck used to).
+  const decks = new Map<MealType, { ids: string[]; pos: number }>();
+  for (const type of config.mealTypes) {
+    if (decks.has(type)) continue;
+    const eligible = isEligible ? recipeIds.filter((id) => isEligible(id, type)) : recipeIds;
+    const pool = eligible.length > 0 ? eligible : recipeIds;
+    decks.set(type, { ids: seededShuffle(pool, rand), pos: 0 });
+  }
 
-  const draw = (usedToday: Set<string>): string => {
+  const draw = (type: MealType, usedToday: Set<string>): string => {
+    const deck = decks.get(type)!;
     // First pass: find the next card not used today.
-    for (let attempts = 0; attempts < recipeIds.length; attempts++) {
-      if (deckPos >= deck.length) {
-        deck = seededShuffle(recipeIds, rand);
-        deckPos = 0;
+    for (let attempts = 0; attempts < deck.ids.length; attempts++) {
+      if (deck.pos >= deck.ids.length) {
+        deck.ids = seededShuffle(deck.ids, rand);
+        deck.pos = 0;
       }
-      const candidate = deck[deckPos];
-      deckPos++;
+      const candidate = deck.ids[deck.pos];
+      deck.pos++;
       if (!usedToday.has(candidate)) return candidate;
     }
     // Collection smaller than meals-per-day: allow a within-day repeat.
-    if (deckPos >= deck.length) {
-      deck = seededShuffle(recipeIds, rand);
-      deckPos = 0;
+    if (deck.pos >= deck.ids.length) {
+      deck.ids = seededShuffle(deck.ids, rand);
+      deck.pos = 0;
     }
-    return deck[deckPos++];
+    return deck.ids[deck.pos++];
   };
 
   for (let d = 0; d < config.days; d++) {
@@ -88,7 +117,7 @@ export function generateMealPlan(
     date.setDate(date.getDate() + d);
     const usedToday = new Set<string>();
     const meals: MealSlot[] = config.mealTypes.map((type) => {
-      const recipeId = draw(usedToday);
+      const recipeId = draw(type, usedToday);
       usedToday.add(recipeId);
       return { type, recipeId };
     });

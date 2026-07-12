@@ -35,8 +35,11 @@ and works offline as an installable PWA.
   all optional, shown as badges on the card and detail view.
 - **Meal plan generator** — pick 1–14 days and which meals (breakfast/lunch/dinner/snack);
   a seeded Fisher–Yates shuffle fills every slot with no repeats within a day (repeats
-  across days only when the collection is small). Shuffle re-rolls with a new seed; empty
-  slots offer a manual picker.
+  across days only when the collection is small). Each meal type draws from its own shuffled
+  deck restricted to recipes tagged for it (untagged recipes stay eligible everywhere, and a
+  type with zero tagged matches falls back to the full collection, so tagging is opt-in and
+  never blanks out a slot) — so a dessert tagged "snack" won't turn up as a dinner. Shuffle
+  re-rolls with a new seed; empty slots offer a manual picker, also restricted the same way.
 - **Smart shopping list** — ingredients from all planned meals are normalized (synonym map
   + plural stemming: "yellow onion" ≡ "onions"), with countable units recognized on either
   side of the name ("2 cloves garlic" ≡ "2 garlic cloves") and a sensible default unit for

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { usePlanStore, useRecipeStore } from '@/lib/stores';
 import { pickSlotRecipe } from '@/lib/actions';
-import { MEAL_TYPE_LABELS } from '@/lib/plan';
+import { MEAL_TYPE_LABELS, recipeFitsMealType } from '@/lib/plan';
 import { enter, fadeRise } from '@/lib/motion';
 import { MEAL_TYPE_ICON } from './icons';
 
@@ -37,6 +37,11 @@ function MealTile({
   const recipe = slot.recipeId ? recipes[slot.recipeId] : undefined;
 
   if (!recipe) {
+    const all = Object.values(recipes);
+    // Same fallback as generation: if meal-type tagging would leave nothing
+    // to pick, show everything rather than an empty dropdown.
+    const fitting = all.filter((r) => recipeFitsMealType(r, slot.type));
+    const pickable = fitting.length > 0 ? fitting : all;
     return (
       <div className="rounded-xl border border-dashed border-charcoal/20 p-3">
         <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/40">
@@ -61,7 +66,7 @@ function MealTile({
             <option value="" disabled>
               Choose a recipe…
             </option>
-            {Object.values(recipes).map((r) => (
+            {pickable.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.title}
               </option>
