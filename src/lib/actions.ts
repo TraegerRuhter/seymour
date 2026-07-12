@@ -108,6 +108,20 @@ export function pickSlotRecipe(dayIndex: number, mealIndex: number, recipeId: st
   regenerateShoppingList();
 }
 
+/** Swaps a single filled (or empty) slot for a different, randomly chosen eligible recipe. */
+export function shuffleSlot(dayIndex: number, mealIndex: number): void {
+  const slot = usePlanStore.getState().plan?.[dayIndex]?.meals[mealIndex];
+  if (!slot) return;
+  const recipes = useRecipeStore.getState().recipes;
+  const all = Object.values(recipes);
+  const fitting = all.filter((r) => recipeFitsMealType(r, slot.type));
+  const pool = fitting.length > 0 ? fitting : all;
+  const candidates = pool.length > 1 ? pool.filter((r) => r.id !== slot.recipeId) : pool;
+  if (candidates.length === 0) return;
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  pickSlotRecipe(dayIndex, mealIndex, pick.id);
+}
+
 // --- Plan archive ---
 
 /** Moves the current plan into the archive and clears the active slot. */

@@ -4,10 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { usePlanStore, useRecipeStore } from '@/lib/stores';
-import { pickSlotRecipe } from '@/lib/actions';
+import { pickSlotRecipe, shuffleSlot } from '@/lib/actions';
 import { MEAL_TYPE_LABELS, recipeFitsMealType } from '@/lib/plan';
 import { enter, fadeRise } from '@/lib/motion';
-import { MEAL_TYPE_ICON } from './icons';
+import { MEAL_TYPE_ICON, PencilIcon, ShuffleIcon } from './icons';
 
 function localDateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -21,7 +21,7 @@ function dayHeading(dateStr: string): string {
   return dateStr === localDateString(new Date()) ? `Today · ${monthDay}` : `${weekday} · ${monthDay}`;
 }
 
-/** A single meal tile; empty slots offer a manual picker. */
+/** A single meal tile. Empty slots offer a manual picker; filled slots offer a shuffle (random swap) and a pencil (manual change). */
 function MealTile({
   dayIndex,
   mealIndex,
@@ -36,7 +36,7 @@ function MealTile({
   if (!slot) return null;
   const recipe = slot.recipeId ? recipes[slot.recipeId] : undefined;
 
-  if (!recipe) {
+  if (!recipe || picking) {
     const all = Object.values(recipes);
     // Same fallback as generation: if meal-type tagging would leave nothing
     // to pick, show everything rather than an empty dropdown.
@@ -54,18 +54,22 @@ function MealTile({
         {picking ? (
           <select
             autoFocus
-            aria-label={`Pick a recipe for ${MEAL_TYPE_LABELS[slot.type]}`}
+            aria-label={
+              recipe ? `Change the recipe for ${MEAL_TYPE_LABELS[slot.type]}` : `Pick a recipe for ${MEAL_TYPE_LABELS[slot.type]}`
+            }
             className="input-base mt-2 py-1.5 text-sm"
-            defaultValue=""
+            defaultValue={recipe?.id ?? ''}
             onChange={(e) => {
               if (e.target.value) pickSlotRecipe(dayIndex, mealIndex, e.target.value);
               setPicking(false);
             }}
             onBlur={() => setPicking(false)}
           >
-            <option value="" disabled>
-              Choose a recipe…
-            </option>
+            {!recipe && (
+              <option value="" disabled>
+                Choose a recipe…
+              </option>
+            )}
             {pickable.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.title}
@@ -86,33 +90,50 @@ function MealTile({
   }
 
   return (
-    <Link
-      href={`/recipes/${recipe.id}`}
-      className="flex items-center gap-3 rounded-xl bg-surface/60 p-3 transition-colors hover:bg-surface"
-    >
-      {recipe.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={recipe.imageUrl}
-          alt=""
-          loading="lazy"
-          className="h-11 w-11 shrink-0 rounded-lg object-cover"
-        />
-      ) : (
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-olive/15">
-          {(() => {
-            const Icon = MEAL_TYPE_ICON[slot.type];
-            return <Icon className="h-6 w-6" />;
-          })()}
-        </span>
-      )}
-      <div className="min-w-0">
-        <p className="text-xs font-medium uppercase tracking-wide text-charcoal/40">
-          {MEAL_TYPE_LABELS[slot.type]}
-        </p>
-        <p className="truncate text-sm font-semibold">{recipe.title}</p>
+    <div className="group relative flex items-center gap-3 rounded-xl bg-surface/60 p-3 transition-colors hover:bg-surface">
+      <Link href={`/recipes/${recipe.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+        {recipe.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={recipe.imageUrl}
+            alt=""
+            loading="lazy"
+            className="h-11 w-11 shrink-0 rounded-lg object-cover"
+          />
+        ) : (
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-olive/15">
+            {(() => {
+              const Icon = MEAL_TYPE_ICON[slot.type];
+              return <Icon className="h-6 w-6" />;
+            })()}
+          </span>
+        )}
+        <div className="min-w-0">
+          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/40">
+            {MEAL_TYPE_LABELS[slot.type]}
+          </p>
+          <p className="truncate text-sm font-semibold">{recipe.title}</p>
+        </div>
+      </Link>
+      <div className="flex shrink-0 gap-0.5">
+        <button
+          type="button"
+          aria-label={`Shuffle ${MEAL_TYPE_LABELS[slot.type]} to a different recipe`}
+          onClick={() => shuffleSlot(dayIndex, mealIndex)}
+          className="rounded-lg p-1.5 text-charcoal/40 transition-colors hover:bg-olive/15 hover:text-charcoal"
+        >
+          <ShuffleIcon className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          aria-label={`Change the recipe for ${MEAL_TYPE_LABELS[slot.type]}`}
+          onClick={() => setPicking(true)}
+          className="rounded-lg p-1.5 text-charcoal/40 transition-colors hover:bg-olive/15 hover:text-charcoal"
+        >
+          <PencilIcon className="h-4 w-4" />
+        </button>
       </div>
-    </Link>
+    </div>
   );
 }
 
