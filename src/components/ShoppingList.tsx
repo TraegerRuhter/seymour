@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ShoppingListItem } from '@/lib/types';
-import { useShoppingStore } from '@/lib/stores';
+import { useRecipeStore, useShoppingStore } from '@/lib/stores';
 import { displayUnit, formatAmount } from '@/lib/units';
 import { categorize, CATEGORY_ORDER, type Category } from '@/lib/categories';
 import { DURATION, EASE, enter, fadeRise, layoutSpring, listRowExit } from '@/lib/motion';
@@ -17,6 +18,7 @@ import {
   SpicesIcon,
   BasketIcon,
   PencilIcon,
+  RecipesIcon,
   SparkleIcon,
   type IconComponent,
 } from './icons';
@@ -59,11 +61,14 @@ const CATEGORY_ICON: Record<Category, IconComponent> = {
 function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) {
   const toggleChecked = useShoppingStore((s) => s.toggleChecked);
   const setOverride = useShoppingStore((s) => s.setOverride);
+  const recipes = useRecipeStore((s) => s.recipes);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
+  const [showSources, setShowSources] = useState(false);
 
   const label = itemLabel(item);
   const inputId = `shop-${item.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  const sourceRecipes = (item.recipeIds ?? []).map((id) => recipes[id]).filter((r) => r != null);
 
   return (
     <motion.li
@@ -73,7 +78,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
       animate="animate"
       exit={listRowExit}
       transition={{ ...enter, layout: layoutSpring }}
-      className="glass-card flex items-center gap-3 px-4 py-3"
+      className="glass-card flex items-start gap-3 px-4 py-3"
     >
       <span className="relative inline-flex h-6 w-6 shrink-0">
         <input
@@ -102,64 +107,101 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
         </svg>
       </span>
 
-      {editing ? (
-        <form
-          className="flex min-w-0 flex-1 items-center gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setOverride(item.id, draft);
-            setEditing(false);
-          }}
-        >
-          <input
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            aria-label={`Edit ${item.ingredientName}`}
-            className="input-base py-1.5 text-sm"
-          />
-          <button type="submit" className="btn-primary px-3 py-1.5 text-sm">
-            Save
-          </button>
-        </form>
-      ) : (
-        <label
-          htmlFor={inputId}
-          className={`relative min-w-0 flex-1 cursor-pointer select-none transition-opacity ${
-            item.checked ? 'opacity-50' : ''
-          }`}
-        >
-          <span className="block truncate">
-            {label}
-            {item.manualOverride && (
-              <span className="ml-2 rounded-full bg-terracotta/10 px-2 py-0.5 text-xs text-terracotta">
-                edited
-              </span>
-            )}
-          </span>
-          <motion.span
-            aria-hidden
-            initial={false}
-            animate={{ scaleX: item.checked ? 1 : 0 }}
-            transition={{ duration: DURATION, ease: EASE }}
-            className="absolute left-0 top-1/2 h-0.5 w-full origin-left bg-charcoal/60"
-          />
-        </label>
-      )}
+      <div className="min-w-0 flex-1">
+        {editing ? (
+          <form
+            className="flex items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setOverride(item.id, draft);
+              setEditing(false);
+            }}
+          >
+            <input
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              aria-label={`Edit ${item.ingredientName}`}
+              className="input-base py-1.5 text-sm"
+            />
+            <button type="submit" className="btn-primary px-3 py-1.5 text-sm">
+              Save
+            </button>
+          </form>
+        ) : (
+          <label
+            htmlFor={inputId}
+            className={`relative block cursor-pointer select-none truncate transition-opacity ${
+              item.checked ? 'opacity-50' : ''
+            }`}
+          >
+            <span className="block truncate">
+              {label}
+              {item.manualOverride && (
+                <span className="ml-2 rounded-full bg-terracotta/10 px-2 py-0.5 text-xs text-terracotta">
+                  edited
+                </span>
+              )}
+            </span>
+            <motion.span
+              aria-hidden
+              initial={false}
+              animate={{ scaleX: item.checked ? 1 : 0 }}
+              transition={{ duration: DURATION, ease: EASE }}
+              className="absolute left-0 top-1/2 h-0.5 w-full origin-left bg-charcoal/60"
+            />
+          </label>
+        )}
+        {showSources && sourceRecipes.length > 1 && (
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+            {sourceRecipes.map((r) => (
+              <Link
+                key={r.id}
+                href={`/recipes/${r.id}`}
+                className="text-xs font-medium text-terracotta hover:underline"
+              >
+                {r.title}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {editable && !editing && !item.checked && (
-        <button
-          type="button"
-          onClick={() => {
-            setDraft(item.manualOverride ?? label);
-            setEditing(true);
-          }}
-          aria-label={`Edit ${item.ingredientName}`}
-          className="rounded-full p-1.5 text-charcoal/40 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
-        >
-          <PencilIcon className="h-5 w-5" />
-        </button>
-      )}
+      <div className="flex shrink-0 items-center gap-1">
+        {sourceRecipes.length === 1 && (
+          <Link
+            href={`/recipes/${sourceRecipes[0].id}`}
+            aria-label={`View ${sourceRecipes[0].title}, the recipe this came from`}
+            className="rounded-full p-1.5 text-charcoal/40 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
+          >
+            <RecipesIcon className="h-5 w-5" />
+          </Link>
+        )}
+        {sourceRecipes.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setShowSources((v) => !v)}
+            aria-label={`Show the ${sourceRecipes.length} recipes this came from`}
+            aria-expanded={showSources}
+            className="rounded-full p-1.5 text-charcoal/40 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
+          >
+            <RecipesIcon className="h-5 w-5" />
+          </button>
+        )}
+        {editable && !editing && !item.checked && (
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(item.manualOverride ?? label);
+              setEditing(true);
+            }}
+            aria-label={`Edit ${item.ingredientName}`}
+            className="rounded-full p-1.5 text-charcoal/40 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
+          >
+            <PencilIcon className="h-5 w-5" />
+          </button>
+        )}
+      </div>
     </motion.li>
   );
 }

@@ -80,6 +80,8 @@ export interface ShoppingListItem {
   checked: boolean;
   /** If manually edited, the override string shown instead of quantity+name */
   manualOverride?: string;
+  /** Ids of the recipes that contributed to this line item (for "show source recipe" links). */
+  recipeIds?: string[];
 }
 
 // --- Parse API contracts ---

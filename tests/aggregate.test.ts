@@ -183,6 +183,25 @@ test('buildShoppingList excludes pantry staples entirely', () => {
   assert.equal(withStaples[0].ingredientName, 'flour');
 });
 
+test('buildShoppingList tags each item with the recipes it came from', () => {
+  const recipes: Record<string, Recipe> = {
+    r1: makeRecipe('r1', ['1 onion']),
+    r2: makeRecipe('r2', ['2 onions']),
+  };
+  const plan: MealPlanDay[] = [
+    {
+      date: '2026-07-07',
+      meals: [
+        { type: 'lunch', recipeId: 'r1' },
+        { type: 'dinner', recipeId: 'r2' },
+      ],
+    },
+  ];
+  const items = buildShoppingList(plan, recipes, 'imperial');
+  assert.equal(items.length, 1);
+  assert.deepEqual(items[0].recipeIds, ['r1', 'r2']);
+});
+
 test('buildShoppingList treats an empty staples set the same as none', () => {
   const recipes: Record<string, Recipe> = { r1: makeRecipe('r1', ['1 tsp salt']) };
   const plan: MealPlanDay[] = [
