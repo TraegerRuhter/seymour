@@ -77,6 +77,44 @@ test('generateMealPlan falls back to the full collection when a meal type has ze
   }
 });
 
+test('generateMealPlan avoids repeating the previous day\'s main ingredient when variety exists', () => {
+  // r0, r1 are "beef"; r2, r3 are "chicken".
+  const mainIngredient = new Map([
+    ['r0', 'beef'],
+    ['r1', 'beef'],
+    ['r2', 'chicken'],
+    ['r3', 'chicken'],
+  ]);
+  const getMainIngredient = (id: string) => mainIngredient.get(id);
+  const plan = generateMealPlan(
+    ['r0', 'r1', 'r2', 'r3'],
+    { days: 10, mealTypes: ['dinner'], seed: 42 },
+    undefined,
+    undefined,
+    getMainIngredient,
+  );
+  for (let i = 1; i < plan.length; i++) {
+    const prev = mainIngredient.get(plan[i - 1].meals[0].recipeId);
+    const cur = mainIngredient.get(plan[i].meals[0].recipeId);
+    assert.notEqual(cur, prev, `day ${i} repeats ${prev} from the day before`);
+  }
+});
+
+test('generateMealPlan variety preference still fills every slot when avoidance is impossible', () => {
+  // Every recipe shares the same main ingredient, so avoidance can never succeed.
+  const getMainIngredient = () => 'beef';
+  const plan = generateMealPlan(
+    ['r0', 'r1'],
+    { days: 6, mealTypes: ['breakfast', 'lunch', 'dinner'], seed: 8 },
+    undefined,
+    undefined,
+    getMainIngredient,
+  );
+  for (const day of plan) {
+    for (const meal of day.meals) assert.ok(meal.recipeId, 'every slot should still be filled');
+  }
+});
+
 test('recipeFitsMealType: untagged recipes fit any meal, tagged recipes are restricted', () => {
   const base: Recipe = {
     id: 'x',

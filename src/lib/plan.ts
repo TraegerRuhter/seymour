@@ -60,12 +60,22 @@ function toDateString(d: Date): string {
  * "breakfast"), that type quietly falls back to the full collection rather
  * than leaving slots empty — an incomplete taxonomy should degrade, not break
  * generation.
+ *
+ * `getMainIngredient(recipeId)`, if given, adds a variety preference: each
+ * meal type avoids repeating the previous day's main ingredient for that
+ * same type (so dinner doesn't draw ground-beef recipes two nights running).
+ * It's a soft preference, not a hard rule — if no untagged-or-varied
+ * candidate turns up within a deck's length of scanning, the draw falls back
+ * to whatever it would have picked without this option, so a collection
+ * that's scarce or homogeneous in main ingredients never leaves a slot
+ * unfilled.
  */
 export function generateMealPlan(
   recipeIds: string[],
   config: MealPlanConfig,
   startDate: Date = new Date(),
   isEligible?: (recipeId: string, type: MealType) => boolean,
+  getMainIngredient?: (recipeId: string) => string | undefined,
 ): MealPlanDay[] {
   const rand = mulberry32(config.seed);
   const days: MealPlanDay[] = [];
@@ -92,9 +102,14 @@ export function generateMealPlan(
     decks.set(type, { ids: seededShuffle(pool, rand), pos: 0 });
   }
 
+  const lastMainIngredientByType = new Map<MealType, string>();
+
   const draw = (type: MealType, usedToday: Set<string>): string => {
     const deck = decks.get(type)!;
-    // First pass: find the next card not used today.
+    const lastIngredient = getMainIngredient ? lastMainIngredientByType.get(type) : undefined;
+    // First pass: find the next not-used-today card, preferring one that
+    // doesn't repeat yesterday's main ingredient for this type.
+    let fallback: string | undefined;
     for (let attempts = 0; attempts < deck.ids.length; attempts++) {
       if (deck.pos >= deck.ids.length) {
         deck.ids = seededShuffle(deck.ids, rand);
@@ -102,8 +117,12 @@ export function generateMealPlan(
       }
       const candidate = deck.ids[deck.pos];
       deck.pos++;
-      if (!usedToday.has(candidate)) return candidate;
+      if (usedToday.has(candidate)) continue;
+      const repeatsIngredient = lastIngredient && getMainIngredient?.(candidate) === lastIngredient;
+      if (!repeatsIngredient) return candidate;
+      if (fallback === undefined) fallback = candidate;
     }
+    if (fallback !== undefined) return fallback;
     // Collection smaller than meals-per-day: allow a within-day repeat.
     if (deck.pos >= deck.ids.length) {
       deck.ids = seededShuffle(deck.ids, rand);
@@ -119,6 +138,9 @@ export function generateMealPlan(
     const meals: MealSlot[] = config.mealTypes.map((type) => {
       const recipeId = draw(type, usedToday);
       usedToday.add(recipeId);
+      const ingredient = getMainIngredient?.(recipeId);
+      if (ingredient) lastMainIngredientByType.set(type, ingredient);
+      else lastMainIngredientByType.delete(type);
       return { type, recipeId };
     });
     days.push({ date: toDateString(date), meals });
