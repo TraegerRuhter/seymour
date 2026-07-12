@@ -55,6 +55,9 @@ and works offline as an installable PWA.
   Unconvertible units (cloves, pinches) never sum with unlike units. Checking off an item
   plays a drawn-checkmark + strikethrough animation and moves it to a collapsible Checked
   section. Inline edits override aggregation per item. Everything persists across reloads.
+  Every item remembers which recipe(s) it came from — a book icon jumps straight to the
+  recipe when there's only one source, or expands to a pick list of titles when several
+  planned meals share an ingredient.
 - **Pantry staples ("spice rack")** — Settings lets you list ingredients you always have on
   hand (salt, olive oil, flour…), normalized the same way recipe ingredients are so "Olive
   Oil" matches "olive oil". Anything on that list is left off the shopping list entirely

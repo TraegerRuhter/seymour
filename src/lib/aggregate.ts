@@ -10,6 +10,12 @@ interface Bucket {
   total: number;
   /** true when at least one contribution had no parseable quantity */
   hasUnquantified: boolean;
+  recipeIds: Set<string>;
+}
+
+/** An ingredient tagged with the recipe it came from, for "source recipe" links. */
+export interface SourcedIngredient extends Ingredient {
+  recipeId?: string;
 }
 
 /**
@@ -21,7 +27,7 @@ interface Bucket {
  * units ("clove", "pinch") stay separate so unlike things are never summed.
  */
 export function aggregateIngredients(
-  ingredients: Ingredient[],
+  ingredients: SourcedIngredient[],
   system: UnitSystem = 'imperial',
 ): ShoppingListItem[] {
   const buckets = new Map<string, Bucket>();
@@ -53,11 +59,12 @@ export function aggregateIngredients(
 
     let bucket = buckets.get(key);
     if (!bucket) {
-      bucket = { name, key, baseUnit, displayUnit, total: 0, hasUnquantified: false };
+      bucket = { name, key, baseUnit, displayUnit, total: 0, hasUnquantified: false, recipeIds: new Set() };
       buckets.set(key, bucket);
     }
     if (amount > 0) bucket.total += amount;
     else bucket.hasUnquantified = true;
+    if (ing.recipeId) bucket.recipeIds.add(ing.recipeId);
   }
 
   const items: ShoppingListItem[] = [];
@@ -75,6 +82,7 @@ export function aggregateIngredients(
       totalQuantity: quantity,
       unit,
       checked: false,
+      ...(bucket.recipeIds.size > 0 ? { recipeIds: [...bucket.recipeIds].sort() } : {}),
     });
   }
 
@@ -103,11 +111,11 @@ export function buildShoppingList(
   staples?: ReadonlySet<string>,
 ): ShoppingListItem[] {
   if (!plan) return [];
-  const all: Ingredient[] = [];
+  const all: SourcedIngredient[] = [];
   for (const day of plan) {
     for (const slot of day.meals) {
       const recipe = slot.recipeId ? recipes[slot.recipeId] : undefined;
-      if (recipe) all.push(...recipe.ingredients);
+      if (recipe) all.push(...recipe.ingredients.map((ing) => ({ ...ing, recipeId: recipe.id })));
     }
   }
   const filtered = staples && staples.size > 0 ? all.filter((i) => !staples.has(i.name)) : all;
