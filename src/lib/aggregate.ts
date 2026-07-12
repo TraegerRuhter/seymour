@@ -90,11 +90,17 @@ export function aggregateIngredients(
 /**
  * Collects every ingredient from the recipes referenced by a meal plan
  * (a recipe planned twice contributes twice) and aggregates them.
+ *
+ * `staples`, if given, is a set of normalized ingredient names (see
+ * `normalizeIngredientName`) the user already has on hand — a "spice rack" —
+ * and are excluded from the list entirely rather than shown as an item to
+ * buy.
  */
 export function buildShoppingList(
   plan: MealPlanDay[] | null,
   recipes: Record<string, Recipe>,
   system: UnitSystem = 'imperial',
+  staples?: ReadonlySet<string>,
 ): ShoppingListItem[] {
   if (!plan) return [];
   const all: Ingredient[] = [];
@@ -104,7 +110,8 @@ export function buildShoppingList(
       if (recipe) all.push(...recipe.ingredients);
     }
   }
-  return aggregateIngredients(all, system);
+  const filtered = staples && staples.size > 0 ? all.filter((i) => !staples.has(i.name)) : all;
+  return aggregateIngredients(filtered, system);
 }
 
 /**

@@ -55,6 +55,11 @@ and works offline as an installable PWA.
   Unconvertible units (cloves, pinches) never sum with unlike units. Checking off an item
   plays a drawn-checkmark + strikethrough animation and moves it to a collapsible Checked
   section. Inline edits override aggregation per item. Everything persists across reloads.
+- **Pantry staples ("spice rack")** — Settings lets you list ingredients you always have on
+  hand (salt, olive oil, flour…), normalized the same way recipe ingredients are so "Olive
+  Oil" matches "olive oil". Anything on that list is left off the shopping list entirely
+  rather than shown as an item to buy; removing a staple brings it back on the next
+  re-aggregation.
 - **Auto re-aggregation** — the list rebuilds whenever the plan or collection changes
   (regenerate, delete, edit…), carrying over checked state and manual edits.
 - **Backup** — Settings offers full JSON export and validated import. Both the exported bundle

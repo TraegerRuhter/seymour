@@ -129,7 +129,7 @@ export default function DangerZone() {
           <div>
             <p className="text-sm font-semibold text-terracotta-dark">Reset everything</p>
             <p className="text-xs text-charcoal/50">
-              Wipe all recipes, plans (including archive), and the shopping list.
+              Wipe all recipes, plans (including archive), the shopping list, and pantry staples.
             </p>
           </div>
           <ConfirmButton

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { exportBundle, importBundle, validateBundle } from '@/lib/actions';
-import { useRecipeStore, useShoppingStore, usePlanStore, useSettingsStore } from '@/lib/stores';
+import { addPantryStaple, exportBundle, importBundle, removePantryStaple, validateBundle } from '@/lib/actions';
+import { useRecipeStore, useShoppingStore, usePlanStore, usePantryStore, useSettingsStore } from '@/lib/stores';
 import { useTheme, type ThemePreference } from '@/lib/theme';
 import type { UnitSystem } from '@/lib/units';
 import DangerZone from '@/components/DangerZone';
@@ -31,6 +31,15 @@ export default function SettingsPage() {
   const [theme, setThemePref] = useTheme();
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const setUnitSystem = useSettingsStore((s) => s.setUnitSystem);
+  const staples = usePantryStore((s) => s.staples);
+  const [stapleInput, setStapleInput] = useState('');
+
+  function handleAddStaple(e: React.FormEvent) {
+    e.preventDefault();
+    if (!stapleInput.trim()) return;
+    addPantryStaple(stapleInput);
+    setStapleInput('');
+  }
 
   useEffect(() => {
     const onPrompt = (e: Event) => {
@@ -164,6 +173,51 @@ export default function SettingsPage() {
             </button>
           ))}
         </div>
+      </section>
+
+      <section id="pantry" aria-label="Pantry" className="glass-card space-y-3 p-5">
+        <div>
+          <h2 className="text-xl font-semibold">Spice rack</h2>
+          <p className="mt-1 text-sm text-charcoal/60">
+            List what you already keep on hand — staples here are left off your shopping list.
+          </p>
+        </div>
+        <form onSubmit={handleAddStaple} className="flex gap-2">
+          <input
+            value={stapleInput}
+            onChange={(e) => setStapleInput(e.target.value)}
+            placeholder="e.g. olive oil, salt, garlic powder"
+            className="input-base flex-1"
+            aria-label="Add a pantry staple"
+          />
+          <button type="submit" className="btn-secondary px-4">
+            Add
+          </button>
+        </form>
+        {staples.length > 0 ? (
+          <ul className="flex flex-wrap gap-2">
+            {staples.map((name) => (
+              <li
+                key={name}
+                className="inline-flex items-center gap-1.5 rounded-full bg-olive/15 px-3 py-1 text-sm capitalize"
+              >
+                {name}
+                <button
+                  type="button"
+                  onClick={() => removePantryStaple(name)}
+                  aria-label={`Remove ${name} from the spice rack`}
+                  className="text-charcoal/40 hover:text-charcoal"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-charcoal/40">
+            Nothing yet — add staples like salt, flour, or olive oil.
+          </p>
+        )}
       </section>
 
       <section aria-label="Backup" className="glass-card space-y-4 p-5">

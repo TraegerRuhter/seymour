@@ -228,6 +228,41 @@ export const useShoppingStore = create<ShoppingState>()(
   ),
 );
 
+// --- Pantry staples ("spice rack") ---
+
+interface PantryState {
+  /** Normalized ingredient names (see normalizeIngredientName) the user already has on hand. */
+  staples: string[];
+  hasHydrated: boolean;
+  addStaple: (name: string) => void;
+  removeStaple: (name: string) => void;
+  replaceAll: (staples: string[]) => void;
+}
+
+export const usePantryStore = create<PantryState>()(
+  persist(
+    (set) => ({
+      staples: [],
+      hasHydrated: false,
+      addStaple: (name) =>
+        set((s) => (s.staples.includes(name) ? s : { staples: [...s.staples, name].sort() })),
+      removeStaple: (name) =>
+        set((s) => ({ staples: s.staples.filter((n) => n !== name) })),
+      replaceAll: (staples) => set({ staples }),
+    }),
+    {
+      name: 'pantry',
+      storage: createJSONStorage(() => makeStorage('pantry')),
+      partialize: (s) => ({ staples: s.staples }),
+      version: 1,
+      migrate: (persisted) => {
+        const s = (persisted ?? {}) as Partial<{ staples: string[] }>;
+        return { staples: s.staples ?? [] };
+      },
+    },
+  ),
+);
+
 // --- Settings ---
 
 interface SettingsState {
@@ -260,7 +295,7 @@ export const useSettingsStore = create<SettingsState>()(
 // Persist rehydrates asynchronously from IndexedDB; pages gate rendering on
 // this so persisted state never flashes in as empty.
 
-const hydrationFlags = { recipes: false, plan: false, shopping: false, settings: false };
+const hydrationFlags = { recipes: false, plan: false, shopping: false, settings: false, pantry: false };
 
 function markHydrated(key: keyof typeof hydrationFlags, store: { setState: (s: { hasHydrated: boolean }) => void }) {
   hydrationFlags[key] = true;
@@ -272,11 +307,13 @@ if (typeof window !== 'undefined') {
   usePlanStore.persist.onFinishHydration(() => markHydrated('plan', usePlanStore));
   useShoppingStore.persist.onFinishHydration(() => markHydrated('shopping', useShoppingStore));
   useSettingsStore.persist.onFinishHydration(() => markHydrated('settings', useSettingsStore));
+  usePantryStore.persist.onFinishHydration(() => markHydrated('pantry', usePantryStore));
   // If rehydration already finished before listeners attached:
   if (useRecipeStore.persist.hasHydrated()) markHydrated('recipes', useRecipeStore);
   if (usePlanStore.persist.hasHydrated()) markHydrated('plan', usePlanStore);
   if (useShoppingStore.persist.hasHydrated()) markHydrated('shopping', useShoppingStore);
   if (useSettingsStore.persist.hasHydrated()) markHydrated('settings', useSettingsStore);
+  if (usePantryStore.persist.hasHydrated()) markHydrated('pantry', usePantryStore);
 }
 
 /** True once all stores have rehydrated from IndexedDB. */
@@ -285,5 +322,6 @@ export function useAllHydrated(): boolean {
   const b = usePlanStore((s) => s.hasHydrated);
   const c = useShoppingStore((s) => s.hasHydrated);
   const d = useSettingsStore((s) => s.hasHydrated);
-  return a && b && c && d;
+  const e = usePantryStore((s) => s.hasHydrated);
+  return a && b && c && d && e;
 }
