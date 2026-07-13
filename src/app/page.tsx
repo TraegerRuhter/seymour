@@ -14,10 +14,7 @@ export default function DashboardPage() {
   const items = useShoppingStore((s) => s.items);
 
   const recipeList = useMemo(
-    () =>
-      Object.values(recipes).sort(
-        (a, b) => +new Date(b.dateAdded) - +new Date(a.dateAdded),
-      ),
+    () => Object.values(recipes).sort((a, b) => +new Date(b.dateAdded) - +new Date(a.dateAdded)),
     [recipes],
   );
   const remaining = useMemo(() => items.filter((i) => !i.checked).length, [items]);
@@ -105,7 +102,9 @@ export default function DashboardPage() {
               {plan ? 'View meal plan' : 'Generate meal plan'}
             </h2>
             <p className="text-sm text-charcoal/60">
-              {plan ? `${plan.length} day${plan.length === 1 ? '' : 's'} planned` : 'Random picks from your collection'}
+              {plan
+                ? `${plan.length} day${plan.length === 1 ? '' : 's'} planned`
+                : 'Random picks from your collection'}
             </p>
           </div>
         </Link>
@@ -146,7 +145,10 @@ export default function DashboardPage() {
           <section aria-label="Shopping list preview">
             <div className="mb-3 flex items-baseline justify-between">
               <h2 className="text-xl font-semibold">Shopping list</h2>
-              <Link href="/shopping-list" className="text-sm font-medium text-terracotta hover:underline">
+              <Link
+                href="/shopping-list"
+                className="text-sm font-medium text-terracotta hover:underline"
+              >
                 View full list
               </Link>
             </div>

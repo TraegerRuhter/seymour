@@ -21,11 +21,16 @@ interface AiExtractOptions {
  * text" import path (fed exactly what the user pasted). Returns null when no
  * API key is configured or the model finds no recipe.
  */
-export async function extractRecipeViaAI({ text, sourceUrl }: AiExtractOptions): Promise<ParsedRecipeData | null> {
+export async function extractRecipeViaAI({
+  text,
+  sourceUrl,
+}: AiExtractOptions): Promise<ParsedRecipeData | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
 
-  const userContent = sourceUrl ? `Page URL: ${sourceUrl}\n\nPage text:\n${text}` : `Pasted text:\n${text}`;
+  const userContent = sourceUrl
+    ? `Page URL: ${sourceUrl}\n\nPage text:\n${text}`
+    : `Pasted text:\n${text}`;
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -57,7 +62,11 @@ export async function extractRecipeViaAI({ text, sourceUrl }: AiExtractOptions):
     ingredientLines?: string[];
     instructions?: string[];
   };
-  if (!parsed.title || !Array.isArray(parsed.ingredientLines) || parsed.ingredientLines.length === 0) {
+  if (
+    !parsed.title ||
+    !Array.isArray(parsed.ingredientLines) ||
+    parsed.ingredientLines.length === 0
+  ) {
     return null;
   }
   return {

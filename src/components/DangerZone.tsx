@@ -69,10 +69,7 @@ export default function DangerZone() {
   const everythingEmpty = recipeCount === 0 && archivedCount === 0 && !hasPlan && itemCount === 0;
 
   return (
-    <section
-      aria-label="Manage data"
-      className="glass-card space-y-4 border-terracotta/20 p-5"
-    >
+    <section aria-label="Manage data" className="glass-card space-y-4 border-terracotta/20 p-5">
       <div>
         <h2 className="text-xl font-semibold">Manage data</h2>
         <p className="mt-1 text-sm text-charcoal/60">
@@ -114,7 +111,8 @@ export default function DangerZone() {
           <div>
             <p className="text-sm font-medium">Delete all recipes</p>
             <p className="text-xs text-charcoal/50">
-              Removes {recipeCount} recipe{recipeCount === 1 ? '' : 's'} and clears the current plan.
+              Removes {recipeCount} recipe{recipeCount === 1 ? '' : 's'} and clears the current
+              plan.
             </p>
           </div>
           <ConfirmButton

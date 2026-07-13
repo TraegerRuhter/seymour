@@ -3,13 +3,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import localforage from 'localforage';
-import type {
-  ArchivedPlan,
-  MealPlanConfig,
-  MealPlanDay,
-  Recipe,
-  ShoppingListItem,
-} from './types';
+import type { ArchivedPlan, MealPlanConfig, MealPlanDay, Recipe, ShoppingListItem } from './types';
 import type { UnitSystem } from './units';
 
 /**
@@ -60,16 +54,14 @@ export const useRecipeStore = create<RecipeState>()(
     (set) => ({
       recipes: {},
       hasHydrated: false,
-      addRecipe: (recipe) =>
-        set((s) => ({ recipes: { ...s.recipes, [recipe.id]: recipe } })),
+      addRecipe: (recipe) => set((s) => ({ recipes: { ...s.recipes, [recipe.id]: recipe } })),
       addRecipes: (list) =>
         set((s) => {
           const next = { ...s.recipes };
           for (const r of list) next[r.id] = r;
           return { recipes: next };
         }),
-      updateRecipe: (recipe) =>
-        set((s) => ({ recipes: { ...s.recipes, [recipe.id]: recipe } })),
+      updateRecipe: (recipe) => set((s) => ({ recipes: { ...s.recipes, [recipe.id]: recipe } })),
       removeRecipe: (id) =>
         set((s) => {
           const next = { ...s.recipes };
@@ -130,8 +122,7 @@ export const usePlanStore = create<PlanState>()(
         });
       },
       clearPlan: () => set({ config: null, plan: null }),
-      pushArchived: (entry) =>
-        set((s) => ({ archivedPlans: [entry, ...s.archivedPlans] })),
+      pushArchived: (entry) => set((s) => ({ archivedPlans: [entry, ...s.archivedPlans] })),
       deleteArchived: (id) =>
         set((s) => ({ archivedPlans: s.archivedPlans.filter((a) => a.id !== id) })),
       clearArchived: () => set({ archivedPlans: [] }),
@@ -144,9 +135,7 @@ export const usePlanStore = create<PlanState>()(
               : {
                   ...day,
                   updatedAt: new Date().toISOString(),
-                  meals: day.meals.map((m, mi) =>
-                    mi !== mealIndex ? m : { ...m, recipeId },
-                  ),
+                  meals: day.meals.map((m, mi) => (mi !== mealIndex ? m : { ...m, recipeId })),
                 },
           );
           return { plan };
@@ -167,9 +156,7 @@ export const usePlanStore = create<PlanState>()(
             return {
               ...day,
               updatedAt: now,
-              meals: day.meals.map((m) =>
-                m.recipeId === recipeId ? { ...m, recipeId: '' } : m,
-              ),
+              meals: day.meals.map((m) => (m.recipeId === recipeId ? { ...m, recipeId: '' } : m)),
             };
           });
           return { plan };
@@ -226,7 +213,11 @@ export const useShoppingStore = create<ShoppingState>()(
         set((s) => ({
           items: s.items.map((i) =>
             i.id === id
-              ? { ...i, manualOverride: text.trim() || undefined, updatedAt: new Date().toISOString() }
+              ? {
+                  ...i,
+                  manualOverride: text.trim() || undefined,
+                  updatedAt: new Date().toISOString(),
+                }
               : i,
           ),
         })),
@@ -280,7 +271,8 @@ export const usePantryStore = create<PantryState>()(
           staples: s.staples.filter((n) => n !== name),
           updatedAt: new Date().toISOString(),
         })),
-      replaceAll: (staples, updatedAt) => set({ staples, updatedAt: updatedAt ?? new Date().toISOString() }),
+      replaceAll: (staples, updatedAt) =>
+        set({ staples, updatedAt: updatedAt ?? new Date().toISOString() }),
     }),
     {
       name: 'pantry',
@@ -330,7 +322,8 @@ export const useSettingsStore = create<SettingsState>()(
       unitSystem: 'imperial',
       updatedAt: null,
       hasHydrated: false,
-      setUnitSystem: (unitSystem, updatedAt) => set({ unitSystem, updatedAt: updatedAt ?? new Date().toISOString() }),
+      setUnitSystem: (unitSystem, updatedAt) =>
+        set({ unitSystem, updatedAt: updatedAt ?? new Date().toISOString() }),
     }),
     {
       name: 'settings',
@@ -338,7 +331,10 @@ export const useSettingsStore = create<SettingsState>()(
       partialize: (s) => ({ unitSystem: s.unitSystem, updatedAt: s.updatedAt }),
       version: 1,
       migrate: (persisted) => {
-        const s = (persisted ?? {}) as Partial<{ unitSystem: UnitSystem; updatedAt: string | null }>;
+        const s = (persisted ?? {}) as Partial<{
+          unitSystem: UnitSystem;
+          updatedAt: string | null;
+        }>;
         return { unitSystem: s.unitSystem ?? 'imperial', updatedAt: s.updatedAt ?? null };
       },
     },
@@ -349,9 +345,18 @@ export const useSettingsStore = create<SettingsState>()(
 // Persist rehydrates asynchronously from IndexedDB; pages gate rendering on
 // this so persisted state never flashes in as empty.
 
-const hydrationFlags = { recipes: false, plan: false, shopping: false, settings: false, pantry: false };
+const hydrationFlags = {
+  recipes: false,
+  plan: false,
+  shopping: false,
+  settings: false,
+  pantry: false,
+};
 
-function markHydrated(key: keyof typeof hydrationFlags, store: { setState: (s: { hasHydrated: boolean }) => void }) {
+function markHydrated(
+  key: keyof typeof hydrationFlags,
+  store: { setState: (s: { hasHydrated: boolean }) => void },
+) {
   hydrationFlags[key] = true;
   store.setState({ hasHydrated: true });
 }

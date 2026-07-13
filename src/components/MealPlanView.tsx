@@ -14,17 +14,13 @@ function dayHeading(dateStr: string): string {
   const date = new Date(y, m - 1, d);
   const weekday = date.toLocaleDateString(undefined, { weekday: 'short' });
   const monthDay = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  return dateStr === toLocalDateString(new Date()) ? `Today · ${monthDay}` : `${weekday} · ${monthDay}`;
+  return dateStr === toLocalDateString(new Date())
+    ? `Today · ${monthDay}`
+    : `${weekday} · ${monthDay}`;
 }
 
 /** A single meal tile. Empty slots offer a manual picker; filled slots offer a shuffle (random swap) and a pencil (manual change). */
-function MealTile({
-  dayIndex,
-  mealIndex,
-}: {
-  dayIndex: number;
-  mealIndex: number;
-}) {
+function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number }) {
   const slot = usePlanStore((s) => s.plan?.[dayIndex]?.meals[mealIndex]);
   const recipes = useRecipeStore((s) => s.recipes);
   const [picking, setPicking] = useState(false);
@@ -49,7 +45,9 @@ function MealTile({
           <select
             autoFocus
             aria-label={
-              recipe ? `Change the recipe for ${MEAL_TYPE_LABELS[slot.type]}` : `Pick a recipe for ${MEAL_TYPE_LABELS[slot.type]}`
+              recipe
+                ? `Change the recipe for ${MEAL_TYPE_LABELS[slot.type]}`
+                : `Pick a recipe for ${MEAL_TYPE_LABELS[slot.type]}`
             }
             className="input-base mt-2 py-1.5 text-sm"
             defaultValue={recipe?.id ?? ''}

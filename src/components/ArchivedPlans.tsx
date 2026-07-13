@@ -23,7 +23,10 @@ export default function ArchivedPlans() {
         aria-expanded={open}
         className="flex items-center gap-2 text-sm font-semibold text-charcoal/60"
       >
-        <span aria-hidden className={`inline-block transition-transform ${open ? 'rotate-90' : ''}`}>
+        <span
+          aria-hidden
+          className={`inline-block transition-transform ${open ? 'rotate-90' : ''}`}
+        >
           ▸
         </span>
         Archived plans ({archived.length})

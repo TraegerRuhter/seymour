@@ -45,7 +45,10 @@ export default function RecipeDetailPage() {
         )}
         <div className="p-6">
           <h1 className="text-3xl font-bold">{recipe.title}</h1>
-          {(recipe.category || recipe.mainIngredient || recipe.cookTimeMinutes != null || recipe.mealTypes?.length) && (
+          {(recipe.category ||
+            recipe.mainIngredient ||
+            recipe.cookTimeMinutes != null ||
+            recipe.mealTypes?.length) && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {recipe.category && (
                 <span className="rounded-full bg-terracotta/10 px-2.5 py-1 text-xs font-medium text-terracotta-dark">
@@ -63,7 +66,10 @@ export default function RecipeDetailPage() {
                 </span>
               )}
               {recipe.mealTypes?.map((t) => (
-                <span key={t} className="rounded-full bg-olive/10 px-2.5 py-1 text-xs font-medium text-olive-dark">
+                <span
+                  key={t}
+                  className="rounded-full bg-olive/10 px-2.5 py-1 text-xs font-medium text-olive-dark"
+                >
                   {MEAL_TYPE_LABELS[t]}
                 </span>
               ))}
@@ -104,10 +110,18 @@ export default function RecipeDetailPage() {
             {confirming ? (
               <span className="inline-flex items-center gap-2 rounded-full bg-terracotta/10 px-3 py-1.5 text-sm">
                 Delete this recipe?
-                <button type="button" onClick={handleDelete} className="font-semibold text-terracotta-dark hover:underline">
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="font-semibold text-terracotta-dark hover:underline"
+                >
                   Yes, delete
                 </button>
-                <button type="button" onClick={() => setConfirming(false)} className="text-charcoal/60 hover:underline">
+                <button
+                  type="button"
+                  onClick={() => setConfirming(false)}
+                  className="text-charcoal/60 hover:underline"
+                >
                   Cancel
                 </button>
               </span>

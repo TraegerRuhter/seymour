@@ -61,7 +61,11 @@ export default function PlanPage() {
         <>
           {/* Plan actions */}
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={regeneratePlan} className="btn-secondary px-4 py-2 text-sm">
+            <button
+              type="button"
+              onClick={regeneratePlan}
+              className="btn-secondary px-4 py-2 text-sm"
+            >
               <ShuffleIcon className="h-4 w-4" /> Shuffle
             </button>
             <button

@@ -25,14 +25,20 @@ import {
   pushSettings,
   pushShoppingItemState,
 } from './sync';
-import { usePantryStore, usePlanStore, useRecipeStore, useSettingsStore, useShoppingStore } from './stores';
+import {
+  usePantryStore,
+  usePlanStore,
+  useRecipeStore,
+  useSettingsStore,
+  useShoppingStore,
+} from './stores';
 import type { UnitSystem } from './units';
 
 /**
  * Cross-store orchestration lives here so individual stores stay decoupled.
  * Every mutation that can affect the active plan re-derives the shopping
  * list, carrying over checked state and manual overrides.
- * 
+ *
  * Shopping list updates are debounced to avoid excessive re-aggregation
  * during rapid mutations (e.g., form edits, plan regenerations).
  */
@@ -42,7 +48,7 @@ let debounceTimeout: NodeJS.Timeout | null = null;
 export function regenerateShoppingList(): void {
   // Clear any pending debounce
   if (debounceTimeout) clearTimeout(debounceTimeout);
-  
+
   // Debounce for 50ms to batch rapid updates (form typing, quick actions)
   debounceTimeout = setTimeout(() => {
     const { plan } = usePlanStore.getState();
@@ -301,7 +307,8 @@ export function exportBundle(): ExportBundle {
 export function validateBundle(data: unknown): data is ExportBundle {
   if (typeof data !== 'object' || data === null) return false;
   const b = data as Partial<ExportBundle>;
-  if (typeof b.version !== 'number' || b.version < 1 || b.version > CURRENT_BUNDLE_VERSION) return false;
+  if (typeof b.version !== 'number' || b.version < 1 || b.version > CURRENT_BUNDLE_VERSION)
+    return false;
   if (typeof b.recipes !== 'object' || b.recipes === null) return false;
   for (const r of Object.values(b.recipes)) {
     if (typeof r.id !== 'string' || typeof r.title !== 'string') return false;
@@ -340,7 +347,9 @@ function migrateBundle(bundle: ExportBundle): ExportBundle {
 export function importBundle(bundle: ExportBundle): void {
   const migrated = migrateBundle(bundle);
   useRecipeStore.getState().replaceAll(migrated.recipes);
-  usePlanStore.getState().replaceAll(migrated.mealPlanConfig, migrated.mealPlan, migrated.archivedPlans ?? []);
+  usePlanStore
+    .getState()
+    .replaceAll(migrated.mealPlanConfig, migrated.mealPlan, migrated.archivedPlans ?? []);
   useShoppingStore.getState().replaceAll(migrated.shoppingList);
   usePantryStore.getState().replaceAll(migrated.pantryStaples ?? []);
 }

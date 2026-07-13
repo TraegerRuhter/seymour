@@ -77,7 +77,8 @@ export default function RecipeCard({
           )}
           <h3 className="line-clamp-2 text-xl font-semibold leading-snug">{recipe.title}</h3>
           <p className="mt-1 text-sm text-charcoal/50">
-            {recipe.ingredients.length} ingredient{recipe.ingredients.length === 1 ? '' : 's'} · Added {added}
+            {recipe.ingredients.length} ingredient{recipe.ingredients.length === 1 ? '' : 's'} ·
+            Added {added}
           </p>
         </div>
       </Link>
@@ -109,10 +110,7 @@ function Thumb({
     );
   }
   return (
-    <div
-      aria-hidden
-      className={`${className} flex items-center justify-center bg-olive/15`}
-    >
+    <div aria-hidden className={`${className} flex items-center justify-center bg-olive/15`}>
       <BowlIcon className="h-1/2 w-1/2 max-h-12 max-w-12 opacity-80" />
     </div>
   );

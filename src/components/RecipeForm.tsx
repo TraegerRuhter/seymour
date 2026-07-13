@@ -37,7 +37,9 @@ export default function RecipeForm({
   const [sourceUrl, setSourceUrl] = useState(existing?.sourceUrl ?? initialValues?.sourceUrl ?? '');
   const [imageUrl, setImageUrl] = useState(existing?.imageUrl ?? initialValues?.imageUrl ?? '');
   const [ingredientsText, setIngredientsText] = useState(
-    existing?.ingredients.map((i) => i.originalString).join('\n') ?? initialValues?.ingredientsText ?? '',
+    existing?.ingredients.map((i) => i.originalString).join('\n') ??
+      initialValues?.ingredientsText ??
+      '',
   );
   const [instructionsText, setInstructionsText] = useState(
     existing?.instructions.join('\n') ?? initialValues?.instructionsText ?? '',
@@ -51,12 +53,17 @@ export default function RecipeForm({
   const [error, setError] = useState('');
 
   function toggleMealType(t: MealType) {
-    setMealTypes((current) => (current.includes(t) ? current.filter((x) => x !== t) : [...current, t]));
+    setMealTypes((current) =>
+      current.includes(t) ? current.filter((x) => x !== t) : [...current, t],
+    );
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const ingredientLines = ingredientsText.split('\n').map((l) => l.trim()).filter(Boolean);
+    const ingredientLines = ingredientsText
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
     if (!title.trim()) {
       setError('Give the recipe a title.');
       return;
@@ -72,12 +79,16 @@ export default function RecipeForm({
       sourceUrl: sourceUrl.trim(),
       imageUrl: imageUrl.trim() || undefined,
       ingredients: parseIngredientLines(ingredientLines),
-      instructions: instructionsText.split('\n').map((l) => l.trim()).filter(Boolean),
+      instructions: instructionsText
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean),
       dateAdded: existing?.dateAdded ?? new Date().toISOString(),
       mealTypes: mealTypes.length ? mealTypes : undefined,
       category: category.trim() || undefined,
       mainIngredient: mainIngredient.trim() || undefined,
-      cookTimeMinutes: cookTimeMinutes != null && !Number.isNaN(cookTimeMinutes) ? cookTimeMinutes : undefined,
+      cookTimeMinutes:
+        cookTimeMinutes != null && !Number.isNaN(cookTimeMinutes) ? cookTimeMinutes : undefined,
     };
     saveRecipe(recipe);
     router.push(`/recipes/${recipe.id}`);
@@ -116,7 +127,10 @@ export default function RecipeForm({
 
       <div>
         <h2 className="mb-2 text-sm font-medium">
-          Meals <span className="font-normal text-charcoal/40">(optional — leave blank to fit any meal)</span>
+          Meals{' '}
+          <span className="font-normal text-charcoal/40">
+            (optional — leave blank to fit any meal)
+          </span>
         </h2>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Meal types">
           {MEAL_TYPES.map((t) => {
@@ -211,7 +225,10 @@ export default function RecipeForm({
       </div>
 
       {error && (
-        <p role="alert" className="rounded-xl bg-terracotta/10 px-4 py-2 text-sm text-terracotta-dark">
+        <p
+          role="alert"
+          className="rounded-xl bg-terracotta/10 px-4 py-2 text-sm text-terracotta-dark"
+        >
           {error}
         </p>
       )}

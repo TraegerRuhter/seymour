@@ -97,7 +97,12 @@ export default function PlanGenerator({
         )}
       </div>
 
-      <button type="button" onClick={handleGenerate} disabled={!canGenerate} className="btn-primary">
+      <button
+        type="button"
+        onClick={handleGenerate}
+        disabled={!canGenerate}
+        className="btn-primary"
+      >
         {hasExistingPlan ? 'Generate & replace plan' : 'Generate plan'}
       </button>
     </section>

@@ -22,7 +22,11 @@ function toInitialValues(data: ParsedRecipeData): RecipeFormInitialValues {
  * Works even when the URL importer can't reach or parse a page — the user
  * does the fetching by hand, so nothing about the site can block it.
  */
-export default function PasteImport({ onExtracted }: { onExtracted: (values: RecipeFormInitialValues) => void }) {
+export default function PasteImport({
+  onExtracted,
+}: {
+  onExtracted: (values: RecipeFormInitialValues) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -83,10 +87,10 @@ export default function PasteImport({ onExtracted }: { onExtracted: (values: Rec
           Paste the recipe page&apos;s text
         </label>
         <p className="mb-2 text-xs text-charcoal/50">
-          Open the recipe on its site, select all (⌘/Ctrl+A) and copy, then paste the whole
-          thing here — this works even when Seymour can&apos;t fetch or parse the page itself,
-          since your browser did the hard part. We&apos;ll pull out the title, ingredients, and
-          steps below for you to review before saving.
+          Open the recipe on its site, select all (⌘/Ctrl+A) and copy, then paste the whole thing
+          here — this works even when Seymour can&apos;t fetch or parse the page itself, since your
+          browser did the hard part. We&apos;ll pull out the title, ingredients, and steps below for
+          you to review before saving.
         </p>
         <textarea
           id="paste-text"
@@ -100,13 +104,21 @@ export default function PasteImport({ onExtracted }: { onExtracted: (values: Rec
       </div>
 
       {error && (
-        <p role="alert" className="rounded-xl bg-terracotta/10 px-4 py-2 text-sm text-terracotta-dark">
+        <p
+          role="alert"
+          className="rounded-xl bg-terracotta/10 px-4 py-2 text-sm text-terracotta-dark"
+        >
           {error}
         </p>
       )}
 
       <div className="flex items-center gap-3">
-        <button type="button" onClick={handleExtract} className="btn-primary" disabled={busy || !text.trim()}>
+        <button
+          type="button"
+          onClick={handleExtract}
+          className="btn-primary"
+          disabled={busy || !text.trim()}
+        >
           {busy ? (
             <>
               <span

@@ -11,7 +11,10 @@ const RATE_LIMIT = 30;
 
 export async function POST(req: NextRequest) {
   if (isRateLimited(`parse-text:${clientIp(req)}`, RATE_LIMIT)) {
-    return NextResponse.json({ error: 'Rate limit exceeded. Try again in a minute.' }, { status: 429 });
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Try again in a minute.' },
+      { status: 429 },
+    );
   }
 
   let body: { text?: unknown };
@@ -52,7 +55,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       status: 'error',
       message:
-        "Couldn’t find an ingredients or instructions section in that text. Double-check what you copied, or fill in the fields by hand below.",
+        'Couldn’t find an ingredients or instructions section in that text. Double-check what you copied, or fill in the fields by hand below.',
     });
   }
 

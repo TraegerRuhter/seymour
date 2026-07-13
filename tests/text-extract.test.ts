@@ -16,7 +16,11 @@ test('extracts a clean, simple paste', () => {
   );
   assert.ok(result);
   assert.equal(result!.title, 'Weeknight Chicken Curry');
-  assert.deepEqual(result!.ingredientLines, ['2 chicken breasts', '1 onion, diced', '2 tbsp curry powder']);
+  assert.deepEqual(result!.ingredientLines, [
+    '2 chicken breasts',
+    '1 onion, diced',
+    '2 tbsp curry powder',
+  ]);
   assert.deepEqual(result!.instructions, [
     'Sauté the onion.',
     'Add the chicken and curry powder.',
@@ -76,13 +80,17 @@ test('is case-insensitive on section headings', () => {
 });
 
 test('strips leading step numbers from instructions', () => {
-  const result = extractRecipeFromText('Eggs\nIngredients\n2 eggs\nInstructions\nStep 1: Crack the eggs.\n2) Whisk them.');
+  const result = extractRecipeFromText(
+    'Eggs\nIngredients\n2 eggs\nInstructions\nStep 1: Crack the eggs.\n2) Whisk them.',
+  );
   assert.ok(result);
   assert.deepEqual(result!.instructions, ['Crack the eggs.', 'Whisk them.']);
 });
 
 test('returns null when no recognizable sections exist', () => {
-  const result = extractRecipeFromText('Just a random paragraph about the weather today, nothing recipe-related.');
+  const result = extractRecipeFromText(
+    'Just a random paragraph about the weather today, nothing recipe-related.',
+  );
   assert.equal(result, null);
 });
 
