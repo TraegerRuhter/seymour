@@ -3,6 +3,7 @@ import './globals.css';
 import BottomNav from '@/components/BottomNav';
 import Header from '@/components/Header';
 import AppProviders from '@/components/AppProviders';
+import { AuthProvider } from '@/lib/auth';
 import { THEME_INIT_SCRIPT } from '@/lib/theme-script';
 
 export const metadata: Metadata = {
@@ -51,16 +52,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-dvh font-sans">
-        <AppProviders>
-          <Header />
-          {/* Bottom padding clears the fixed nav *and* the home-indicator
-              inset the nav now sits above, so the last of the content is never
-              hidden behind it. */}
-          <main className="mx-auto w-full max-w-6xl px-4 pb-[calc(7rem_+_var(--safe-bottom))] pt-4 lg:px-8 lg:pb-12">
-            {children}
-          </main>
-          <BottomNav />
-        </AppProviders>
+        <AuthProvider>
+          <AppProviders>
+            <Header />
+            {/* Bottom padding clears the fixed nav *and* the home-indicator
+                inset the nav now sits above, so the last of the content is never
+                hidden behind it. */}
+            <main className="mx-auto w-full max-w-6xl px-4 pb-[calc(7rem_+_var(--safe-bottom))] pt-4 lg:px-8 lg:pb-12">
+              {children}
+            </main>
+            <BottomNav />
+          </AppProviders>
+        </AuthProvider>
       </body>
     </html>
   );

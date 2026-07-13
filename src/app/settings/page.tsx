@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { addPantryStaple, exportBundle, importBundle, removePantryStaple, validateBundle } from '@/lib/actions';
 import { useRecipeStore, useShoppingStore, usePlanStore, usePantryStore, useSettingsStore } from '@/lib/stores';
+import { useAuth } from '@/lib/auth';
+import { getSupabaseClient } from '@/lib/supabase';
 import { useTheme, type ThemePreference } from '@/lib/theme';
 import type { UnitSystem } from '@/lib/units';
 import DangerZone from '@/components/DangerZone';
@@ -29,6 +32,8 @@ export default function SettingsPage() {
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [theme, setThemePref] = useTheme();
+  const { user, signOut } = useAuth();
+  const syncConfigured = getSupabaseClient() !== null;
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const setUnitSystem = useSettingsStore((s) => s.setUnitSystem);
   const staples = usePantryStore((s) => s.staples);
@@ -116,6 +121,35 @@ export default function SettingsPage() {
           <p className="text-sm text-charcoal/60">list items</p>
         </div>
       </section>
+
+      {syncConfigured && (
+        <section aria-label="Account" className="glass-card space-y-3 p-5">
+          <div>
+            <h2 className="text-xl font-semibold">Account</h2>
+            <p className="mt-1 text-sm text-charcoal/60">
+              {user
+                ? 'Your recipes, plan, and shopping list sync across your signed-in devices.'
+                : 'Sign in to sync your recipes, plan, and shopping list across devices — fully optional, Seymour works the same without it.'}
+            </p>
+          </div>
+          {user ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-medium">{user.email}</p>
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="btn-secondary px-4 py-1.5 text-sm"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <Link href="/login" className="btn-primary inline-flex w-fit">
+              Sign in to sync
+            </Link>
+          )}
+        </section>
+      )}
 
       <section aria-label="Appearance" className="glass-card space-y-3 p-5">
         <div>
