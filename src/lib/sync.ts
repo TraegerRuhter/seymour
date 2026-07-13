@@ -642,3 +642,66 @@ export async function pullAll(): Promise<void> {
     pullSettings(),
   ]);
 }
+
+// --- Realtime -------------------------------------------------------------
+
+const SYNCED_TABLES = [
+  'recipes',
+  'shopping_list_items',
+  'meal_plan_config',
+  'meal_plan_days',
+  'archived_plans',
+  'pantry_staples',
+  'settings',
+  'deleted_records',
+] as const;
+
+let realtimePullTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleRealtimePull(): void {
+  if (realtimePullTimer) clearTimeout(realtimePullTimer);
+  realtimePullTimer = setTimeout(() => {
+    realtimePullTimer = null;
+    void pullAll();
+  }, 500);
+}
+
+/**
+ * Subscribes to live Postgres changes for the signed-in user's rows across
+ * every synced table, so a change made on one device shows up on another
+ * without waiting for the next app-foreground pull. A burst of writes (e.g.
+ * a full plan regenerate touching many meal_plan_days rows at once)
+ * triggers one debounced re-pull, not one per row.
+ *
+ * The device that made a change also receives its own event back and
+ * re-pulls too — harmless, since pulling is idempotent, but not filtered
+ * out; doing so would mean tracking a per-client id purely to skip one
+ * redundant no-op fetch.
+ *
+ * Returns an unsubscribe function — call it when the caller unmounts or the
+ * user signs out. A no-op subscription (whose unsubscribe does nothing) is
+ * returned when accounts aren't configured or no one is signed in.
+ */
+export function subscribeRealtime(): () => void {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return () => {};
+
+  const channel = supabase.channel(`sync:${userId}`);
+  for (const table of SYNCED_TABLES) {
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table, filter: `user_id=eq.${userId}` },
+      scheduleRealtimePull,
+    );
+  }
+  channel.subscribe();
+
+  return () => {
+    if (realtimePullTimer) {
+      clearTimeout(realtimePullTimer);
+      realtimePullTimer = null;
+    }
+    void supabase.removeChannel(channel);
+  };
+}
