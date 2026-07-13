@@ -243,6 +243,16 @@ export function PencilIcon(p: IconProps) {
   );
 }
 
+export function MoreIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <circle cx="12" cy="6" r="2.1" fill={T} />
+      <circle cx="12" cy="12" r="2.1" fill={O} />
+      <circle cx="12" cy="18" r="2.1" fill={OD} />
+    </Svg>
+  );
+}
+
 export function TrashIcon(p: IconProps) {
   return (
     <Svg {...p}>

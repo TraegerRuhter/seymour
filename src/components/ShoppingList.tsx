@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import type { ShoppingListItem } from '@/lib/types';
+import type { Recipe, ShoppingListItem } from '@/lib/types';
 import { useRecipeStore, useShoppingStore } from '@/lib/stores';
-import { setShoppingItemOverride, toggleShoppingItem } from '@/lib/actions';
+import { addPantryStaple, setShoppingItemOverride, toggleShoppingItem } from '@/lib/actions';
 import { displayUnit, formatAmount } from '@/lib/units';
 import { categorize, CATEGORY_ORDER, type Category } from '@/lib/categories';
 import { DURATION, EASE, enter, fadeRise, layoutSpring, listRowExit } from '@/lib/motion';
@@ -18,6 +19,7 @@ import {
   PantryIcon,
   SpicesIcon,
   BasketIcon,
+  MoreIcon,
   PencilIcon,
   RecipesIcon,
   SparkleIcon,
@@ -55,6 +57,137 @@ const CATEGORY_ICON: Record<Category, IconComponent> = {
 };
 
 /**
+ * Overflow menu for a row's actions: view the source recipe(s), quick-add
+ * the ingredient to the pantry ("spice rack"), and edit. Split into an
+ * explicit link per source recipe rather than a single "view" affordance —
+ * a shared icon that either navigated directly (one source) or expanded a
+ * list (several) read as "the button only goes to one recipe" when there
+ * were actually more, since nothing distinguished the two behaviors.
+ */
+function RowMenu({
+  item,
+  sourceRecipes,
+  editable,
+  onEdit,
+}: {
+  item: ShoppingListItem;
+  sourceRecipes: Recipe[];
+  editable: boolean;
+  onEdit: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState<{ top?: number; bottom?: number; right: number } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Portaled to <body> and positioned via getBoundingClientRect rather than
+  // a plain `absolute` popover anchored in place — the list's rows each sit
+  // in their own framer-motion `layout` stacking context, so a same-subtree
+  // popover could render *behind* a later row's category section and eat
+  // its own clicks. Fixed positioning sidesteps that entirely.
+  //
+  // Flips upward for a row near the bottom of the viewport (common with a
+  // long list) so the menu never opens off-screen.
+  function updatePosition() {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const MENU_HEIGHT_ESTIMATE = 220; // generous for up to ~5 entries
+    const openUpward = window.innerHeight - rect.bottom < MENU_HEIGHT_ESTIMATE && rect.top > MENU_HEIGHT_ESTIMATE;
+    setCoords({
+      right: window.innerWidth - rect.right,
+      ...(openUpward ? { bottom: window.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }),
+    });
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    updatePosition();
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+      if (buttonRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-label={`More actions for ${item.ingredientName}`}
+        className="shrink-0 rounded-full p-1.5 text-charcoal/40 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
+      >
+        <MoreIcon className="h-5 w-5" />
+      </button>
+      {open &&
+        coords &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{ top: coords.top, bottom: coords.bottom, right: coords.right }}
+            className="fixed z-50 w-56 overflow-hidden rounded-xl border border-charcoal/10 bg-surface py-1 shadow-card-hover"
+          >
+            {sourceRecipes.map((r) => (
+              <Link
+                key={r.id}
+                href={`/recipes/${r.id}`}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-charcoal hover:bg-charcoal/5"
+              >
+                <RecipesIcon className="h-4 w-4 shrink-0" />
+                <span className="truncate">
+                  {sourceRecipes.length > 1 ? `View: ${r.title}` : `View recipe: ${r.title}`}
+                </span>
+              </Link>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                addPantryStaple(item.ingredientName);
+                setOpen(false);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-charcoal hover:bg-charcoal/5"
+            >
+              <SpicesIcon className="h-4 w-4 shrink-0" />
+              Add to spice rack
+            </button>
+            {editable && !item.checked && (
+              <button
+                type="button"
+                onClick={() => {
+                  onEdit();
+                  setOpen(false);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-charcoal hover:bg-charcoal/5"
+              >
+                <PencilIcon className="h-4 w-4 shrink-0" />
+                Edit
+              </button>
+            )}
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+}
+
+/**
  * The animated checkbox: on check, an SVG checkmark draws itself while a
  * strikethrough line slides across the label; the row then relocates to the
  * "Checked" section via a shared layout animation.
@@ -63,7 +196,6 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
   const recipes = useRecipeStore((s) => s.recipes);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
-  const [showSources, setShowSources] = useState(false);
 
   const label = itemLabel(item);
   const inputId = `shop-${item.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
@@ -151,56 +283,19 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
             />
           </label>
         )}
-        {showSources && sourceRecipes.length > 1 && (
-          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
-            {sourceRecipes.map((r) => (
-              <Link
-                key={r.id}
-                href={`/recipes/${r.id}`}
-                className="text-xs font-medium text-terracotta hover:underline"
-              >
-                {r.title}
-              </Link>
-            ))}
-          </div>
-        )}
       </div>
 
-      <div className="flex shrink-0 items-center gap-1">
-        {sourceRecipes.length === 1 && (
-          <Link
-            href={`/recipes/${sourceRecipes[0].id}`}
-            aria-label={`View ${sourceRecipes[0].title}, the recipe this came from`}
-            className="rounded-full p-1.5 text-charcoal/40 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
-          >
-            <RecipesIcon className="h-5 w-5" />
-          </Link>
-        )}
-        {sourceRecipes.length > 1 && (
-          <button
-            type="button"
-            onClick={() => setShowSources((v) => !v)}
-            aria-label={`Show the ${sourceRecipes.length} recipes this came from`}
-            aria-expanded={showSources}
-            className="rounded-full p-1.5 text-charcoal/40 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
-          >
-            <RecipesIcon className="h-5 w-5" />
-          </button>
-        )}
-        {editable && !editing && !item.checked && (
-          <button
-            type="button"
-            onClick={() => {
-              setDraft(item.manualOverride ?? label);
-              setEditing(true);
-            }}
-            aria-label={`Edit ${item.ingredientName}`}
-            className="rounded-full p-1.5 text-charcoal/40 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
-          >
-            <PencilIcon className="h-5 w-5" />
-          </button>
-        )}
-      </div>
+      {!editing && (
+        <RowMenu
+          item={item}
+          sourceRecipes={sourceRecipes}
+          editable={editable}
+          onEdit={() => {
+            setDraft(item.manualOverride ?? label);
+            setEditing(true);
+          }}
+        />
+      )}
     </motion.li>
   );
 }
