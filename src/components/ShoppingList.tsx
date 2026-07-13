@@ -197,6 +197,8 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
   const recipes = useRecipeStore((s) => s.recipes);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
+  const [expanded, setExpanded] = useState(false);
+  const labelTextRef = useRef<HTMLSpanElement>(null);
 
   const label = itemLabel(item);
   const inputId = `shop-${item.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
@@ -263,11 +265,22 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
         ) : (
           <label
             htmlFor={inputId}
-            className={`relative block cursor-pointer select-none truncate transition-opacity ${
+            onClick={(e) => {
+              // A tap meant to read a truncated name shouldn't also check the
+              // item off — reveal the full text first, and only let a second
+              // tap (now that it's no longer truncated) reach the checkbox.
+              const el = labelTextRef.current;
+              const isTruncated = !!el && el.scrollWidth > el.clientWidth;
+              if (isTruncated && !expanded) {
+                e.preventDefault();
+                setExpanded(true);
+              }
+            }}
+            className={`relative block cursor-pointer select-none transition-opacity ${
               item.checked ? 'opacity-50' : ''
             }`}
           >
-            <span className="block truncate">
+            <span ref={labelTextRef} className={`block ${expanded ? '' : 'truncate'}`}>
               {label}
               {item.manualOverride && (
                 <span className="ml-2 rounded-full bg-terracotta/10 px-2 py-0.5 text-xs text-terracotta">
