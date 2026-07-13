@@ -43,15 +43,18 @@ test('normalizes synonyms: yellow onion + onion merge', () => {
 
 test('normalizes leading prep-word adjectives: chopped onion + minced onion merge', () => {
   // Real-world case: "1/2 cup chopped onion" and "1 cup minced onion" from
-  // two different recipes should read as one "onion" line, not two.
+  // two different recipes should read as one "onion" line, not two — and
+  // since onion has a known cup-per-piece yield, the merged total converts
+  // to a buyable piece count ("2 onions") rather than staying "1½ cups"
+  // (nobody buys a cup of onion at the store).
   const items = aggregateIngredients([
     parseIngredient('1/2 cup chopped onion'),
     parseIngredient('1 cup minced onion'),
   ]);
   assert.equal(items.length, 1);
   assert.equal(items[0].ingredientName, 'onion');
-  assert.equal(items[0].unit, 'cup');
-  assert.ok(Math.abs(items[0].totalQuantity - 1.5) < 0.01);
+  assert.equal(items[0].unit, '');
+  assert.equal(items[0].totalQuantity, 2);
 });
 
 test('a merge of differently-worded lines carries a "why this many" source breakdown', () => {
@@ -79,10 +82,10 @@ test('a single-line item (or one repeated verbatim across meals) has no breakdow
   assert.equal(repeated[0].sources, undefined);
 });
 
-test('does not sum unlike units (cloves vs cups)', () => {
+test('does not sum unlike units (sticks vs tbsp)', () => {
   const items = aggregateIngredients([
-    parseIngredient('2 cloves garlic'),
-    parseIngredient('1 tbsp garlic'),
+    parseIngredient('2 sticks cinnamon'),
+    parseIngredient('1 tbsp cinnamon'),
   ]);
   assert.equal(items.length, 2);
 });

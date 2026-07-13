@@ -1,5 +1,6 @@
 import type { Ingredient, MealPlanDay, Recipe, ShoppingListItem } from './types';
-import { toBase, toReadable, type UnitSystem } from './units';
+import { toBase, toReadable, roundUpTo, type UnitSystem } from './units';
+import { PRODUCE_YIELDS } from './produce-yields';
 
 interface Bucket {
   name: string;
@@ -11,6 +12,14 @@ interface Bucket {
   recipeIds: Set<string>;
   /** Every original line that fed into this bucket, for the "why this many" breakdown. */
   sources: { originalString: string; recipeId?: string }[];
+  /**
+   * For produce with a known "cup of prepped X ≈ N whole pieces" yield
+   * (see produce-yields.ts): prepped-volume contributions ("1 cup chopped
+   * onion") accumulate here in mL, converted to an equivalent piece count
+   * once at output time and added to any literal whole-piece counts already
+   * in `total` — nobody buys a cup of onion at the store.
+   */
+  produceMl: number;
 }
 
 /** An ingredient tagged with the recipe it came from, for "source recipe" links. */
@@ -36,14 +45,24 @@ export function aggregateIngredients(
     const name = ing.name;
     if (!name) continue;
 
+    const yieldInfo = PRODUCE_YIELDS[name];
+
     let key: string;
     let baseUnit: 'ml' | 'g' | null = null;
     let displayUnit = ing.unit;
     let amount = ing.quantity;
+    let volumeMl = 0;
 
     if (ing.quantity > 0 && ing.unit) {
       const converted = toBase(ing.quantity, ing.unit);
-      if (converted) {
+      if (yieldInfo && converted && converted.baseUnit === 'ml') {
+        // Route a prepped-volume line ("1 cup chopped onion") into the same
+        // bucket as a whole-piece count ("2 onions") for this ingredient.
+        key = `${name}|${yieldInfo.pieceUnit}`;
+        displayUnit = yieldInfo.pieceUnit;
+        amount = 0;
+        volumeMl = converted.quantity;
+      } else if (converted) {
         baseUnit = converted.baseUnit;
         amount = converted.quantity;
         key = `${name}|${converted.baseUnit}`;
@@ -59,10 +78,20 @@ export function aggregateIngredients(
 
     let bucket = buckets.get(key);
     if (!bucket) {
-      bucket = { name, key, baseUnit, displayUnit, total: 0, recipeIds: new Set(), sources: [] };
+      bucket = {
+        name,
+        key,
+        baseUnit,
+        displayUnit,
+        total: 0,
+        recipeIds: new Set(),
+        sources: [],
+        produceMl: 0,
+      };
       buckets.set(key, bucket);
     }
     if (amount > 0) bucket.total += amount;
+    if (volumeMl > 0) bucket.produceMl += volumeMl;
     if (ing.recipeId) bucket.recipeIds.add(ing.recipeId);
     bucket.sources.push({ originalString: ing.originalString, recipeId: ing.recipeId });
   }
@@ -71,7 +100,12 @@ export function aggregateIngredients(
   for (const bucket of buckets.values()) {
     let quantity = bucket.total;
     let unit = bucket.displayUnit;
-    if (bucket.baseUnit && bucket.total > 0) {
+    const yieldInfo = PRODUCE_YIELDS[bucket.name];
+    if (yieldInfo && bucket.produceMl > 0) {
+      const equivalentPieces = bucket.produceMl / yieldInfo.mlPerPiece;
+      quantity = roundUpTo(bucket.total + equivalentPieces, 1);
+      unit = yieldInfo.pieceUnit;
+    } else if (bucket.baseUnit && bucket.total > 0) {
       const readable = toReadable(bucket.total, bucket.baseUnit, system);
       quantity = readable.quantity;
       unit = readable.unit;

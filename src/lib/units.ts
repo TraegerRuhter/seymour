@@ -104,6 +104,8 @@ const UNIT_ALIASES: Record<string, string> = {
   sticks: 'stick',
   stalk: 'stalk',
   stalks: 'stalk',
+  rib: 'stalk',
+  ribs: 'stalk',
   sprig: 'sprig',
   sprigs: 'sprig',
   head: 'head',
@@ -114,6 +116,8 @@ const UNIT_ALIASES: Record<string, string> = {
   pieces: 'piece',
   handful: 'handful',
   handfuls: 'handful',
+  ear: 'ear',
+  ears: 'ear',
 };
 
 const DEFS_BY_CANONICAL = new Map(UNIT_DEFS.map((d) => [d.canonical, d]));
@@ -181,7 +185,7 @@ function round2(v: number): number {
 export type UnitSystem = 'imperial' | 'metric';
 
 /** Rounds a value UP to the nearest multiple of `step` (24 for 23.3 at step 1). */
-function roundUpTo(value: number, step: number): number {
+export function roundUpTo(value: number, step: number): number {
   // A *relative* epsilon absorbs the small inconsistencies between our
   // conversion constants (e.g. tbsp isn't exactly 1/16 cup), which otherwise
   // accumulate when a recipe is scaled up — 168 tbsp is 10.5 cups, not 10.75.
@@ -269,6 +273,7 @@ export function displayUnit(unit: string, quantity: number): string {
     bunch: 'bunches',
     piece: 'pieces',
     handful: 'handfuls',
+    ear: 'ears',
   };
   if (quantity > 1 && plural[unit]) return plural[unit];
   return unit;
