@@ -207,3 +207,35 @@ alter table public.deleted_records enable row level security;
 drop policy if exists "deleted_records is owner-only" on public.deleted_records;
 create policy "deleted_records is owner-only" on public.deleted_records
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- --- Realtime: broadcast changes on synced tables to subscribed clients ---
+--
+-- The default `supabase_realtime` publication starts empty; a table must be
+-- added explicitly before postgres_changes subscriptions receive anything
+-- for it (see subscribeRealtime in src/lib/sync.ts). Guarded because ALTER
+-- PUBLICATION ... ADD TABLE errors on a table that's already a member,
+-- which would otherwise break re-running this script.
+
+do $$
+declare
+  t text;
+begin
+  foreach t in array array[
+    'recipes',
+    'shopping_list_items',
+    'meal_plan_config',
+    'meal_plan_days',
+    'archived_plans',
+    'pantry_staples',
+    'settings',
+    'deleted_records'
+  ]
+  loop
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
+    ) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+end $$;

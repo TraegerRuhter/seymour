@@ -6,7 +6,7 @@ import { useAllHydrated, usePlanStore, useRecipeStore, useSettingsStore } from '
 import { regenerateShoppingList } from '@/lib/actions';
 import { applyTheme, getStoredTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
-import { pullAll } from '@/lib/sync';
+import { pullAll, subscribeRealtime } from '@/lib/sync';
 import Logo from './Logo';
 
 /**
@@ -28,9 +28,12 @@ export default function AppProviders({ children }: { children: React.ReactNode }
   }, [hydrated, plan, recipes, unitSystem]);
 
   // Reconcile with the server once local data has hydrated and a user is
-  // signed in — picks up anything that changed on another device.
+  // signed in, then keep listening for live changes from other devices
+  // until they sign out (or this effect re-runs for a different user).
   useEffect(() => {
-    if (hydrated && user) void pullAll();
+    if (!hydrated || !user) return;
+    void pullAll();
+    return subscribeRealtime();
   }, [hydrated, user]);
 
   // Follow OS theme changes live while in "system" mode.

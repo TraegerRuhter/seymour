@@ -147,7 +147,9 @@ write wins and the earlier one is overwritten, the standard "last-write-wins" tr
 pantry staples list and unit-system setting sync as a single row each rather than
 record-by-record, since they change rarely enough that the extra granularity isn't worth it.
 Deletes propagate via a small tombstone table, so a recipe deleted on one device doesn't
-reappear the next time another device syncs.
+reappear the next time another device syncs. Signed-in devices also stay live via Supabase
+Realtime — a change made on one shows up on another within about half a second, no need to
+background/foreground the app or wait for the next sync.
 
 ### Tests
 
