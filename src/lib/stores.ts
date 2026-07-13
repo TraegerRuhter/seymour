@@ -101,6 +101,8 @@ interface PlanState {
   setPlan: (config: MealPlanConfig, plan: MealPlanDay[]) => void;
   clearPlan: () => void;
   setSlot: (dayIndex: number, mealIndex: number, recipeId: string) => void;
+  /** Replaces a single day wholesale — used when a pull decides the server's copy of that day wins. */
+  setDay: (dayIndex: number, day: MealPlanDay) => void;
   clearRecipeFromPlan: (recipeId: string) => void;
   /** Adds an entry to the archive (most recent first). */
   pushArchived: (entry: ArchivedPlan) => void;
@@ -120,7 +122,13 @@ export const usePlanStore = create<PlanState>()(
       plan: null,
       archivedPlans: [],
       hasHydrated: false,
-      setPlan: (config, plan) => set({ config, plan }),
+      setPlan: (config, plan) => {
+        const now = new Date().toISOString();
+        set({
+          config: { ...config, updatedAt: now },
+          plan: plan.map((day) => ({ ...day, updatedAt: now })),
+        });
+      },
       clearPlan: () => set({ config: null, plan: null }),
       pushArchived: (entry) =>
         set((s) => ({ archivedPlans: [entry, ...s.archivedPlans] })),
@@ -135,6 +143,7 @@ export const usePlanStore = create<PlanState>()(
               ? day
               : {
                   ...day,
+                  updatedAt: new Date().toISOString(),
                   meals: day.meals.map((m, mi) =>
                     mi !== mealIndex ? m : { ...m, recipeId },
                   ),
@@ -142,15 +151,27 @@ export const usePlanStore = create<PlanState>()(
           );
           return { plan };
         }),
+      setDay: (dayIndex, day) =>
+        set((s) => {
+          if (!s.plan) return s;
+          const plan = s.plan.map((d, di) => (di !== dayIndex ? d : day));
+          return { plan };
+        }),
       clearRecipeFromPlan: (recipeId) =>
         set((s) => {
           if (!s.plan) return s;
-          const plan = s.plan.map((day) => ({
-            ...day,
-            meals: day.meals.map((m) =>
-              m.recipeId === recipeId ? { ...m, recipeId: '' } : m,
-            ),
-          }));
+          const now = new Date().toISOString();
+          const plan = s.plan.map((day) => {
+            const touched = day.meals.some((m) => m.recipeId === recipeId);
+            if (!touched) return day;
+            return {
+              ...day,
+              updatedAt: now,
+              meals: day.meals.map((m) =>
+                m.recipeId === recipeId ? { ...m, recipeId: '' } : m,
+              ),
+            };
+          });
           return { plan };
         }),
       replaceAll: (config, plan, archivedPlans) =>

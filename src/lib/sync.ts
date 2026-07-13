@@ -1,12 +1,21 @@
 import { getSupabaseClient } from './supabase';
-import { useAuthUserStore, useRecipeStore, useShoppingStore } from './stores';
-import type { Ingredient, MealType, Recipe, ShoppingListItem } from './types';
+import { useAuthUserStore, usePlanStore, useRecipeStore, useShoppingStore } from './stores';
+import type {
+  ArchivedPlan,
+  Ingredient,
+  MealPlanConfig,
+  MealPlanDay,
+  MealType,
+  Recipe,
+  ShoppingListItem,
+} from './types';
 
 /** Entities that can be independently deleted and need a tombstone row. */
-export type SyncEntity = 'recipe';
+export type SyncEntity = 'recipe' | 'archived_plan';
 
 const TABLE_BY_ENTITY: Record<SyncEntity, string> = {
   recipe: 'recipes',
+  archived_plan: 'archived_plans',
 };
 
 function currentUserId(): string | null {
@@ -277,7 +286,251 @@ export async function pullShoppingItemStates(): Promise<void> {
   if (changed) setItems(merged);
 }
 
-/** Runs every entity's pull. Recipes and shopping-list check-state sync so far — more join in as each lands. */
+// --- Meal plan: config + per-day rows -----------------------------------
+
+interface MealPlanConfigRow {
+  days: number;
+  meal_types: MealType[];
+  seed: number;
+  updated_at: string;
+}
+
+interface MealPlanDayRow {
+  day_index: number;
+  date: string;
+  meals: MealPlanDay['meals'];
+  updated_at: string;
+}
+
+function rowToConfig(row: MealPlanConfigRow): MealPlanConfig {
+  return { days: row.days, mealTypes: row.meal_types, seed: row.seed, updatedAt: row.updated_at };
+}
+
+function configToRow(userId: string, config: MealPlanConfig) {
+  return { user_id: userId, days: config.days, meal_types: config.mealTypes, seed: config.seed };
+}
+
+function rowToDay(row: MealPlanDayRow): MealPlanDay {
+  return { date: row.date, meals: row.meals, updatedAt: row.updated_at };
+}
+
+function dayToRow(userId: string, dayIndex: number, day: MealPlanDay) {
+  return { user_id: userId, day_index: dayIndex, date: day.date, meals: day.meals };
+}
+
+export async function pushMealPlanConfig(config: MealPlanConfig): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return;
+  try {
+    await supabase.from('meal_plan_config').upsert(configToRow(userId, config));
+  } catch {
+    // Offline or unreachable — nothing to do until the next sync attempt.
+  }
+}
+
+export async function pushMealPlanDay(dayIndex: number, day: MealPlanDay): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return;
+  try {
+    await supabase.from('meal_plan_days').upsert(dayToRow(userId, dayIndex, day));
+  } catch {
+    // Offline or unreachable — nothing to do until the next sync attempt.
+  }
+}
+
+/**
+ * Pushes a full regenerate: the new config plus every day, and drops any
+ * remote days beyond the new plan's length (a shorter regenerate shouldn't
+ * leave stale trailing days for a pull to resurrect later).
+ */
+async function trimMealPlanDaysFrom(fromIndex: number): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return;
+  try {
+    await supabase.from('meal_plan_days').delete().eq('user_id', userId).gte('day_index', fromIndex);
+  } catch {
+    // Offline or unreachable — nothing to do until the next sync attempt.
+  }
+}
+
+export async function pushMealPlan(config: MealPlanConfig, plan: MealPlanDay[]): Promise<void> {
+  await Promise.all([
+    pushMealPlanConfig(config),
+    ...plan.map((day, i) => pushMealPlanDay(i, day)),
+    trimMealPlanDaysFrom(plan.length),
+  ]);
+}
+
+/**
+ * Deletes the remote meal plan entirely (used when the local plan is
+ * archived or cleared). No tombstone — the next device to generate a new
+ * plan just pushes fresh rows. A device that's offline with a stale local
+ * plan at the moment this runs can re-upload it on reconnect; accepted as an
+ * edge case rather than adding a second conflict-resolution mechanism just
+ * for "was this plan deliberately cleared."
+ */
+export async function clearMealPlanRemote(): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return;
+  try {
+    await Promise.all([
+      supabase.from('meal_plan_config').delete().eq('user_id', userId),
+      supabase.from('meal_plan_days').delete().eq('user_id', userId),
+    ]);
+  } catch {
+    // Offline or unreachable — nothing to do until the next sync attempt.
+  }
+}
+
+/**
+ * Reconciles the local meal plan with Supabase. The config (day count, meal
+ * types, seed) is compared first: if the server's is newer, a full
+ * regenerate happened on another device and a differently-shaped plan can't
+ * be sensibly merged day-by-day, so the whole remote plan replaces the
+ * local one. Otherwise the config hasn't changed on either side — regular
+ * regeneration didn't touch it — so days merge individually, which is what
+ * lets a slot swap on one device and a different day's swap on another both
+ * survive.
+ */
+export async function pullMealPlan(): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return;
+
+  let configRow: MealPlanConfigRow | null;
+  let dayRows: MealPlanDayRow[] | null;
+  try {
+    const [configResult, daysResult] = await Promise.all([
+      supabase.from('meal_plan_config').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('meal_plan_days').select('*').eq('user_id', userId).order('day_index'),
+    ]);
+    if (configResult.error || daysResult.error) return;
+    configRow = configResult.data;
+    dayRows = daysResult.data;
+  } catch {
+    return;
+  }
+
+  const { config: localConfig, plan: localPlan, setPlan, setDay } = usePlanStore.getState();
+  const remoteConfig = configRow ? rowToConfig(configRow) : undefined;
+  const remoteDaysByIndex = new Map((dayRows ?? []).map((row) => [row.day_index, rowToDay(row)]));
+
+  if (!localConfig || !localPlan) {
+    if (remoteConfig && remoteDaysByIndex.size > 0) {
+      const days = [...remoteDaysByIndex.entries()].sort(([a], [b]) => a - b).map(([, day]) => day);
+      setPlan(remoteConfig, days);
+    }
+    return;
+  }
+
+  const configWinner = resolveLastWriteWins(localConfig, remoteConfig);
+
+  if (configWinner === remoteConfig && remoteConfig) {
+    const days = [...remoteDaysByIndex.entries()].sort(([a], [b]) => a - b).map(([, day]) => day);
+    setPlan(remoteConfig, days);
+    return;
+  }
+
+  if (!remoteConfig) {
+    void pushMealPlan(localConfig, localPlan);
+    return;
+  }
+
+  localPlan.forEach((localDay, index) => {
+    const remoteDay = remoteDaysByIndex.get(index);
+    const winner = resolveLastWriteWins(localDay, remoteDay);
+    if (winner === remoteDay && remoteDay) {
+      setDay(index, remoteDay);
+    } else if (winner === localDay && (!remoteDay || (localDay.updatedAt ?? '') > (remoteDay.updatedAt ?? ''))) {
+      void pushMealPlanDay(index, localDay);
+    }
+  });
+}
+
+// --- Archived plans (immutable once created) ------------------------------
+
+interface ArchivedPlanRow {
+  id: string;
+  archived_at: string;
+  label: string;
+  config: MealPlanConfig;
+  plan: MealPlanDay[];
+}
+
+function rowToArchivedPlan(row: ArchivedPlanRow): ArchivedPlan {
+  return { id: row.id, archivedAt: row.archived_at, label: row.label, config: row.config, plan: row.plan };
+}
+
+function archivedPlanToRow(userId: string, entry: ArchivedPlan) {
+  return {
+    user_id: userId,
+    id: entry.id,
+    archived_at: entry.archivedAt,
+    label: entry.label,
+    config: entry.config,
+    plan: entry.plan,
+  };
+}
+
+/** Upserts one archived plan. Archived plans are immutable once created, so this only ever fires once per entry. */
+export async function pushArchivedPlan(entry: ArchivedPlan): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return;
+  try {
+    await supabase.from('archived_plans').upsert(archivedPlanToRow(userId, entry));
+  } catch {
+    // Offline or unreachable — nothing to do until the next sync attempt.
+  }
+}
+
+/**
+ * Adopts remote archived plans the local device doesn't have yet (skipping
+ * anything tombstoned as deleted), and pushes local ones the server doesn't
+ * have. No content merging needed — an archived plan never changes after
+ * creation, so existence plus tombstones is the whole story.
+ */
+export async function pullArchivedPlans(): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return;
+
+  let rows: ArchivedPlanRow[] | null;
+  let tombstoneRows: { record_id: string }[] | null;
+  try {
+    const [plansResult, tombstonesResult] = await Promise.all([
+      supabase.from('archived_plans').select('*').eq('user_id', userId),
+      supabase.from('deleted_records').select('record_id').eq('user_id', userId).eq('entity', 'archived_plan'),
+    ]);
+    if (plansResult.error || tombstonesResult.error) return;
+    rows = plansResult.data;
+    tombstoneRows = tombstonesResult.data;
+  } catch {
+    return;
+  }
+
+  const deletedIds = new Set((tombstoneRows ?? []).map((t) => t.record_id));
+  const { archivedPlans: local, pushArchived } = usePlanStore.getState();
+  const localIds = new Set(local.map((a) => a.id));
+  const remoteIds = new Set((rows ?? []).map((r) => r.id));
+
+  for (const row of rows ?? []) {
+    if (deletedIds.has(row.id) || localIds.has(row.id)) continue;
+    pushArchived(rowToArchivedPlan(row));
+  }
+
+  for (const entry of local) {
+    if (!deletedIds.has(entry.id) && !remoteIds.has(entry.id)) {
+      void pushArchivedPlan(entry);
+    }
+  }
+}
+
+/** Runs every entity's pull. More entities join in as each lands. */
 export async function pullAll(): Promise<void> {
-  await Promise.all([pullRecipes(), pullShoppingItemStates()]);
+  await Promise.all([pullRecipes(), pullShoppingItemStates(), pullMealPlan(), pullArchivedPlans()]);
 }
