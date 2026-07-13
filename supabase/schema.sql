@@ -127,16 +127,21 @@ create trigger set_updated_at before insert or update on public.archived_plans
   for each row execute function public.set_updated_at();
 
 -- --- Shopping list items -----------------------------------------------
+--
+-- Only the user-owned, mutable part of an item syncs: whether it's checked
+-- and any manual-override text. Everything else about an item (which
+-- ingredients exist, their quantities, which recipes they came from) is
+-- *derived* — recomputed locally by buildShoppingList() from the plan,
+-- recipes, and pantry staples, all of which sync independently. Two devices
+-- with the same plan/recipes/staples compute the same items on their own;
+-- syncing the computed fields too would just create spurious conflicts
+-- between two correct-but-independently-recomputed values.
 
 create table if not exists public.shopping_list_items (
   user_id uuid not null references auth.users (id) on delete cascade,
   id text not null,
-  ingredient_name text not null,
-  total_quantity double precision not null default 0,
-  unit text not null default '',
   checked boolean not null default false,
   manual_override text,
-  recipe_ids jsonb,
   updated_at timestamptz not null default now(),
   primary key (user_id, id)
 );

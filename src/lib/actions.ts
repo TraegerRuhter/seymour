@@ -14,7 +14,7 @@ import { parseIngredientLines } from './ingredient-parser';
 import { buildShoppingList, mergeShoppingList } from './aggregate';
 import { normalizeIngredientName } from './normalize';
 import { generateMealPlan, newSeed, planLabel, recipeFitsMealType } from './plan';
-import { deleteRemote, pushRecipe } from './sync';
+import { deleteRemote, pushRecipe, pushShoppingItemState } from './sync';
 import { usePantryStore, usePlanStore, useRecipeStore, useSettingsStore, useShoppingStore } from './stores';
 
 /**
@@ -43,6 +43,22 @@ export function regenerateShoppingList(): void {
     shopping.setItems(mergeShoppingList(next, shopping.items));
     debounceTimeout = null;
   }, 50);
+}
+
+// --- Shopping list item state ---
+
+/** Toggles an item's checked state and syncs the change (checked state only, not the item itself). */
+export function toggleShoppingItem(id: string): void {
+  useShoppingStore.getState().toggleChecked(id);
+  const item = useShoppingStore.getState().items.find((i) => i.id === id);
+  if (item) void pushShoppingItemState(item);
+}
+
+/** Sets (or clears) an item's manual-override text and syncs the change. */
+export function setShoppingItemOverride(id: string, text: string): void {
+  useShoppingStore.getState().setOverride(id, text);
+  const item = useShoppingStore.getState().items.find((i) => i.id === id);
+  if (item) void pushShoppingItemState(item);
 }
 
 // --- Pantry staples ("spice rack") ---
