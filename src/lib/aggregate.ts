@@ -1,5 +1,5 @@
 import type { Ingredient, MealPlanDay, Recipe, ShoppingListItem } from './types';
-import { toBase, toReadable, unitKind, type UnitSystem } from './units';
+import { toBase, toReadable, type UnitSystem } from './units';
 
 interface Bucket {
   name: string;
@@ -8,8 +8,6 @@ interface Bucket {
   baseUnit: 'ml' | 'g' | null;
   displayUnit: string;
   total: number;
-  /** true when at least one contribution had no parseable quantity */
-  hasUnquantified: boolean;
   recipeIds: Set<string>;
 }
 
@@ -59,11 +57,10 @@ export function aggregateIngredients(
 
     let bucket = buckets.get(key);
     if (!bucket) {
-      bucket = { name, key, baseUnit, displayUnit, total: 0, hasUnquantified: false, recipeIds: new Set() };
+      bucket = { name, key, baseUnit, displayUnit, total: 0, recipeIds: new Set() };
       buckets.set(key, bucket);
     }
     if (amount > 0) bucket.total += amount;
-    else bucket.hasUnquantified = true;
     if (ing.recipeId) bucket.recipeIds.add(ing.recipeId);
   }
 
@@ -141,5 +138,3 @@ export function mergeShoppingList(
     };
   });
 }
-
-export { unitKind };

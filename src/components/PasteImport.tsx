@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { ParsedRecipeData } from '@/lib/types';
 import type { RecipeFormInitialValues } from './RecipeForm';
+import { ClipboardIcon } from './icons';
 
 function toInitialValues(data: ParsedRecipeData): RecipeFormInitialValues {
   return {
@@ -64,8 +65,13 @@ export default function PasteImport({ onExtracted }: { onExtracted: (values: Rec
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="text-sm font-medium text-terracotta hover:underline">
-        📋 Paste page text instead
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-terracotta hover:underline"
+      >
+        <ClipboardIcon className="h-4 w-4" />
+        Paste page text instead
       </button>
     );
   }

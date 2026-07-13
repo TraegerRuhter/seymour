@@ -3,15 +3,10 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { usePlanStore, useRecipeStore, useShoppingStore } from '@/lib/stores';
-import { MEAL_TYPE_LABELS } from '@/lib/plan';
+import { MEAL_TYPE_LABELS, toLocalDateString } from '@/lib/plan';
 import RecipeCard from '@/components/RecipeCard';
 import ShoppingList from '@/components/ShoppingList';
 import { InboxIcon, DiceIcon, ChefPlantIcon, MEAL_TYPE_ICON } from '@/components/icons';
-
-function todayString(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 export default function DashboardPage() {
   const recipes = useRecipeStore((s) => s.recipes);
@@ -26,7 +21,7 @@ export default function DashboardPage() {
     [recipes],
   );
   const remaining = useMemo(() => items.filter((i) => !i.checked).length, [items]);
-  const today = useMemo(() => plan?.find((d) => d.date === todayString()), [plan]);
+  const today = useMemo(() => plan?.find((d) => d.date === toLocalDateString(new Date())), [plan]);
   const todayMeals = useMemo(
     () => today?.meals.filter((m) => m.recipeId && recipes[m.recipeId]) ?? [],
     [recipes, today],
@@ -51,6 +46,7 @@ export default function DashboardPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {todayMeals.map((meal) => {
               const recipe = recipes[meal.recipeId];
+              const MealIcon = MEAL_TYPE_ICON[meal.type];
               return (
                 <Link
                   key={meal.type}
@@ -67,10 +63,7 @@ export default function DashboardPage() {
                     />
                   ) : (
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-olive/15">
-                      {(() => {
-                        const Icon = MEAL_TYPE_ICON[meal.type];
-                        return <Icon className="h-6 w-6" />;
-                      })()}
+                      <MealIcon className="h-6 w-6" />
                     </span>
                   )}
                   <div className="min-w-0">

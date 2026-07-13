@@ -284,6 +284,17 @@ export function InboxIcon(p: IconProps) {
   );
 }
 
+export function ClipboardIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="5" y="4.5" width="14" height="17" rx="2.5" fill={O} />
+      <rect x="6.8" y="6.4" width="10.4" height="13.2" rx="1.2" fill={K} />
+      <rect x="8.5" y="3" width="7" height="4" rx="1.5" fill={TD} />
+      <path d="M9 11h6M9 14h6M9 17h4" stroke={O} strokeWidth="1.4" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 export function DiceIcon(p: IconProps) {
   return (
     <Svg {...p}>

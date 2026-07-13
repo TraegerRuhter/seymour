@@ -5,20 +5,16 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { usePlanStore, useRecipeStore } from '@/lib/stores';
 import { pickSlotRecipe, shuffleSlot } from '@/lib/actions';
-import { MEAL_TYPE_LABELS, recipeFitsMealType } from '@/lib/plan';
+import { MEAL_TYPE_LABELS, recipeFitsMealType, toLocalDateString } from '@/lib/plan';
 import { enter, fadeRise } from '@/lib/motion';
 import { MEAL_TYPE_ICON, PencilIcon, ShuffleIcon } from './icons';
-
-function localDateString(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 function dayHeading(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
   const weekday = date.toLocaleDateString(undefined, { weekday: 'short' });
   const monthDay = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  return dateStr === localDateString(new Date()) ? `Today · ${monthDay}` : `${weekday} · ${monthDay}`;
+  return dateStr === toLocalDateString(new Date()) ? `Today · ${monthDay}` : `${weekday} · ${monthDay}`;
 }
 
 /** A single meal tile. Empty slots offer a manual picker; filled slots offer a shuffle (random swap) and a pencil (manual change). */
@@ -35,6 +31,7 @@ function MealTile({
 
   if (!slot) return null;
   const recipe = slot.recipeId ? recipes[slot.recipeId] : undefined;
+  const MealIcon = MEAL_TYPE_ICON[slot.type];
 
   if (!recipe || picking) {
     const all = Object.values(recipes);
@@ -45,10 +42,7 @@ function MealTile({
     return (
       <div className="rounded-xl border border-dashed border-charcoal/20 p-3">
         <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/40">
-          {(() => {
-            const Icon = MEAL_TYPE_ICON[slot.type];
-            return <Icon className="h-4 w-4" />;
-          })()}
+          <MealIcon className="h-4 w-4" />
           {MEAL_TYPE_LABELS[slot.type]}
         </p>
         {picking ? (
@@ -102,10 +96,7 @@ function MealTile({
           />
         ) : (
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-olive/15">
-            {(() => {
-              const Icon = MEAL_TYPE_ICON[slot.type];
-              return <Icon className="h-6 w-6" />;
-            })()}
+            <MealIcon className="h-6 w-6" />
           </span>
         )}
         <div className="min-w-0">
@@ -145,7 +136,7 @@ export default function MealPlanView() {
   const plan = usePlanStore((s) => s.plan);
   if (!plan || plan.length === 0) return null;
 
-  const todayStr = localDateString(new Date());
+  const todayStr = toLocalDateString(new Date());
 
   return (
     <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 lg:mx-0 lg:grid lg:snap-none lg:grid-cols-3 lg:overflow-visible lg:px-0 xl:grid-cols-4">

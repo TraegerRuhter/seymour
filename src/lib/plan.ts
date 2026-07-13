@@ -35,7 +35,8 @@ export function newSeed(): number {
   return Math.floor(Math.random() * 2 ** 31);
 }
 
-function toDateString(d: Date): string {
+/** Local (not UTC) YYYY-MM-DD — the format plan days are keyed by and compared against "today". */
+export function toLocalDateString(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -84,7 +85,7 @@ export function generateMealPlan(
       const date = new Date(startDate);
       date.setDate(date.getDate() + d);
       days.push({
-        date: toDateString(date),
+        date: toLocalDateString(date),
         meals: config.mealTypes.map((type): MealSlot => ({ type, recipeId: '' })),
       });
     }
@@ -143,7 +144,7 @@ export function generateMealPlan(
       else lastMainIngredientByType.delete(type);
       return { type, recipeId };
     });
-    days.push({ date: toDateString(date), meals });
+    days.push({ date: toLocalDateString(date), meals });
   }
   return days;
 }
