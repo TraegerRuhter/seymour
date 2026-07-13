@@ -4,9 +4,10 @@ _"Feed me, Seymour."_ A single-user, browser-first web app that turns online rec
 structured personal collection, generates randomized meal plans, and produces smart,
 consolidated shopping lists with a single tap. Named for the hungriest plant in showbiz.
 
-Everything lives in **your browser** (IndexedDB) — no accounts, no server database, fully
-private. A thin Next.js API route handles recipe parsing; everything else runs client-side
-and works offline as an installable PWA.
+Everything lives in **your browser** (IndexedDB) by default — no account needed, fully
+private. An optional account adds cross-device sync on top, entirely opt-in (see
+[Accounts & sync](#accounts--sync)). A thin Next.js API route handles recipe parsing;
+everything else runs client-side and works offline as an installable PWA.
 
 ## Features
 
@@ -74,11 +75,14 @@ and works offline as an installable PWA.
   light flash, and "system" tracks OS changes live. Printing always uses the light palette.
 - **PWA** — installable, offline-capable (library, plan, and list work without network;
   parsing requires connectivity), viewed recipe images are cached.
+- **Accounts & sync** *(optional)* — sign in to sync your recipes, plan, and shopping list
+  across devices. Off by default and fully opt-in; see [Accounts & sync](#accounts--sync)
+  below for how it works and how to set it up.
 
 ## Stack
 
 Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS · Framer Motion ·
-Zustand (persisted to IndexedDB via localforage) · nanoid
+Zustand (persisted to IndexedDB via localforage) · nanoid · Supabase (optional, for accounts + sync)
 
 ## Getting started
 
@@ -99,6 +103,8 @@ npm run build && npm start
 | --------------------- | -------- | -------------------------------------------------------------- |
 | `OPENAI_API_KEY`      | No       | Enables the AI fallback in `/api/parse` when structured-data scraping fails. Server-side only; never reaches the client. |
 | `RECIPE_READER_PROXY` | No       | Reader-proxy fallback for sites that block direct server-side fetches (Cloudflare-protected sites like Allrecipes reject datacenter IPs). **Defaults to Jina AI Reader** (`https://r.jina.ai/{url}`) when unset. Override with your own `{url}` template, or set to `off` to disable all third-party calls. |
+| `NEXT_PUBLIC_SUPABASE_URL` | No | Enables optional accounts + cross-device sync (see [Accounts & sync](#accounts--sync)). Unset means no sign-in UI anywhere and zero behavior change. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | No | Paired with the URL above. Safe to expose to the client — every table's row-level security policy restricts it to the signed-in user's own rows. |
 
 Copy `.env.example` to `.env.local` and fill in whichever you want.
 
@@ -113,6 +119,35 @@ residential-grade infrastructure and returns the HTML, which Seymour then parses
 normally. It's only used as a fallback when a direct fetch is blocked or yields
 no recipe, so reachable sites never touch the proxy. Set `RECIPE_READER_PROXY=off`
 to disable it; manual entry always works regardless.
+
+### Accounts & sync
+
+Signing in is entirely optional — Seymour works fully offline and privately without an
+account, exactly as described above. An account adds one thing: your recipes, meal plan,
+shopping list, archived plans, and pantry staples follow you to another device.
+
+**Setup** (skip this if you don't want sync):
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. Open the project's SQL Editor and run [`supabase/schema.sql`](supabase/schema.sql) — it
+   creates every table, enables row-level security scoped to `auth.uid()`, and sets up the
+   `updated_at` triggers sync relies on.
+3. Copy the Project URL and anon/public key from Project Settings → API into
+   `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`.env.local` for local dev,
+   your host's env vars for deployment).
+4. Sign in from Settings → Account. Sign-in is passwordless (a magic link emailed to you) —
+   no password to set or lose.
+
+**How sync works.** Each record — a recipe, a shopping-list item, a day of the meal plan,
+an archived plan — syncs independently, tagged with a server-set `updated_at`. That means
+editing a recipe on your phone and checking off a shopping-list item on your laptop at the
+same time both survive; neither device's change is silently discarded. The one case that
+doesn't merge cleanly is two devices editing the *same* record at the same time — the later
+write wins and the earlier one is overwritten, the standard "last-write-wins" tradeoff. The
+pantry staples list and unit-system setting sync as a single row each rather than
+record-by-record, since they change rarely enough that the extra granularity isn't worth it.
+Deletes propagate via a small tombstone table, so a recipe deleted on one device doesn't
+reappear the next time another device syncs.
 
 ### Tests
 
@@ -175,8 +210,11 @@ feature won't work there because it has no server to run the parser.
    - `RECIPE_READER_PROXY` — override the default reader proxy with your own
      `{url}` template, or set it to `off` to disable all third-party calls
      (Cloudflare sites then require manual entry).
+   - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — enables
+     optional accounts + cross-device sync; see
+     [Accounts & sync](#accounts--sync).
 
 Every push to `main` redeploys; branches get preview URLs.
 
-Data stays in each visitor's browser (IndexedDB) — there's no server database
-to provision.
+Data stays in each visitor's browser (IndexedDB) by default — there's no
+server database to provision unless you opt into accounts + sync.
