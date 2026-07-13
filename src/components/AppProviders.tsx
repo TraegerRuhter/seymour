@@ -5,6 +5,8 @@ import { MotionConfig } from 'framer-motion';
 import { useAllHydrated, usePlanStore, useRecipeStore, useSettingsStore } from '@/lib/stores';
 import { regenerateShoppingList } from '@/lib/actions';
 import { applyTheme, getStoredTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/auth';
+import { pullAll } from '@/lib/sync';
 import Logo from './Logo';
 
 /**
@@ -17,12 +19,19 @@ export default function AppProviders({ children }: { children: React.ReactNode }
   const plan = usePlanStore((s) => s.plan);
   const recipes = useRecipeStore((s) => s.recipes);
   const unitSystem = useSettingsStore((s) => s.unitSystem);
+  const { user } = useAuth();
 
   // Re-derive the shopping list whenever the plan, the recipe collection, or
   // the unit system changes (covers edits on other pages and imported data).
   useEffect(() => {
     if (hydrated) regenerateShoppingList();
   }, [hydrated, plan, recipes, unitSystem]);
+
+  // Reconcile with the server once local data has hydrated and a user is
+  // signed in — picks up anything that changed on another device.
+  useEffect(() => {
+    if (hydrated && user) void pullAll();
+  }, [hydrated, user]);
 
   // Follow OS theme changes live while in "system" mode.
   useEffect(() => {

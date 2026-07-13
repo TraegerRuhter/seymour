@@ -34,6 +34,8 @@ export interface Recipe {
   mainIngredient?: string;
   /** Total time to make, in minutes. */
   cookTimeMinutes?: number;
+  /** Set on every local edit; compared against the server's row to resolve sync conflicts. Absent until the record has synced at least once. */
+  updatedAt?: string;
 }
 
 // --- Meal Plan Domain ---
