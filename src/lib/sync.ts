@@ -1,5 +1,12 @@
 import { getSupabaseClient } from './supabase';
-import { useAuthUserStore, usePlanStore, useRecipeStore, useShoppingStore } from './stores';
+import {
+  useAuthUserStore,
+  usePantryStore,
+  usePlanStore,
+  useRecipeStore,
+  useSettingsStore,
+  useShoppingStore,
+} from './stores';
 import type {
   ArchivedPlan,
   Ingredient,
@@ -9,6 +16,7 @@ import type {
   Recipe,
   ShoppingListItem,
 } from './types';
+import type { UnitSystem } from './units';
 
 /** Entities that can be independently deleted and need a tombstone row. */
 export type SyncEntity = 'recipe' | 'archived_plan';
@@ -530,7 +538,107 @@ export async function pullArchivedPlans(): Promise<void> {
   }
 }
 
+// --- Pantry staples: whole list, one row per user -------------------------
+
+interface PantryRow {
+  staples: string[];
+  updated_at: string;
+}
+
+interface WholeBlobState {
+  updatedAt?: string;
+}
+
+/** Upserts the entire staples list. Low edit frequency and low conflict risk made per-staple rows not worth the extra table — see supabase/schema.sql. */
+export async function pushPantryStaples(staples: string[]): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return;
+  try {
+    await supabase.from('pantry_staples').upsert({ user_id: userId, staples });
+  } catch {
+    // Offline or unreachable — nothing to do until the next sync attempt.
+  }
+}
+
+export async function pullPantryStaples(): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return;
+
+  let row: PantryRow | null;
+  try {
+    const result = await supabase.from('pantry_staples').select('*').eq('user_id', userId).maybeSingle();
+    if (result.error) return;
+    row = result.data;
+  } catch {
+    return;
+  }
+
+  const { staples, updatedAt, replaceAll } = usePantryStore.getState();
+  const localState: WholeBlobState = { updatedAt: updatedAt ?? undefined };
+  const remoteState: WholeBlobState | undefined = row ? { updatedAt: row.updated_at } : undefined;
+  const winner = resolveLastWriteWins(localState, remoteState);
+
+  if (winner === remoteState && row) {
+    replaceAll(row.staples, row.updated_at);
+  } else if (winner === localState && (!remoteState || (updatedAt ?? '') > (remoteState.updatedAt ?? ''))) {
+    void pushPantryStaples(staples);
+  }
+}
+
+// --- Settings: whole blob, one row per user -------------------------------
+
+interface SettingsRow {
+  unit_system: UnitSystem;
+  updated_at: string;
+}
+
+export async function pushSettings(unitSystem: UnitSystem): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return;
+  try {
+    await supabase.from('settings').upsert({ user_id: userId, unit_system: unitSystem });
+  } catch {
+    // Offline or unreachable — nothing to do until the next sync attempt.
+  }
+}
+
+export async function pullSettings(): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return;
+
+  let row: SettingsRow | null;
+  try {
+    const result = await supabase.from('settings').select('*').eq('user_id', userId).maybeSingle();
+    if (result.error) return;
+    row = result.data;
+  } catch {
+    return;
+  }
+
+  const { unitSystem, updatedAt, setUnitSystem } = useSettingsStore.getState();
+  const localState: WholeBlobState = { updatedAt: updatedAt ?? undefined };
+  const remoteState: WholeBlobState | undefined = row ? { updatedAt: row.updated_at } : undefined;
+  const winner = resolveLastWriteWins(localState, remoteState);
+
+  if (winner === remoteState && row) {
+    setUnitSystem(row.unit_system, row.updated_at);
+  } else if (winner === localState && (!remoteState || (updatedAt ?? '') > (remoteState.updatedAt ?? ''))) {
+    void pushSettings(unitSystem);
+  }
+}
+
 /** Runs every entity's pull. More entities join in as each lands. */
 export async function pullAll(): Promise<void> {
-  await Promise.all([pullRecipes(), pullShoppingItemStates(), pullMealPlan(), pullArchivedPlans()]);
+  await Promise.all([
+    pullRecipes(),
+    pullShoppingItemStates(),
+    pullMealPlan(),
+    pullArchivedPlans(),
+    pullPantryStaples(),
+    pullSettings(),
+  ]);
 }
