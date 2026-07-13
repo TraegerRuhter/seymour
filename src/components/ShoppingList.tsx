@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ShoppingListItem } from '@/lib/types';
 import { useRecipeStore, useShoppingStore } from '@/lib/stores';
+import { setShoppingItemOverride, toggleShoppingItem } from '@/lib/actions';
 import { displayUnit, formatAmount } from '@/lib/units';
 import { categorize, CATEGORY_ORDER, type Category } from '@/lib/categories';
 import { DURATION, EASE, enter, fadeRise, layoutSpring, listRowExit } from '@/lib/motion';
@@ -59,8 +60,6 @@ const CATEGORY_ICON: Record<Category, IconComponent> = {
  * "Checked" section via a shared layout animation.
  */
 function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) {
-  const toggleChecked = useShoppingStore((s) => s.toggleChecked);
-  const setOverride = useShoppingStore((s) => s.setOverride);
   const recipes = useRecipeStore((s) => s.recipes);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
@@ -85,7 +84,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
           type="checkbox"
           id={inputId}
           checked={item.checked}
-          onChange={() => toggleChecked(item.id)}
+          onChange={() => toggleShoppingItem(item.id)}
           className="peer absolute inset-0 h-6 w-6 cursor-pointer appearance-none rounded-full border-2 border-charcoal/25 transition-colors checked:border-olive checked:bg-olive"
         />
         <svg
@@ -113,7 +112,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
             className="flex items-center gap-2"
             onSubmit={(e) => {
               e.preventDefault();
-              setOverride(item.id, draft);
+              setShoppingItemOverride(item.id, draft);
               setEditing(false);
             }}
           >

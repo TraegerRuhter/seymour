@@ -1,6 +1,6 @@
 import { getSupabaseClient } from './supabase';
-import { useAuthUserStore, useRecipeStore } from './stores';
-import type { Ingredient, MealType, Recipe } from './types';
+import { useAuthUserStore, useRecipeStore, useShoppingStore } from './stores';
+import type { Ingredient, MealType, Recipe, ShoppingListItem } from './types';
 
 /** Entities that can be independently deleted and need a tombstone row. */
 export type SyncEntity = 'recipe';
@@ -184,7 +184,100 @@ export async function pullRecipes(): Promise<void> {
   }
 }
 
-/** Runs every entity's pull. Only recipes sync so far — more join in as each lands. */
+// --- Shopping list item check-state -----------------------------------
+
+interface ShoppingItemStateRow {
+  id: string;
+  checked: boolean;
+  manual_override: string | null;
+  updated_at: string;
+}
+
+interface CheckState {
+  checked: boolean;
+  manualOverride?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Upserts one item's checked/manualOverride state. Only that state syncs —
+ * quantities and ingredient names are recomputed locally from the plan,
+ * recipes, and pantry staples, never sent over the wire (see the comment on
+ * the `shopping_list_items` table in supabase/schema.sql).
+ */
+export async function pushShoppingItemState(item: ShoppingListItem): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return;
+  try {
+    await supabase.from('shopping_list_items').upsert({
+      user_id: userId,
+      id: item.id,
+      checked: item.checked,
+      manual_override: item.manualOverride ?? null,
+    });
+  } catch {
+    // Offline or unreachable — nothing to do until the next sync attempt.
+  }
+}
+
+/**
+ * Merges remote checked/manualOverride state into the current local
+ * shopping list, per item id. Never pulls item existence or quantities —
+ * those come from each device's own buildShoppingList() re-derivation, so
+ * two devices with the same plan/recipes/staples arrive at the same items
+ * independently, without a network round trip.
+ */
+export async function pullShoppingItemStates(): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return;
+
+  let rows: ShoppingItemStateRow[] | null;
+  try {
+    const result = await supabase.from('shopping_list_items').select('*').eq('user_id', userId);
+    if (result.error) return;
+    rows = result.data;
+  } catch {
+    return;
+  }
+
+  const remoteById = new Map<string, CheckState>(
+    (rows ?? []).map((row) => [
+      row.id,
+      { checked: row.checked, manualOverride: row.manual_override ?? undefined, updatedAt: row.updated_at },
+    ]),
+  );
+
+  const { items, setItems } = useShoppingStore.getState();
+  let changed = false;
+  const merged = items.map((item) => {
+    const localState: CheckState = {
+      checked: item.checked,
+      manualOverride: item.manualOverride,
+      updatedAt: item.updatedAt,
+    };
+    const remoteState = remoteById.get(item.id);
+    const winner = resolveLastWriteWins(localState, remoteState);
+
+    if (winner === remoteState && remoteState) {
+      changed = true;
+      return {
+        ...item,
+        checked: remoteState.checked,
+        manualOverride: remoteState.manualOverride,
+        updatedAt: remoteState.updatedAt,
+      };
+    }
+    if (winner === localState && (!remoteState || (item.updatedAt ?? '') > (remoteState.updatedAt ?? ''))) {
+      void pushShoppingItemState(item);
+    }
+    return item;
+  });
+  if (changed) setItems(merged);
+}
+
+/** Runs every entity's pull. Recipes and shopping-list check-state sync so far — more join in as each lands. */
 export async function pullAll(): Promise<void> {
-  await pullRecipes();
+  await Promise.all([pullRecipes(), pullShoppingItemStates()]);
 }

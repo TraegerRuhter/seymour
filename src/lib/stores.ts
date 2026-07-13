@@ -198,14 +198,14 @@ export const useShoppingStore = create<ShoppingState>()(
       toggleChecked: (id) =>
         set((s) => ({
           items: s.items.map((i) =>
-            i.id === id ? { ...i, checked: !i.checked } : i,
+            i.id === id ? { ...i, checked: !i.checked, updatedAt: new Date().toISOString() } : i,
           ),
         })),
       setOverride: (id, text) =>
         set((s) => ({
           items: s.items.map((i) =>
             i.id === id
-              ? { ...i, manualOverride: text.trim() || undefined }
+              ? { ...i, manualOverride: text.trim() || undefined, updatedAt: new Date().toISOString() }
               : i,
           ),
         })),

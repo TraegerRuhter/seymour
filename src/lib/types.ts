@@ -84,6 +84,8 @@ export interface ShoppingListItem {
   manualOverride?: string;
   /** Ids of the recipes that contributed to this line item (for "show source recipe" links). */
   recipeIds?: string[];
+  /** Set on every local checked/manualOverride edit; compared against the server's row to resolve sync conflicts. */
+  updatedAt?: string;
 }
 
 // --- Parse API contracts ---
