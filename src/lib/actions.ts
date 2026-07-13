@@ -20,10 +20,13 @@ import {
   pushArchivedPlan,
   pushMealPlan,
   pushMealPlanDay,
+  pushPantryStaples,
   pushRecipe,
+  pushSettings,
   pushShoppingItemState,
 } from './sync';
 import { usePantryStore, usePlanStore, useRecipeStore, useSettingsStore, useShoppingStore } from './stores';
+import type { UnitSystem } from './units';
 
 /**
  * Cross-store orchestration lives here so individual stores stay decoupled.
@@ -69,6 +72,15 @@ export function setShoppingItemOverride(id: string, text: string): void {
   if (item) void pushShoppingItemState(item);
 }
 
+// --- Settings ---
+
+/** Sets the measurement system and syncs the change. Also re-aggregates so the list re-renders in the new units. */
+export function setUnitSystem(system: UnitSystem): void {
+  useSettingsStore.getState().setUnitSystem(system);
+  regenerateShoppingList();
+  void pushSettings(useSettingsStore.getState().unitSystem);
+}
+
 // --- Pantry staples ("spice rack") ---
 
 /** Adds a staple (normalized the same way recipe ingredients are) and re-aggregates the list. */
@@ -77,11 +89,13 @@ export function addPantryStaple(raw: string): void {
   if (!name) return;
   usePantryStore.getState().addStaple(name);
   regenerateShoppingList();
+  void pushPantryStaples(usePantryStore.getState().staples);
 }
 
 export function removePantryStaple(name: string): void {
   usePantryStore.getState().removeStaple(name);
   regenerateShoppingList();
+  void pushPantryStaples(usePantryStore.getState().staples);
 }
 
 export function recipeFromParsed(data: ParsedRecipeData): Recipe {
@@ -254,6 +268,7 @@ export function resetEverything(): void {
   for (const id of recipeIds) void deleteRemote('recipe', id);
   for (const id of archivedIds) void deleteRemote('archived_plan', id);
   void clearMealPlanRemote();
+  void pushPantryStaples([]);
 }
 
 // --- Export / Import ---

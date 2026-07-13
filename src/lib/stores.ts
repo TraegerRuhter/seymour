@@ -254,31 +254,42 @@ export const useShoppingStore = create<ShoppingState>()(
 interface PantryState {
   /** Normalized ingredient names (see normalizeIngredientName) the user already has on hand. */
   staples: string[];
+  /** Set on every local change; compared against the server's row to resolve sync conflicts (the whole list syncs as one row, not per-staple). */
+  updatedAt: string | null;
   hasHydrated: boolean;
   addStaple: (name: string) => void;
   removeStaple: (name: string) => void;
-  replaceAll: (staples: string[]) => void;
+  /** `updatedAt` is only passed when adopting a remote value during a pull — otherwise it's stamped fresh. */
+  replaceAll: (staples: string[], updatedAt?: string) => void;
 }
 
 export const usePantryStore = create<PantryState>()(
   persist(
     (set) => ({
       staples: [],
+      updatedAt: null,
       hasHydrated: false,
       addStaple: (name) =>
-        set((s) => (s.staples.includes(name) ? s : { staples: [...s.staples, name].sort() })),
+        set((s) =>
+          s.staples.includes(name)
+            ? s
+            : { staples: [...s.staples, name].sort(), updatedAt: new Date().toISOString() },
+        ),
       removeStaple: (name) =>
-        set((s) => ({ staples: s.staples.filter((n) => n !== name) })),
-      replaceAll: (staples) => set({ staples }),
+        set((s) => ({
+          staples: s.staples.filter((n) => n !== name),
+          updatedAt: new Date().toISOString(),
+        })),
+      replaceAll: (staples, updatedAt) => set({ staples, updatedAt: updatedAt ?? new Date().toISOString() }),
     }),
     {
       name: 'pantry',
       storage: createJSONStorage(() => makeStorage('pantry')),
-      partialize: (s) => ({ staples: s.staples }),
+      partialize: (s) => ({ staples: s.staples, updatedAt: s.updatedAt }),
       version: 1,
       migrate: (persisted) => {
-        const s = (persisted ?? {}) as Partial<{ staples: string[] }>;
-        return { staples: s.staples ?? [] };
+        const s = (persisted ?? {}) as Partial<{ staples: string[]; updatedAt: string | null }>;
+        return { staples: s.staples ?? [], updatedAt: s.updatedAt ?? null };
       },
     },
   ),
@@ -306,25 +317,29 @@ export const useAuthUserStore = create<AuthUserState>((set) => ({
 
 interface SettingsState {
   unitSystem: UnitSystem;
+  /** Set on every local change; compared against the server's row to resolve sync conflicts. */
+  updatedAt: string | null;
   hasHydrated: boolean;
-  setUnitSystem: (system: UnitSystem) => void;
+  /** `updatedAt` is only passed when adopting a remote value during a pull — otherwise it's stamped fresh. */
+  setUnitSystem: (system: UnitSystem, updatedAt?: string) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       unitSystem: 'imperial',
+      updatedAt: null,
       hasHydrated: false,
-      setUnitSystem: (unitSystem) => set({ unitSystem }),
+      setUnitSystem: (unitSystem, updatedAt) => set({ unitSystem, updatedAt: updatedAt ?? new Date().toISOString() }),
     }),
     {
       name: 'settings',
       storage: createJSONStorage(() => makeStorage('settings')),
-      partialize: (s) => ({ unitSystem: s.unitSystem }),
+      partialize: (s) => ({ unitSystem: s.unitSystem, updatedAt: s.updatedAt }),
       version: 1,
       migrate: (persisted) => {
-        const s = (persisted ?? {}) as Partial<{ unitSystem: UnitSystem }>;
-        return { unitSystem: s.unitSystem ?? 'imperial' };
+        const s = (persisted ?? {}) as Partial<{ unitSystem: UnitSystem; updatedAt: string | null }>;
+        return { unitSystem: s.unitSystem ?? 'imperial', updatedAt: s.updatedAt ?? null };
       },
     },
   ),

@@ -2,7 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { addPantryStaple, exportBundle, importBundle, removePantryStaple, validateBundle } from '@/lib/actions';
+import {
+  addPantryStaple,
+  exportBundle,
+  importBundle,
+  removePantryStaple,
+  setUnitSystem,
+  validateBundle,
+} from '@/lib/actions';
 import { useRecipeStore, useShoppingStore, usePlanStore, usePantryStore, useSettingsStore } from '@/lib/stores';
 import { useAuth } from '@/lib/auth';
 import { getSupabaseClient } from '@/lib/supabase';
@@ -35,7 +42,6 @@ export default function SettingsPage() {
   const { user, signOut } = useAuth();
   const syncConfigured = getSupabaseClient() !== null;
   const unitSystem = useSettingsStore((s) => s.unitSystem);
-  const setUnitSystem = useSettingsStore((s) => s.setUnitSystem);
   const staples = usePantryStore((s) => s.staples);
   const [stapleInput, setStapleInput] = useState('');
 
