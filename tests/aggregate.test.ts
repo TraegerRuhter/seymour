@@ -54,6 +54,31 @@ test('normalizes leading prep-word adjectives: chopped onion + minced onion merg
   assert.ok(Math.abs(items[0].totalQuantity - 1.5) < 0.01);
 });
 
+test('a merge of differently-worded lines carries a "why this many" source breakdown', () => {
+  const items = aggregateIngredients([
+    { ...parseIngredient('1/2 cup chopped onion'), recipeId: 'r1' },
+    { ...parseIngredient('1 cup minced onion'), recipeId: 'r2' },
+  ]);
+  assert.equal(items.length, 1);
+  assert.deepEqual(items[0].sources, [
+    { originalString: '1/2 cup chopped onion', recipeId: 'r1' },
+    { originalString: '1 cup minced onion', recipeId: 'r2' },
+  ]);
+});
+
+test('a single-line item (or one repeated verbatim across meals) has no breakdown to show', () => {
+  const single = aggregateIngredients([parseIngredient('1 cup milk')]);
+  assert.equal(single[0].sources, undefined);
+
+  // Same recipe planned twice contributes the identical line twice — nothing
+  // different to explain, so no breakdown either.
+  const repeated = aggregateIngredients([
+    parseIngredient('1 onion, diced'),
+    parseIngredient('1 onion, diced'),
+  ]);
+  assert.equal(repeated[0].sources, undefined);
+});
+
 test('does not sum unlike units (cloves vs cups)', () => {
   const items = aggregateIngredients([
     parseIngredient('2 cloves garlic'),

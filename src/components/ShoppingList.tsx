@@ -198,6 +198,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [expanded, setExpanded] = useState(false);
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const labelTextRef = useRef<HTMLSpanElement>(null);
 
   const label = itemLabel(item);
@@ -296,6 +297,37 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
               className="absolute left-0 top-1/2 h-0.5 w-full origin-left bg-charcoal/60"
             />
           </label>
+        )}
+
+        {!editing && item.sources && item.sources.length > 1 && (
+          <div className="mt-1">
+            <button
+              type="button"
+              onClick={() => setShowBreakdown((v) => !v)}
+              aria-expanded={showBreakdown}
+              className="flex items-center gap-1 text-xs text-charcoal/50 hover:text-charcoal/70"
+            >
+              <span
+                aria-hidden
+                className={`inline-block transition-transform ${showBreakdown ? 'rotate-90' : ''}`}
+              >
+                ▸
+              </span>
+              Why this many?
+            </button>
+            {showBreakdown && (
+              <ul className="mt-1 space-y-0.5 border-l-2 border-charcoal/10 pl-3">
+                {item.sources.map((s) => (
+                  <li key={s.originalString} className="truncate text-xs text-charcoal/60">
+                    {s.originalString}
+                    {s.recipeId && recipes[s.recipeId] && (
+                      <span className="text-charcoal/40"> · {recipes[s.recipeId].title}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
       </div>
 

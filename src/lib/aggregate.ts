@@ -9,6 +9,8 @@ interface Bucket {
   displayUnit: string;
   total: number;
   recipeIds: Set<string>;
+  /** Every original line that fed into this bucket, for the "why this many" breakdown. */
+  sources: { originalString: string; recipeId?: string }[];
 }
 
 /** An ingredient tagged with the recipe it came from, for "source recipe" links. */
@@ -57,11 +59,12 @@ export function aggregateIngredients(
 
     let bucket = buckets.get(key);
     if (!bucket) {
-      bucket = { name, key, baseUnit, displayUnit, total: 0, recipeIds: new Set() };
+      bucket = { name, key, baseUnit, displayUnit, total: 0, recipeIds: new Set(), sources: [] };
       buckets.set(key, bucket);
     }
     if (amount > 0) bucket.total += amount;
     if (ing.recipeId) bucket.recipeIds.add(ing.recipeId);
+    bucket.sources.push({ originalString: ing.originalString, recipeId: ing.recipeId });
   }
 
   const items: ShoppingListItem[] = [];
@@ -73,6 +76,11 @@ export function aggregateIngredients(
       quantity = readable.quantity;
       unit = readable.unit;
     }
+    // Only worth showing a "why this many" breakdown when the merge
+    // actually combined two differently-worded lines — a bucket built from
+    // one recipe's line repeated across several planned meals has nothing
+    // to explain.
+    const distinctSources = [...new Map(bucket.sources.map((s) => [s.originalString, s])).values()];
     items.push({
       id: bucket.key,
       ingredientName: bucket.name,
@@ -80,6 +88,7 @@ export function aggregateIngredients(
       unit,
       checked: false,
       ...(bucket.recipeIds.size > 0 ? { recipeIds: [...bucket.recipeIds].sort() } : {}),
+      ...(distinctSources.length > 1 ? { sources: distinctSources } : {}),
     });
   }
 
