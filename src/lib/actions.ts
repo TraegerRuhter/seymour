@@ -14,7 +14,15 @@ import { parseIngredientLines } from './ingredient-parser';
 import { buildShoppingList, mergeShoppingList } from './aggregate';
 import { normalizeIngredientName } from './normalize';
 import { generateMealPlan, newSeed, planLabel, recipeFitsMealType } from './plan';
-import { deleteRemote, pushRecipe, pushShoppingItemState } from './sync';
+import {
+  clearMealPlanRemote,
+  deleteRemote,
+  pushArchivedPlan,
+  pushMealPlan,
+  pushMealPlanDay,
+  pushRecipe,
+  pushShoppingItemState,
+} from './sync';
 import { usePantryStore, usePlanStore, useRecipeStore, useSettingsStore, useShoppingStore } from './stores';
 
 /**
@@ -108,6 +116,8 @@ export function deleteRecipe(id: string): void {
   usePlanStore.getState().clearRecipeFromPlan(id);
   regenerateShoppingList();
   void deleteRemote('recipe', id);
+  const { config, plan } = usePlanStore.getState();
+  if (config && plan) void pushMealPlan(config, plan);
 }
 
 export function generatePlan(days: number, mealTypes: MealType[], seed?: number): void {
@@ -133,6 +143,8 @@ export function generatePlan(days: number, mealTypes: MealType[], seed?: number)
   );
   usePlanStore.getState().setPlan(config, plan);
   regenerateShoppingList();
+  const { config: stampedConfig, plan: stampedPlan } = usePlanStore.getState();
+  if (stampedConfig && stampedPlan) void pushMealPlan(stampedConfig, stampedPlan);
 }
 
 /** Re-runs the current configuration with a fresh seed. */
@@ -145,6 +157,8 @@ export function regeneratePlan(): void {
 export function pickSlotRecipe(dayIndex: number, mealIndex: number, recipeId: string): void {
   usePlanStore.getState().setSlot(dayIndex, mealIndex, recipeId);
   regenerateShoppingList();
+  const day = usePlanStore.getState().plan?.[dayIndex];
+  if (day) void pushMealPlanDay(dayIndex, day);
 }
 
 /** Swaps a single filled (or empty) slot for a different, randomly chosen eligible recipe. */
@@ -177,6 +191,8 @@ export function archiveCurrentPlan(): void {
   usePlanStore.getState().pushArchived(entry);
   usePlanStore.getState().clearPlan();
   regenerateShoppingList();
+  void pushArchivedPlan(entry);
+  void clearMealPlanRemote();
 }
 
 /** Makes an archived plan the active one again (and removes it from the archive). */
@@ -186,29 +202,39 @@ export function restoreArchivedPlan(id: string): void {
   usePlanStore.getState().setPlan(entry.config, entry.plan);
   usePlanStore.getState().deleteArchived(id);
   regenerateShoppingList();
+  const { config, plan } = usePlanStore.getState();
+  if (config && plan) void pushMealPlan(config, plan);
+  void deleteRemote('archived_plan', id);
 }
 
 export function deleteArchivedPlan(id: string): void {
   usePlanStore.getState().deleteArchived(id);
+  void deleteRemote('archived_plan', id);
 }
 
 export function clearArchivedPlans(): void {
+  const ids = usePlanStore.getState().archivedPlans.map((a) => a.id);
   usePlanStore.getState().clearArchived();
+  for (const id of ids) void deleteRemote('archived_plan', id);
 }
 
 /** Deletes the current plan without archiving it. */
 export function clearCurrentPlan(): void {
   usePlanStore.getState().clearPlan();
   regenerateShoppingList();
+  void clearMealPlanRemote();
 }
 
 // --- Bulk data management ---
 
 /** Removes every recipe and clears the current plan (its slots would be empty). */
 export function deleteAllRecipes(): void {
+  const ids = Object.keys(useRecipeStore.getState().recipes);
   useRecipeStore.getState().replaceAll({});
   usePlanStore.getState().clearPlan();
   regenerateShoppingList();
+  for (const id of ids) void deleteRemote('recipe', id);
+  void clearMealPlanRemote();
 }
 
 /** Rebuilds the shopping list from the current plan, dropping checks and edits. */
@@ -219,10 +245,15 @@ export function resetShoppingList(): void {
 
 /** Wipes all data: recipes, current + archived plans, shopping list, and pantry staples. */
 export function resetEverything(): void {
+  const recipeIds = Object.keys(useRecipeStore.getState().recipes);
+  const archivedIds = usePlanStore.getState().archivedPlans.map((a) => a.id);
   useRecipeStore.getState().replaceAll({});
   usePlanStore.getState().replaceAll(null, null, []);
   useShoppingStore.getState().replaceAll([]);
   usePantryStore.getState().replaceAll([]);
+  for (const id of recipeIds) void deleteRemote('recipe', id);
+  for (const id of archivedIds) void deleteRemote('archived_plan', id);
+  void clearMealPlanRemote();
 }
 
 // --- Export / Import ---

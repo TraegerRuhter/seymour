@@ -53,12 +53,16 @@ export interface MealSlot {
 export interface MealPlanDay {
   date: string; // YYYY-MM-DD, date of the planned day
   meals: MealSlot[];
+  /** Set whenever this day's slots change (regenerate, swap, shuffle); compared to the server's row to resolve sync conflicts per day. */
+  updatedAt?: string;
 }
 
 export interface MealPlanConfig {
   days: number;
   mealTypes: MealType[];
   seed: number;
+  /** Set on every regenerate; compared to the server's row to resolve sync conflicts. */
+  updatedAt?: string;
 }
 
 /** A meal plan saved to history so it can be looked back on or restored. */
