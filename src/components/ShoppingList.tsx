@@ -362,27 +362,26 @@ export default function ShoppingList({
         <ProgressBar done={checked.length} total={items.length} />
       </div>
 
-      {CATEGORY_ORDER.filter((cat) => groups.has(cat)).map((cat) => (
-        <section key={cat} aria-label={cat} className="mb-5">
-          <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-charcoal/50">
-            {(() => {
-              const Icon = CATEGORY_ICON[cat];
-              return <Icon className="h-5 w-5" />;
-            })()}
-            {cat}
-            <span className="font-normal normal-case tracking-normal">
-              · {groups.get(cat)!.length}
-            </span>
-          </h2>
-          <ul className="space-y-2">
-            <AnimatePresence initial={false}>
-              {groups.get(cat)!.map((item) => (
-                <Row key={item.id} item={item} editable={editable} />
-              ))}
-            </AnimatePresence>
-          </ul>
-        </section>
-      ))}
+      {CATEGORY_ORDER.filter((cat) => groups.has(cat)).map((cat) => {
+        const CategoryIcon = CATEGORY_ICON[cat];
+        const catItems = groups.get(cat)!;
+        return (
+          <section key={cat} aria-label={cat} className="mb-5">
+            <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-charcoal/50">
+              <CategoryIcon className="h-5 w-5" />
+              {cat}
+              <span className="font-normal normal-case tracking-normal">· {catItems.length}</span>
+            </h2>
+            <ul className="space-y-2">
+              <AnimatePresence initial={false}>
+                {catItems.map((item) => (
+                  <Row key={item.id} item={item} editable={editable} />
+                ))}
+              </AnimatePresence>
+            </ul>
+          </section>
+        );
+      })}
 
       {checked.length > 0 && (
         <section className="mt-6" aria-label="Checked items">

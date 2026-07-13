@@ -96,13 +96,15 @@ export function parseIngredient(originalString: string): Ingredient {
   if (quantity > 0) {
     // Optional unit token right after the quantity. Try two-word units first ("fl oz", "fluid ounces").
     const twoWord = rest.match(TWO_WORD_UNIT_REGEX);
-    if (twoWord && canonicalUnit(twoWord[1].replace(/\./g, ''))) {
-      unit = canonicalUnit(twoWord[1].replace(/\./g, ''))!;
+    const twoWordUnit = twoWord && canonicalUnit(twoWord[1].replace(/\./g, ''));
+    if (twoWord && twoWordUnit) {
+      unit = twoWordUnit;
       rest = rest.slice(twoWord[0].length).trim();
     } else {
       const oneWord = rest.match(ONE_WORD_UNIT_REGEX);
-      if (oneWord && canonicalUnit(oneWord[1])) {
-        unit = canonicalUnit(oneWord[1])!;
+      const oneWordUnit = oneWord && canonicalUnit(oneWord[1]);
+      if (oneWord && oneWordUnit) {
+        unit = oneWordUnit;
         rest = rest.slice(oneWord[0].length).trim();
       }
     }
@@ -113,8 +115,9 @@ export function parseIngredient(originalString: string): Ingredient {
     if (paren) {
       rest = rest.slice(paren[0].length);
       const innerUnit = rest.match(ONE_WORD_UNIT_REGEX);
-      if (!unit && innerUnit && canonicalUnit(innerUnit[1])) {
-        unit = canonicalUnit(innerUnit[1])!;
+      const innerCanonical = innerUnit && canonicalUnit(innerUnit[1]);
+      if (!unit && innerUnit && innerCanonical) {
+        unit = innerCanonical;
         rest = rest.slice(innerUnit[0].length).trim();
       }
     }

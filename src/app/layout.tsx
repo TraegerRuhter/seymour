@@ -1,10 +1,19 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import BottomNav from '@/components/BottomNav';
 import Header from '@/components/Header';
 import AppProviders from '@/components/AppProviders';
 import { AuthProvider } from '@/lib/auth';
 import { THEME_INIT_SCRIPT } from '@/lib/theme-script';
+
+// Self-hosted by Next at build time (no runtime request to Google, no layout
+// shift). Exposed as a CSS variable that Tailwind's font-sans stack points at.
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -47,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     // suppressHydrationWarning: the theme init script may add .dark to <html>
     // before React hydrates.
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
