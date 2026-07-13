@@ -88,6 +88,8 @@ export interface ShoppingListItem {
   manualOverride?: string;
   /** Ids of the recipes that contributed to this line item (for "show source recipe" links). */
   recipeIds?: string[];
+  /** Distinct original ingredient lines merged into this total (only set when a merge actually combined 2+ different phrasings), for a "why this many" breakdown. */
+  sources?: { originalString: string; recipeId?: string }[];
   /** Set on every local checked/manualOverride edit; compared against the server's row to resolve sync conflicts. */
   updatedAt?: string;
 }
