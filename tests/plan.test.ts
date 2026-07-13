@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { generateMealPlan, mulberry32, planLabel, recipeFitsMealType, seededShuffle } from '../src/lib/plan.ts';
+import {
+  generateMealPlan,
+  mulberry32,
+  planLabel,
+  recipeFitsMealType,
+  seededShuffle,
+} from '../src/lib/plan.ts';
 import type { MealPlanConfig, MealType, Recipe } from '../src/lib/types.ts';
 
 const ids = (n: number) => Array.from({ length: n }, (_, i) => `r${i}`);
@@ -15,13 +21,25 @@ test('same seed produces the same plan', () => {
 
 test('different seeds produce different plans (usually)', () => {
   const start = new Date(2026, 6, 7);
-  const a = generateMealPlan(ids(10), { days: 7, mealTypes: ['breakfast', 'lunch', 'dinner'], seed: 1 }, start);
-  const b = generateMealPlan(ids(10), { days: 7, mealTypes: ['breakfast', 'lunch', 'dinner'], seed: 2 }, start);
+  const a = generateMealPlan(
+    ids(10),
+    { days: 7, mealTypes: ['breakfast', 'lunch', 'dinner'], seed: 1 },
+    start,
+  );
+  const b = generateMealPlan(
+    ids(10),
+    { days: 7, mealTypes: ['breakfast', 'lunch', 'dinner'], seed: 2 },
+    start,
+  );
   assert.notDeepEqual(a, b);
 });
 
 test('no recipe repeats within a single day when collection is large enough', () => {
-  const plan = generateMealPlan(ids(5), { days: 14, mealTypes: ['breakfast', 'lunch', 'dinner', 'snack'], seed: 7 });
+  const plan = generateMealPlan(ids(5), {
+    days: 14,
+    mealTypes: ['breakfast', 'lunch', 'dinner', 'snack'],
+    seed: 7,
+  });
   for (const day of plan) {
     const seen = new Set(day.meals.map((m) => m.recipeId));
     assert.equal(seen.size, day.meals.length, `duplicates within ${day.date}`);
@@ -29,7 +47,11 @@ test('no recipe repeats within a single day when collection is large enough', ()
 });
 
 test('fills all slots even when collection is smaller than meals per day', () => {
-  const plan = generateMealPlan(ids(2), { days: 3, mealTypes: ['breakfast', 'lunch', 'dinner'], seed: 3 });
+  const plan = generateMealPlan(ids(2), {
+    days: 3,
+    mealTypes: ['breakfast', 'lunch', 'dinner'],
+    seed: 3,
+  });
   for (const day of plan) {
     for (const meal of day.meals) assert.ok(meal.recipeId);
   }
@@ -45,7 +67,10 @@ test('plan has correct shape: days × mealTypes', () => {
   const plan = generateMealPlan(ids(8), { days: 4, mealTypes: ['lunch', 'dinner'], seed: 9 });
   assert.equal(plan.length, 4);
   for (const day of plan) {
-    assert.deepEqual(day.meals.map((m) => m.type), ['lunch', 'dinner']);
+    assert.deepEqual(
+      day.meals.map((m) => m.type),
+      ['lunch', 'dinner'],
+    );
     assert.match(day.date, /^\d{4}-\d{2}-\d{2}$/);
   }
 });
@@ -71,13 +96,18 @@ test('generateMealPlan restricts each meal type to its eligible recipes', () => 
 test('generateMealPlan falls back to the full collection when a meal type has zero eligible recipes', () => {
   // Nothing is tagged "snack" — every recipe is breakfast-only.
   const isEligible = (_id: string, type: MealType) => type === 'breakfast';
-  const plan = generateMealPlan(ids(3), { days: 2, mealTypes: ['snack'], seed: 5 }, undefined, isEligible);
+  const plan = generateMealPlan(
+    ids(3),
+    { days: 2, mealTypes: ['snack'], seed: 5 },
+    undefined,
+    isEligible,
+  );
   for (const day of plan) {
     assert.ok(day.meals[0].recipeId, 'snack slot should still be filled');
   }
 });
 
-test('generateMealPlan avoids repeating the previous day\'s main ingredient when variety exists', () => {
+test("generateMealPlan avoids repeating the previous day's main ingredient when variety exists", () => {
   // r0, r1 are "beef"; r2, r3 are "chicken".
   const mainIngredient = new Map([
     ['r0', 'beef'],

@@ -28,7 +28,11 @@ export default function ShoppingListPage() {
           </p>
         </div>
         {checkedCount > 0 && (
-          <button type="button" onClick={clearChecked} className="btn-secondary px-4 py-1.5 text-sm">
+          <button
+            type="button"
+            onClick={clearChecked}
+            className="btn-secondary px-4 py-1.5 text-sm"
+          >
             Uncheck all
           </button>
         )}

@@ -22,11 +22,33 @@ const SKIP_LINE =
   /^(jump\s+to\s+recipe|print(\s+recipe)?|save(\s+recipe)?|pin(\s+it)?|share|rate\s+this\s+recipe|prep\s*time|cook\s*time|total\s*time|servings?|yield|by\s+\S+|posted\s+(on|by))\b|^★+/i;
 const STEP_NUMBER_PREFIX = /^\s*(?:step\s*)?\d+[.):]\s*/i;
 const NAV_WORDS = new Set([
-  'menu', 'home', 'about', 'contact', 'recipes', 'blog', 'shop', 'search',
-  'subscribe', 'login', 'sign in', 'cart', 'newsletter', 'skip to content',
-  'skip to recipe', 'occasions', 'cuisines', 'in the kitchen', 'news',
-  'community', 'video', 'about us', 'ingredients', 'meal types', 'holidays',
-  'world cuisine', 'kitchen tips',
+  'menu',
+  'home',
+  'about',
+  'contact',
+  'recipes',
+  'blog',
+  'shop',
+  'search',
+  'subscribe',
+  'login',
+  'sign in',
+  'cart',
+  'newsletter',
+  'skip to content',
+  'skip to recipe',
+  'occasions',
+  'cuisines',
+  'in the kitchen',
+  'news',
+  'community',
+  'video',
+  'about us',
+  'ingredients',
+  'meal types',
+  'holidays',
+  'world cuisine',
+  'kitchen tips',
 ]);
 // Short all-caps banner/promo lines ("GET THE MAGAZINE", "SUBSCRIBE NOW") —
 // real recipe titles are essentially never pasted in all caps, since the

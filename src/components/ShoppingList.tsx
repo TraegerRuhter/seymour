@@ -39,9 +39,7 @@ function itemLabel(item: ShoppingListItem): string {
   const qty = formatAmount(item.totalQuantity, item.unit);
   const unit = displayUnit(item.unit, item.totalQuantity);
   const name =
-    !item.unit && item.totalQuantity > 1
-      ? pluralizeName(item.ingredientName)
-      : item.ingredientName;
+    !item.unit && item.totalQuantity > 1 ? pluralizeName(item.ingredientName) : item.ingredientName;
   return [qty, unit, name].filter(Boolean).join(' ');
 }
 
@@ -76,7 +74,9 @@ function RowMenu({
   onEdit: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [coords, setCoords] = useState<{ top?: number; bottom?: number; right: number } | null>(null);
+  const [coords, setCoords] = useState<{ top?: number; bottom?: number; right: number } | null>(
+    null,
+  );
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -92,7 +92,8 @@ function RowMenu({
     const rect = buttonRef.current?.getBoundingClientRect();
     if (!rect) return;
     const MENU_HEIGHT_ESTIMATE = 220; // generous for up to ~5 entries
-    const openUpward = window.innerHeight - rect.bottom < MENU_HEIGHT_ESTIMATE && rect.top > MENU_HEIGHT_ESTIMATE;
+    const openUpward =
+      window.innerHeight - rect.bottom < MENU_HEIGHT_ESTIMATE && rect.top > MENU_HEIGHT_ESTIMATE;
     setCoords({
       right: window.innerWidth - rect.right,
       ...(openUpward ? { bottom: window.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }),

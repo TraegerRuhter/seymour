@@ -80,10 +80,16 @@ const MICRODATA_HTML = `
 </div>`;
 
 test('extractRecipeFromMicrodata: reads title, ingredients, image, and instructions from a real recipe-card fixture', () => {
-  const result = extractRecipeFromMicrodata(MICRODATA_HTML, 'https://broccyourbody.com/key-lime-pie-ice-cream-sandwiches/');
+  const result = extractRecipeFromMicrodata(
+    MICRODATA_HTML,
+    'https://broccyourbody.com/key-lime-pie-ice-cream-sandwiches/',
+  );
   assert.ok(result);
   assert.equal(result!.title, 'Key Lime Pie Ice Cream Sandwiches');
-  assert.equal(result!.imageUrl, 'https://broccyourbody.com/wp-content/uploads/2026/06/View-recent-photos.png');
+  assert.equal(
+    result!.imageUrl,
+    'https://broccyourbody.com/wp-content/uploads/2026/06/View-recent-photos.png',
+  );
   assert.deepEqual(result!.ingredientLines, [
     '12 oz graham crackers, about 3 sleeves',
     '1 1/2 sticks salted butter, melted',
@@ -98,7 +104,13 @@ test('extractRecipeFromMicrodata: reads title, ingredients, image, and instructi
 });
 
 test('extractRecipeFromMicrodata: returns null when there is no schema.org/Recipe itemtype at all', () => {
-  assert.equal(extractRecipeFromMicrodata('<div>just a blog post, no recipe markup</div>', 'https://example.com'), null);
+  assert.equal(
+    extractRecipeFromMicrodata(
+      '<div>just a blog post, no recipe markup</div>',
+      'https://example.com',
+    ),
+    null,
+  );
 });
 
 test('extractRecipeFromMicrodata: returns null when the Recipe scope has no recipeIngredient items', () => {

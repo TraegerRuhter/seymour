@@ -114,7 +114,10 @@ async function parseOne(url: string): Promise<ParseResult> {
 
 export async function POST(req: NextRequest) {
   if (isRateLimited(`parse:${clientIp(req)}`, RATE_LIMIT)) {
-    return NextResponse.json({ error: 'Rate limit exceeded. Try again in a minute.' }, { status: 429 });
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Try again in a minute.' },
+      { status: 429 },
+    );
   }
 
   let body: { urls?: unknown };
@@ -125,13 +128,21 @@ export async function POST(req: NextRequest) {
   }
 
   const urls = Array.isArray(body.urls)
-    ? body.urls.filter((u): u is string => typeof u === 'string' && u.trim().length > 0).map((u) => u.trim())
+    ? body.urls
+        .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+        .map((u) => u.trim())
     : [];
   if (urls.length === 0) {
-    return NextResponse.json({ error: 'Provide { urls: string[] } with at least one URL.' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Provide { urls: string[] } with at least one URL.' },
+      { status: 400 },
+    );
   }
   if (urls.length > MAX_URLS_PER_REQUEST) {
-    return NextResponse.json({ error: `At most ${MAX_URLS_PER_REQUEST} URLs per request.` }, { status: 400 });
+    return NextResponse.json(
+      { error: `At most ${MAX_URLS_PER_REQUEST} URLs per request.` },
+      { status: 400 },
+    );
   }
 
   const results = await Promise.all(urls.map(parseOne));

@@ -1,0 +1,15 @@
+.next
+node_modules
+public
+supabase/schema.sql
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# Deliberately dense: ~40 icon definitions read far better as one line per
+# <path> than exploded across 4-8 lines each. Hand-formatted on purpose.
+src/components/icons.tsx
+
+# Prettier's markdown printer reinterpreted a literal "+" in prose as a list
+# marker, silently changing rendered semantics (a continuation line became
+# a nested bullet) — too risky for hand-written prose to run unreviewed.
+*.md

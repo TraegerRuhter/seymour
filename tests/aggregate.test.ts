@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { aggregateIngredients, buildShoppingList, mergeShoppingList } from '../src/lib/aggregate.ts';
+import {
+  aggregateIngredients,
+  buildShoppingList,
+  mergeShoppingList,
+} from '../src/lib/aggregate.ts';
 import { parseIngredient } from '../src/lib/ingredient-parser.ts';
 import { formatAmount, formatQuantity, toReadable } from '../src/lib/units.ts';
 import type { MealPlanDay, Recipe } from '../src/lib/types.ts';
@@ -111,10 +115,7 @@ test('unquantified items appear once without quantity', () => {
 test('mergeShoppingList preserves checked state by id', () => {
   const first = aggregateIngredients([parseIngredient('1 cup milk')]);
   first[0].checked = true;
-  const next = aggregateIngredients([
-    parseIngredient('1 cup milk'),
-    parseIngredient('2 eggs'),
-  ]);
+  const next = aggregateIngredients([parseIngredient('1 cup milk'), parseIngredient('2 eggs')]);
   const merged = mergeShoppingList(next, first);
   const milk = merged.find((i) => i.ingredientName === 'milk')!;
   const egg = merged.find((i) => i.ingredientName === 'egg')!;
@@ -172,9 +173,7 @@ test('buildShoppingList excludes pantry staples entirely', () => {
   const recipes: Record<string, Recipe> = {
     r1: makeRecipe('r1', ['1 tsp salt', '2 cups flour']),
   };
-  const plan: MealPlanDay[] = [
-    { date: '2026-07-07', meals: [{ type: 'dinner', recipeId: 'r1' }] },
-  ];
+  const plan: MealPlanDay[] = [{ date: '2026-07-07', meals: [{ type: 'dinner', recipeId: 'r1' }] }];
   const withoutStaples = buildShoppingList(plan, recipes, 'imperial');
   assert.equal(withoutStaples.length, 2);
 
@@ -204,9 +203,7 @@ test('buildShoppingList tags each item with the recipes it came from', () => {
 
 test('buildShoppingList treats an empty staples set the same as none', () => {
   const recipes: Record<string, Recipe> = { r1: makeRecipe('r1', ['1 tsp salt']) };
-  const plan: MealPlanDay[] = [
-    { date: '2026-07-07', meals: [{ type: 'dinner', recipeId: 'r1' }] },
-  ];
+  const plan: MealPlanDay[] = [{ date: '2026-07-07', meals: [{ type: 'dinner', recipeId: 'r1' }] }];
   const items = buildShoppingList(plan, recipes, 'imperial', new Set());
   assert.equal(items.length, 1);
 });

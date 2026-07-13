@@ -13,10 +13,7 @@ export default function RecipeLibraryPage() {
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
 
   const sortedRecipes = useMemo(
-    () =>
-      Object.values(recipes).sort(
-        (a, b) => +new Date(b.dateAdded) - +new Date(a.dateAdded),
-      ),
+    () => Object.values(recipes).sort((a, b) => +new Date(b.dateAdded) - +new Date(a.dateAdded)),
     [recipes],
   );
 

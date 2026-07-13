@@ -66,7 +66,9 @@ function AddRecipe() {
         setProgress('');
       }
     } catch (err) {
-      setErrors([{ url: '', message: err instanceof Error ? err.message : 'Something went wrong.' }]);
+      setErrors([
+        { url: '', message: err instanceof Error ? err.message : 'Something went wrong.' },
+      ]);
       setProgress('');
     } finally {
       setBusy(false);
@@ -82,7 +84,11 @@ function AddRecipe() {
         </p>
       </header>
 
-      <div role="tablist" aria-label="Add method" className="inline-flex rounded-full border border-charcoal/15 bg-surface/60 p-1">
+      <div
+        role="tablist"
+        aria-label="Add method"
+        className="inline-flex rounded-full border border-charcoal/15 bg-surface/60 p-1"
+      >
         {(['url', 'manual'] as const).map((m) => (
           <button
             key={m}
@@ -102,7 +108,8 @@ function AddRecipe() {
         <form onSubmit={handleParse} className="space-y-4">
           <div>
             <label htmlFor="add-urls" className="mb-1 block text-sm font-medium">
-              Recipe URLs <span className="font-normal text-charcoal/40">(one per line, up to 10)</span>
+              Recipe URLs{' '}
+              <span className="font-normal text-charcoal/40">(one per line, up to 10)</span>
             </label>
             <textarea
               id="add-urls"
@@ -110,14 +117,23 @@ function AddRecipe() {
               onChange={(e) => setUrlsText(e.target.value)}
               rows={6}
               className="input-base font-mono text-sm"
-              placeholder={'https://cooking.example.com/best-pancakes\nhttps://blog.example.org/weeknight-curry'}
+              placeholder={
+                'https://cooking.example.com/best-pancakes\nhttps://blog.example.org/weeknight-curry'
+              }
               disabled={busy}
             />
           </div>
 
-          {progress && <p className="text-sm text-charcoal/60" aria-live="polite">{progress}</p>}
+          {progress && (
+            <p className="text-sm text-charcoal/60" aria-live="polite">
+              {progress}
+            </p>
+          )}
           {errors.length > 0 && (
-            <ul role="alert" className="space-y-1 rounded-xl bg-terracotta/10 px-4 py-3 text-sm text-terracotta-dark">
+            <ul
+              role="alert"
+              className="space-y-1 rounded-xl bg-terracotta/10 px-4 py-3 text-sm text-terracotta-dark"
+            >
               {errors.map((e, i) => (
                 <li key={i}>
                   {e.url && <span className="font-medium break-all">{e.url}: </span>}

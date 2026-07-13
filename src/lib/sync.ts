@@ -262,7 +262,11 @@ export async function pullShoppingItemStates(): Promise<void> {
   const remoteById = new Map<string, CheckState>(
     (rows ?? []).map((row) => [
       row.id,
-      { checked: row.checked, manualOverride: row.manual_override ?? undefined, updatedAt: row.updated_at },
+      {
+        checked: row.checked,
+        manualOverride: row.manual_override ?? undefined,
+        updatedAt: row.updated_at,
+      },
     ]),
   );
 
@@ -286,7 +290,10 @@ export async function pullShoppingItemStates(): Promise<void> {
         updatedAt: remoteState.updatedAt,
       };
     }
-    if (winner === localState && (!remoteState || (item.updatedAt ?? '') > (remoteState.updatedAt ?? ''))) {
+    if (
+      winner === localState &&
+      (!remoteState || (item.updatedAt ?? '') > (remoteState.updatedAt ?? ''))
+    ) {
       void pushShoppingItemState(item);
     }
     return item;
@@ -358,7 +365,11 @@ async function trimMealPlanDaysFrom(fromIndex: number): Promise<void> {
   const userId = currentUserId();
   if (!supabase || !userId) return;
   try {
-    await supabase.from('meal_plan_days').delete().eq('user_id', userId).gte('day_index', fromIndex);
+    await supabase
+      .from('meal_plan_days')
+      .delete()
+      .eq('user_id', userId)
+      .gte('day_index', fromIndex);
   } catch {
     // Offline or unreachable — nothing to do until the next sync attempt.
   }
@@ -453,7 +464,10 @@ export async function pullMealPlan(): Promise<void> {
     const winner = resolveLastWriteWins(localDay, remoteDay);
     if (winner === remoteDay && remoteDay) {
       setDay(index, remoteDay);
-    } else if (winner === localDay && (!remoteDay || (localDay.updatedAt ?? '') > (remoteDay.updatedAt ?? ''))) {
+    } else if (
+      winner === localDay &&
+      (!remoteDay || (localDay.updatedAt ?? '') > (remoteDay.updatedAt ?? ''))
+    ) {
       void pushMealPlanDay(index, localDay);
     }
   });
@@ -470,7 +484,13 @@ interface ArchivedPlanRow {
 }
 
 function rowToArchivedPlan(row: ArchivedPlanRow): ArchivedPlan {
-  return { id: row.id, archivedAt: row.archived_at, label: row.label, config: row.config, plan: row.plan };
+  return {
+    id: row.id,
+    archivedAt: row.archived_at,
+    label: row.label,
+    config: row.config,
+    plan: row.plan,
+  };
 }
 
 function archivedPlanToRow(userId: string, entry: ArchivedPlan) {
@@ -512,7 +532,11 @@ export async function pullArchivedPlans(): Promise<void> {
   try {
     const [plansResult, tombstonesResult] = await Promise.all([
       supabase.from('archived_plans').select('*').eq('user_id', userId),
-      supabase.from('deleted_records').select('record_id').eq('user_id', userId).eq('entity', 'archived_plan'),
+      supabase
+        .from('deleted_records')
+        .select('record_id')
+        .eq('user_id', userId)
+        .eq('entity', 'archived_plan'),
     ]);
     if (plansResult.error || tombstonesResult.error) return;
     rows = plansResult.data;
@@ -568,7 +592,11 @@ export async function pullPantryStaples(): Promise<void> {
 
   let row: PantryRow | null;
   try {
-    const result = await supabase.from('pantry_staples').select('*').eq('user_id', userId).maybeSingle();
+    const result = await supabase
+      .from('pantry_staples')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
     if (result.error) return;
     row = result.data;
   } catch {
@@ -582,7 +610,10 @@ export async function pullPantryStaples(): Promise<void> {
 
   if (winner === remoteState && row) {
     replaceAll(row.staples, row.updated_at);
-  } else if (winner === localState && (!remoteState || (updatedAt ?? '') > (remoteState.updatedAt ?? ''))) {
+  } else if (
+    winner === localState &&
+    (!remoteState || (updatedAt ?? '') > (remoteState.updatedAt ?? ''))
+  ) {
     void pushPantryStaples(staples);
   }
 }
@@ -626,7 +657,10 @@ export async function pullSettings(): Promise<void> {
 
   if (winner === remoteState && row) {
     setUnitSystem(row.unit_system, row.updated_at);
-  } else if (winner === localState && (!remoteState || (updatedAt ?? '') > (remoteState.updatedAt ?? ''))) {
+  } else if (
+    winner === localState &&
+    (!remoteState || (updatedAt ?? '') > (remoteState.updatedAt ?? ''))
+  ) {
     void pushSettings(unitSystem);
   }
 }

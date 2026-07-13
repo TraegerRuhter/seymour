@@ -81,7 +81,11 @@ export default function ImagePicker({
         {value && (
           <div className="relative shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={value} alt="" className="h-16 w-16 rounded-xl border border-charcoal/10 object-cover" />
+            <img
+              src={value}
+              alt=""
+              className="h-16 w-16 rounded-xl border border-charcoal/10 object-cover"
+            />
             <button
               type="button"
               onClick={() => onChange('')}

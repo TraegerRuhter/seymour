@@ -10,7 +10,13 @@ import {
   setUnitSystem,
   validateBundle,
 } from '@/lib/actions';
-import { useRecipeStore, useShoppingStore, usePlanStore, usePantryStore, useSettingsStore } from '@/lib/stores';
+import {
+  useRecipeStore,
+  useShoppingStore,
+  usePlanStore,
+  usePantryStore,
+  useSettingsStore,
+} from '@/lib/stores';
 import { useAuth } from '@/lib/auth';
 import { getSupabaseClient } from '@/lib/supabase';
 import { useTheme, type ThemePreference } from '@/lib/theme';
@@ -113,7 +119,10 @@ export default function SettingsPage() {
         </p>
       </header>
 
-      <section aria-label="Data summary" className="glass-card grid grid-cols-3 gap-4 p-5 text-center">
+      <section
+        aria-label="Data summary"
+        className="glass-card grid grid-cols-3 gap-4 p-5 text-center"
+      >
         <div>
           <p className="text-2xl font-bold">{recipeCount}</p>
           <p className="text-sm text-charcoal/60">recipes</p>
@@ -272,7 +281,11 @@ export default function SettingsPage() {
           <button type="button" onClick={handleExport} className="btn-primary">
             Export all data
           </button>
-          <button type="button" onClick={() => fileInput.current?.click()} className="btn-secondary">
+          <button
+            type="button"
+            onClick={() => fileInput.current?.click()}
+            className="btn-secondary"
+          >
             Import data
           </button>
           <input
@@ -288,7 +301,9 @@ export default function SettingsPage() {
           <p
             role="status"
             className={`rounded-xl px-4 py-2 text-sm ${
-              message.kind === 'ok' ? 'bg-olive/15 text-olive-dark' : 'bg-terracotta/10 text-terracotta-dark'
+              message.kind === 'ok'
+                ? 'bg-olive/15 text-olive-dark'
+                : 'bg-terracotta/10 text-terracotta-dark'
             }`}
           >
             {message.text}

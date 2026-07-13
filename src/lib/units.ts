@@ -32,34 +32,88 @@ const UNIT_DEFS: UnitDef[] = [
 
 /** Maps every accepted spelling to its canonical unit. */
 const UNIT_ALIASES: Record<string, string> = {
-  cup: 'cup', cups: 'cup', c: 'cup',
-  tablespoon: 'tbsp', tablespoons: 'tbsp', tbsp: 'tbsp', tbsps: 'tbsp', tbs: 'tbsp', tb: 'tbsp',
-  teaspoon: 'tsp', teaspoons: 'tsp', tsp: 'tsp', tsps: 'tsp',
-  'fl oz': 'fl oz', 'fluid ounce': 'fl oz', 'fluid ounces': 'fl oz', floz: 'fl oz',
-  pint: 'pint', pints: 'pint', pt: 'pint',
-  quart: 'quart', quarts: 'quart', qt: 'quart', qts: 'quart',
-  gallon: 'gallon', gallons: 'gallon', gal: 'gallon',
-  milliliter: 'ml', milliliters: 'ml', millilitre: 'ml', millilitres: 'ml', ml: 'ml',
-  liter: 'l', liters: 'l', litre: 'l', litres: 'l', l: 'l',
-  gram: 'g', grams: 'g', g: 'g', gr: 'g',
-  kilogram: 'kg', kilograms: 'kg', kg: 'kg', kgs: 'kg',
-  ounce: 'oz', ounces: 'oz', oz: 'oz',
-  pound: 'lb', pounds: 'lb', lb: 'lb', lbs: 'lb',
+  cup: 'cup',
+  cups: 'cup',
+  c: 'cup',
+  tablespoon: 'tbsp',
+  tablespoons: 'tbsp',
+  tbsp: 'tbsp',
+  tbsps: 'tbsp',
+  tbs: 'tbsp',
+  tb: 'tbsp',
+  teaspoon: 'tsp',
+  teaspoons: 'tsp',
+  tsp: 'tsp',
+  tsps: 'tsp',
+  'fl oz': 'fl oz',
+  'fluid ounce': 'fl oz',
+  'fluid ounces': 'fl oz',
+  floz: 'fl oz',
+  pint: 'pint',
+  pints: 'pint',
+  pt: 'pint',
+  quart: 'quart',
+  quarts: 'quart',
+  qt: 'quart',
+  qts: 'quart',
+  gallon: 'gallon',
+  gallons: 'gallon',
+  gal: 'gallon',
+  milliliter: 'ml',
+  milliliters: 'ml',
+  millilitre: 'ml',
+  millilitres: 'ml',
+  ml: 'ml',
+  liter: 'l',
+  liters: 'l',
+  litre: 'l',
+  litres: 'l',
+  l: 'l',
+  gram: 'g',
+  grams: 'g',
+  g: 'g',
+  gr: 'g',
+  kilogram: 'kg',
+  kilograms: 'kg',
+  kg: 'kg',
+  kgs: 'kg',
+  ounce: 'oz',
+  ounces: 'oz',
+  oz: 'oz',
+  pound: 'lb',
+  pounds: 'lb',
+  lb: 'lb',
+  lbs: 'lb',
   // countable / non-convertible units kept as-is (not summed with unlike units)
-  clove: 'clove', cloves: 'clove',
-  pinch: 'pinch', pinches: 'pinch',
-  dash: 'dash', dashes: 'dash',
-  can: 'can', cans: 'can',
-  jar: 'jar', jars: 'jar',
-  package: 'package', packages: 'package', pkg: 'package',
-  slice: 'slice', slices: 'slice',
-  stick: 'stick', sticks: 'stick',
-  stalk: 'stalk', stalks: 'stalk',
-  sprig: 'sprig', sprigs: 'sprig',
-  head: 'head', heads: 'head',
-  bunch: 'bunch', bunches: 'bunch',
-  piece: 'piece', pieces: 'piece',
-  handful: 'handful', handfuls: 'handful',
+  clove: 'clove',
+  cloves: 'clove',
+  pinch: 'pinch',
+  pinches: 'pinch',
+  dash: 'dash',
+  dashes: 'dash',
+  can: 'can',
+  cans: 'can',
+  jar: 'jar',
+  jars: 'jar',
+  package: 'package',
+  packages: 'package',
+  pkg: 'package',
+  slice: 'slice',
+  slices: 'slice',
+  stick: 'stick',
+  sticks: 'stick',
+  stalk: 'stalk',
+  stalks: 'stalk',
+  sprig: 'sprig',
+  sprigs: 'sprig',
+  head: 'head',
+  heads: 'head',
+  bunch: 'bunch',
+  bunches: 'bunch',
+  piece: 'piece',
+  pieces: 'piece',
+  handful: 'handful',
+  handfuls: 'handful',
 };
 
 const DEFS_BY_CANONICAL = new Map(UNIT_DEFS.map((d) => [d.canonical, d]));
@@ -78,7 +132,10 @@ export function unitKind(canonical: string): UnitKind {
  * Converts a quantity in a canonical unit to its base unit.
  * Returns null when the unit is not convertible (counts, pinches, cloves…).
  */
-export function toBase(quantity: number, canonical: string): { quantity: number; baseUnit: 'ml' | 'g' } | null {
+export function toBase(
+  quantity: number,
+  canonical: string,
+): { quantity: number; baseUnit: 'ml' | 'g' } | null {
   const def = DEFS_BY_CANONICAL.get(canonical);
   if (!def || def.toBase === undefined) return null;
   return {
@@ -152,11 +209,13 @@ export function toReadable(
 ): { quantity: number; unit: string } {
   if (baseUnit === 'g') {
     if (system === 'metric') {
-      if (baseQuantity >= 1000) return { quantity: roundUpTo(baseQuantity / 1000, 0.05), unit: 'kg' };
+      if (baseQuantity >= 1000)
+        return { quantity: roundUpTo(baseQuantity / 1000, 0.05), unit: 'kg' };
       if (baseQuantity >= 100) return { quantity: roundUpTo(baseQuantity, 5), unit: 'g' };
       return { quantity: roundUpTo(baseQuantity, 1), unit: 'g' };
     }
-    if (baseQuantity >= 453.592) return { quantity: roundUpTo(baseQuantity / 453.592, 0.25), unit: 'lb' };
+    if (baseQuantity >= 453.592)
+      return { quantity: roundUpTo(baseQuantity / 453.592, 0.25), unit: 'lb' };
     return { quantity: roundUpTo(baseQuantity / 28.3495, 0.25), unit: 'oz' };
   }
 
@@ -166,8 +225,10 @@ export function toReadable(
     if (baseQuantity >= 100) return { quantity: roundUpTo(baseQuantity, 10), unit: 'ml' };
     return { quantity: roundUpTo(baseQuantity, 5), unit: 'ml' };
   }
-  if (baseQuantity >= 236.588 / 4) return { quantity: roundUpTo(baseQuantity / 236.588, 0.25), unit: 'cup' };
-  if (baseQuantity >= 14.7868) return { quantity: roundUpTo(baseQuantity / 14.7868, 0.5), unit: 'tbsp' };
+  if (baseQuantity >= 236.588 / 4)
+    return { quantity: roundUpTo(baseQuantity / 236.588, 0.25), unit: 'cup' };
+  if (baseQuantity >= 14.7868)
+    return { quantity: roundUpTo(baseQuantity / 14.7868, 0.5), unit: 'tbsp' };
   return { quantity: roundUpTo(baseQuantity / 4.92892, 0.25), unit: 'tsp' };
 }
 
@@ -190,11 +251,24 @@ export function displayUnit(unit: string, quantity: number): string {
   if (unit === 'ml') return 'mL';
   if (unit === 'l') return 'L';
   const plural: Record<string, string> = {
-    cup: 'cups', pint: 'pints', quart: 'quarts', gallon: 'gallons',
-    clove: 'cloves', pinch: 'pinches', dash: 'dashes', can: 'cans',
-    jar: 'jars', package: 'packages', slice: 'slices', stick: 'sticks',
-    stalk: 'stalks', sprig: 'sprigs', head: 'heads', bunch: 'bunches',
-    piece: 'pieces', handful: 'handfuls',
+    cup: 'cups',
+    pint: 'pints',
+    quart: 'quarts',
+    gallon: 'gallons',
+    clove: 'cloves',
+    pinch: 'pinches',
+    dash: 'dashes',
+    can: 'cans',
+    jar: 'jars',
+    package: 'packages',
+    slice: 'slices',
+    stick: 'sticks',
+    stalk: 'stalks',
+    sprig: 'sprigs',
+    head: 'heads',
+    bunch: 'bunches',
+    piece: 'pieces',
+    handful: 'handfuls',
   };
   if (quantity > 1 && plural[unit]) return plural[unit];
   return unit;

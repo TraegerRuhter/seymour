@@ -12,16 +12,16 @@ const SYNONYMS: Record<string, string> = {
   'red onion': 'red onion', // distinct enough to keep separate
   'spring onion': 'scallion',
   'green onion': 'scallion',
-  'scallion': 'scallion',
+  scallion: 'scallion',
   'garlic clove': 'garlic',
   'clove of garlic': 'garlic',
   'cloves garlic': 'garlic',
-  'garlic': 'garlic',
+  garlic: 'garlic',
   'red bell pepper': 'bell pepper',
   'green bell pepper': 'bell pepper',
   'yellow bell pepper': 'bell pepper',
   'orange bell pepper': 'bell pepper',
-  'capsicum': 'bell pepper',
+  capsicum: 'bell pepper',
   'roma tomato': 'tomato',
   'plum tomato': 'tomato',
   'vine tomato': 'tomato',
@@ -42,7 +42,7 @@ const SYNONYMS: Record<string, string> = {
   'fine salt': 'salt',
   'extra virgin olive oil': 'olive oil',
   'extra-virgin olive oil': 'olive oil',
-  'evoo': 'olive oil',
+  evoo: 'olive oil',
   'unsalted butter': 'butter',
   'salted butter': 'butter',
   'whole milk': 'milk',
@@ -101,18 +101,56 @@ const SYNONYMS: Record<string, string> = {
  * "chopped onion" fell through untouched.
  */
 const DROPPABLE_PREFIXES = [
-  'fresh', 'freshly', 'large', 'medium', 'small', 'ripe', 'raw', 'cold',
-  'warm', 'room temperature', 'organic', 'good quality', 'good-quality',
-  'finely', 'roughly', 'thinly', 'coarsely', 'lightly',
-  'chopped', 'diced', 'minced', 'sliced', 'grated', 'shredded', 'peeled',
-  'crushed', 'melted', 'softened', 'beaten',
+  'fresh',
+  'freshly',
+  'large',
+  'medium',
+  'small',
+  'ripe',
+  'raw',
+  'cold',
+  'warm',
+  'room temperature',
+  'organic',
+  'good quality',
+  'good-quality',
+  'finely',
+  'roughly',
+  'thinly',
+  'coarsely',
+  'lightly',
+  'chopped',
+  'diced',
+  'minced',
+  'sliced',
+  'grated',
+  'shredded',
+  'peeled',
+  'crushed',
+  'melted',
+  'softened',
+  'beaten',
 ];
 
 /** Trailing preparation words that describe technique, not the item. */
 const DROPPABLE_SUFFIXES = [
-  'chopped', 'diced', 'minced', 'sliced', 'grated', 'shredded', 'peeled',
-  'crushed', 'melted', 'softened', 'beaten', 'divided', 'optional',
-  'to taste', 'for serving', 'for garnish', 'plus more',
+  'chopped',
+  'diced',
+  'minced',
+  'sliced',
+  'grated',
+  'shredded',
+  'peeled',
+  'crushed',
+  'melted',
+  'softened',
+  'beaten',
+  'divided',
+  'optional',
+  'to taste',
+  'for serving',
+  'for garnish',
+  'plus more',
 ];
 
 /**
@@ -122,7 +160,7 @@ const DROPPABLE_SUFFIXES = [
  */
 function stripAffixes(name: string): string {
   let out = name;
-  
+
   // Forward pass: strip all leading prefixes
   let changed = true;
   while (changed) {
@@ -135,7 +173,7 @@ function stripAffixes(name: string): string {
       }
     }
   }
-  
+
   // Backward pass: strip all trailing suffixes
   changed = true;
   while (changed) {
@@ -152,7 +190,7 @@ function stripAffixes(name: string): string {
       }
     }
   }
-  
+
   return out.trim();
 }
 
@@ -164,7 +202,12 @@ function stemLastWord(name: string): string {
   if (last.length > 3) {
     if (last.endsWith('oes')) stemmed = last.slice(0, -2);
     else if (last.endsWith('ies')) stemmed = last.slice(0, -3) + 'y';
-    else if (last.endsWith('ses') || last.endsWith('xes') || last.endsWith('ches') || last.endsWith('shes')) {
+    else if (
+      last.endsWith('ses') ||
+      last.endsWith('xes') ||
+      last.endsWith('ches') ||
+      last.endsWith('shes')
+    ) {
       stemmed = last.slice(0, -2);
     } else if (last.endsWith('s') && !last.endsWith('ss') && !last.endsWith('us')) {
       stemmed = last.slice(0, -1);

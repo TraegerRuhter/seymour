@@ -56,7 +56,11 @@ export default function AppProviders({ children }: { children: React.ReactNode }
 
   if (!hydrated) {
     return (
-      <div className="flex min-h-dvh items-center justify-center" aria-busy="true" aria-label="Loading Seymour">
+      <div
+        className="flex min-h-dvh items-center justify-center"
+        aria-busy="true"
+        aria-label="Loading Seymour"
+      >
         <div className="text-center">
           <Logo className="mx-auto h-16 w-16 animate-float" />
           <p className="mt-3 text-sm text-charcoal/50">Waking Seymour up…</p>

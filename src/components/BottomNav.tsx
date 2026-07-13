@@ -34,8 +34,7 @@ export default function BottomNav() {
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-around lg:max-w-none lg:gap-1 lg:px-2">
         {TABS.map((tab) => {
-          const active =
-            tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);
+          const active = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);
           return (
             <li key={tab.href}>
               <Link

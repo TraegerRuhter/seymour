@@ -156,7 +156,6 @@ export const MEAL_TYPE_LABELS: Record<MealType, string> = {
   snack: 'Snack',
 };
 
-
 function formatMonthDay(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });

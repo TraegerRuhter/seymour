@@ -35,7 +35,8 @@ function classifyStatus(status: number): FetchFailure {
 }
 
 // Precompile regexes at module level to avoid recompilation on every call
-const JSON_LD_REGEX = /<script[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+const JSON_LD_REGEX =
+  /<script[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
 const INVALID_JSON_CLEANUP_REGEX = /,\s*([}\]])/g;
 const BR_REGEX = /<br\s*\/?>/gi;
 const END_P_REGEX = /<\/p>/gi;
@@ -176,11 +177,31 @@ function findRecipeNode(data: unknown, depth = 0): Record<string, unknown> | nul
 }
 
 const NAMED_ENTITIES: Record<string, string> = {
-  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
-  frac12: '½', frac14: '¼', frac34: '¾',
-  frac13: '⅓', frac23: '⅔', frac18: '⅛', frac38: '⅜', frac58: '⅝', frac78: '⅞',
-  deg: '°', ndash: '–', mdash: '—', rsquo: '’', lsquo: '‘',
-  rdquo: '”', ldquo: '“', hellip: '…', eacute: 'é', egrave: 'è',
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+  frac12: '½',
+  frac14: '¼',
+  frac34: '¾',
+  frac13: '⅓',
+  frac23: '⅔',
+  frac18: '⅛',
+  frac38: '⅜',
+  frac58: '⅝',
+  frac78: '⅞',
+  deg: '°',
+  ndash: '–',
+  mdash: '—',
+  rsquo: '’',
+  lsquo: '‘',
+  rdquo: '”',
+  ldquo: '“',
+  hellip: '…',
+  eacute: 'é',
+  egrave: 'è',
 };
 
 function decodeBasicEntities(s: string): string {
@@ -191,10 +212,7 @@ function decodeBasicEntities(s: string): string {
 }
 
 function decodeEntities(s: string): string {
-  return decodeBasicEntities(s)
-    .replace(TAG_REGEX, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return decodeBasicEntities(s).replace(TAG_REGEX, '').replace(/\s+/g, ' ').trim();
 }
 
 function asText(value: unknown): string {
@@ -243,17 +261,14 @@ function extractInstructions(value: unknown, depth = 0): string[] {
 
 function decodeEntitiesMultiline(s: string): string {
   return decodeBasicEntities(
-    s
-      .replace(BR_REGEX, '\n')
-      .replace(END_P_REGEX, '\n')
-      .replace(TAG_REGEX, ''),
+    s.replace(BR_REGEX, '\n').replace(END_P_REGEX, '\n').replace(TAG_REGEX, ''),
   );
 }
 
 /**
  * Attempts structured-data extraction from a page's HTML.
  * Returns null when no usable schema.org Recipe is present.
- * 
+ *
  * Exits early after finding the first valid recipe to avoid parsing
  * unnecessary JSON-LD blocks.
  */
@@ -355,13 +370,18 @@ function extractMicrodataInstructions(html: string): string[] {
 }
 
 /** Attempts schema.org Recipe extraction from HTML microdata. Returns null when no usable itemprop="recipeIngredient" data is present. */
-export function extractRecipeFromMicrodata(html: string, sourceUrl: string): ParsedRecipeData | null {
+export function extractRecipeFromMicrodata(
+  html: string,
+  sourceUrl: string,
+): ParsedRecipeData | null {
   if (!MICRODATA_RECIPE_TYPE_RE.test(html)) return null;
 
   const ingredientLines = extractMicrodataIngredients(html);
   if (ingredientLines.length === 0) return null;
 
-  const nameMatch = /<[^>]+\bitemprop\s*=\s*["'][^"']*\bname\b[^"']*["'][^>]*>([\s\S]*?)<\//i.exec(html);
+  const nameMatch = /<[^>]+\bitemprop\s*=\s*["'][^"']*\bname\b[^"']*["'][^>]*>([\s\S]*?)<\//i.exec(
+    html,
+  );
   const title = nameMatch ? decodeEntities(nameMatch[1]) : '';
 
   return {

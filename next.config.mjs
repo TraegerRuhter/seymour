@@ -5,7 +5,10 @@ const nextConfig = {
     // Plain <img> tags are used throughout, so leave optimization off to avoid
     // routing third-party images through Vercel's optimizer.
     unoptimized: true,
-    remotePatterns: [{ protocol: 'https', hostname: '**' }, { protocol: 'http', hostname: '**' }],
+    remotePatterns: [
+      { protocol: 'https', hostname: '**' },
+      { protocol: 'http', hostname: '**' },
+    ],
   },
 };
 
