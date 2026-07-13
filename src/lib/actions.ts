@@ -14,6 +14,7 @@ import { parseIngredientLines } from './ingredient-parser';
 import { buildShoppingList, mergeShoppingList } from './aggregate';
 import { normalizeIngredientName } from './normalize';
 import { generateMealPlan, newSeed, planLabel, recipeFitsMealType } from './plan';
+import { deleteRemote, pushRecipe } from './sync';
 import { usePantryStore, usePlanStore, useRecipeStore, useSettingsStore, useShoppingStore } from './stores';
 
 /**
@@ -72,13 +73,17 @@ export function recipeFromParsed(data: ParsedRecipeData): Recipe {
 }
 
 export function saveRecipes(recipes: Recipe[]): void {
-  useRecipeStore.getState().addRecipes(recipes);
+  const stamped = recipes.map((r) => ({ ...r, updatedAt: new Date().toISOString() }));
+  useRecipeStore.getState().addRecipes(stamped);
   regenerateShoppingList();
+  for (const recipe of stamped) void pushRecipe(recipe);
 }
 
 export function saveRecipe(recipe: Recipe): void {
-  useRecipeStore.getState().addRecipe(recipe);
+  const stamped = { ...recipe, updatedAt: new Date().toISOString() };
+  useRecipeStore.getState().addRecipe(stamped);
   regenerateShoppingList();
+  void pushRecipe(stamped);
 }
 
 /** Deletes a recipe, clears any plan slots that referenced it, and re-aggregates. */
@@ -86,6 +91,7 @@ export function deleteRecipe(id: string): void {
   useRecipeStore.getState().removeRecipe(id);
   usePlanStore.getState().clearRecipeFromPlan(id);
   regenerateShoppingList();
+  void deleteRemote('recipe', id);
 }
 
 export function generatePlan(days: number, mealTypes: MealType[], seed?: number): void {

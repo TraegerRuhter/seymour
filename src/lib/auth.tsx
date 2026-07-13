@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { getSupabaseClient } from './supabase';
+import { useAuthUserStore } from './stores';
 
 interface AuthState {
   user: User | null;
@@ -32,12 +33,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) return;
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
+      useAuthUserStore.getState().setUserId(data.user?.id ?? null);
       setLoading(false);
     });
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      useAuthUserStore.getState().setUserId(session?.user?.id ?? null);
     });
     return () => subscription.unsubscribe();
   }, [supabase]);
@@ -46,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) return;
     await supabase.auth.signOut();
     setUser(null);
+    useAuthUserStore.getState().setUserId(null);
   }
 
   return <AuthContext.Provider value={{ user, loading, signOut }}>{children}</AuthContext.Provider>;

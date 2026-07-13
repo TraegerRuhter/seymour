@@ -263,6 +263,24 @@ export const usePantryStore = create<PantryState>()(
   ),
 );
 
+// --- Signed-in user id (session-only, not persisted) ---
+//
+// Mirrors Supabase's own session state so plain functions outside React
+// (actions.ts, sync.ts) can read "who's signed in right now" via
+// `useAuthUserStore.getState()`, the same way they already read every other
+// store — without needing to be hooks themselves. `AuthProvider` is the only
+// writer.
+
+interface AuthUserState {
+  userId: string | null;
+  setUserId: (userId: string | null) => void;
+}
+
+export const useAuthUserStore = create<AuthUserState>((set) => ({
+  userId: null,
+  setUserId: (userId) => set({ userId }),
+}));
+
 // --- Settings ---
 
 interface SettingsState {
