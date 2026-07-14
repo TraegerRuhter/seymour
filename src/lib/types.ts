@@ -40,9 +40,9 @@ export interface Recipe {
 
 // --- Meal Plan Domain ---
 
-export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'dessert';
 
-export const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+export const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert'];
 
 export interface MealSlot {
   type: MealType;
