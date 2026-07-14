@@ -154,6 +154,7 @@ export const MEAL_TYPE_LABELS: Record<MealType, string> = {
   lunch: 'Lunch',
   dinner: 'Dinner',
   snack: 'Snack',
+  dessert: 'Dessert',
 };
 
 function formatMonthDay(dateStr: string): string {

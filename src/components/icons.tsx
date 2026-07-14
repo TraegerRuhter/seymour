@@ -448,10 +448,23 @@ export function SparkleIcon(p: IconProps) {
   );
 }
 
+export function DessertIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      {/* cupcake: fluted liner, frosting swirl, cherry on top */}
+      <path d="M6.5 12.5h11l-1.2 6.6a1.6 1.6 0 0 1-1.6 1.4H9.3a1.6 1.6 0 0 1-1.6-1.4z" fill={T} />
+      <path d="M7.7 12.5l.6 2.2.9-2.2.9 2.2.9-2.2.9 2.2.9-2.2.9 2.2.6-2.2" stroke={TD} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <path d="M7.5 12.5c-1.6-.4-2.4-1.8-1.9-3.2a2.5 2.5 0 0 1 2.8-1.6c0-1.6 1.3-2.8 2.9-2.7.3-1.2 1.6-2 2.9-1.6 1.3.4 2 1.7 1.7 3 1.4.1 2.4 1.3 2.3 2.7-.1 1.4-1.1 2.6-2.6 2.9z" fill={O} stroke={OD} strokeWidth=".8" strokeLinejoin="round" />
+      <circle cx="12" cy="5.4" r="1.2" fill={TD} />
+    </Svg>
+  );
+}
+
 /** Meal-type → icon, for plan tiles and the dashboard "today" strip. */
 export const MEAL_TYPE_ICON: Record<MealType, IconComponent> = {
   breakfast: BreakfastIcon,
   lunch: LunchIcon,
   dinner: DinnerIcon,
   snack: SnackIcon,
+  dessert: DessertIcon,
 };

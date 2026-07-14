@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { Recipe } from '@/lib/types';
 import { cardExit, enter, fadeRise, layoutSpring } from '@/lib/motion';
+import { MEAL_TYPE_LABELS } from '@/lib/plan';
 import { BowlIcon } from './icons';
 
 export default function RecipeCard({
@@ -61,7 +62,7 @@ export default function RecipeCard({
       >
         <Thumb recipe={recipe} className="aspect-[4/3] w-full" rounded={false} />
         <div className="p-4">
-          {(recipe.category || recipe.cookTimeMinutes != null) && (
+          {(recipe.category || recipe.cookTimeMinutes != null || recipe.mealTypes?.length) && (
             <div className="mb-1.5 flex flex-wrap gap-1.5">
               {recipe.category && (
                 <span className="rounded-full bg-terracotta/10 px-2 py-0.5 text-xs font-medium text-terracotta-dark">
@@ -73,6 +74,17 @@ export default function RecipeCard({
                   {recipe.cookTimeMinutes} min
                 </span>
               )}
+              {/* Grayed out so it reads as metadata, not a highlight like
+                  category/cook time — but still visible enough that an
+                  untagged recipe (no chips at all here) stands out. */}
+              {recipe.mealTypes?.map((t) => (
+                <span
+                  key={t}
+                  className="rounded-full bg-charcoal/10 px-2 py-0.5 text-xs font-medium text-charcoal/50"
+                >
+                  {MEAL_TYPE_LABELS[t]}
+                </span>
+              ))}
             </div>
           )}
           <h3 className="line-clamp-2 text-xl font-semibold leading-snug">{recipe.title}</h3>
