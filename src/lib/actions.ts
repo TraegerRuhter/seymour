@@ -203,6 +203,17 @@ function refillCurrentPlan(shouldRefill: (slot: MealSlot) => boolean): void {
   if (stampedConfig && stampedPlan) void pushMealPlan(stampedConfig, stampedPlan);
 }
 
+/** Sets one slot's servings multiplier and re-derives the shopping list from it. */
+export function setSlotScale(dayIndex: number, mealIndex: number, scale: number): void {
+  const clamped = Math.min(10, Math.max(0.25, scale));
+  usePlanStore.getState().patchSlot(dayIndex, mealIndex, {
+    scale: clamped === 1 ? undefined : clamped,
+  });
+  regenerateShoppingList();
+  const day = usePlanStore.getState().plan?.[dayIndex];
+  if (day) void pushMealPlanDay(dayIndex, day);
+}
+
 /** Pins or unpins one slot; pinned slots survive a shuffle untouched. */
 export function togglePinSlot(dayIndex: number, mealIndex: number): void {
   const slot = usePlanStore.getState().plan?.[dayIndex]?.meals[mealIndex];

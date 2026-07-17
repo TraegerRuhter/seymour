@@ -8,6 +8,7 @@ import {
   addMealToDay,
   pickSlotRecipe,
   removeMealFromDay,
+  setSlotScale,
   shuffleSlot,
   togglePinSlot,
 } from '@/lib/actions';
@@ -99,64 +100,135 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
   }
 
   return (
-    <div className="group relative flex items-center gap-3 rounded-xl bg-surface/60 p-3 transition-colors hover:bg-surface">
-      <Link href={`/recipes/${recipe.id}`} className="flex min-w-0 flex-1 items-center gap-3">
-        {recipe.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={recipe.imageUrl}
-            alt=""
-            loading="lazy"
-            className="h-11 w-11 shrink-0 rounded-lg object-cover"
+    <div className="group relative rounded-xl bg-surface/60 p-3 transition-colors hover:bg-surface">
+      <div className="flex items-center gap-3">
+        <Link href={`/recipes/${recipe.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+          {recipe.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={recipe.imageUrl}
+              alt=""
+              loading="lazy"
+              className="h-11 w-11 shrink-0 rounded-lg object-cover"
+            />
+          ) : (
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-olive/15">
+              <MealIcon className="h-6 w-6" />
+            </span>
+          )}
+          <div className="min-w-0">
+            <p className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-charcoal/40">
+              {label}
+              {slot.pinned && (
+                <PinIcon filled className="h-3.5 w-3.5" aria-label="Pinned — kept when shuffling" />
+              )}
+            </p>
+            <p className="truncate text-sm font-semibold">{recipe.title}</p>
+          </div>
+        </Link>
+        <div className="flex shrink-0 gap-0.5">
+          <button
+            type="button"
+            aria-label={`Shuffle ${label} to a different recipe`}
+            onClick={() => shuffleSlot(dayIndex, mealIndex)}
+            className="rounded-lg p-1.5 text-charcoal/40 transition-colors hover:bg-olive/15 hover:text-charcoal"
+          >
+            <ShuffleIcon className="h-4 w-4" />
+          </button>
+          <ActionMenu
+            ariaLabel={`More actions for ${label}: ${recipe.title}`}
+            items={[
+              {
+                label: slot.pinned ? 'Unpin' : 'Pin (keep when shuffling)',
+                icon: PinIcon,
+                onSelect: () => togglePinSlot(dayIndex, mealIndex),
+              },
+              {
+                label: 'Change recipe…',
+                icon: PencilIcon,
+                onSelect: () => setPicking(true),
+              },
+              {
+                label: 'Remove meal',
+                icon: TrashIcon,
+                tone: 'danger',
+                onSelect: () => removeMealFromDay(dayIndex, mealIndex),
+              },
+            ]}
           />
-        ) : (
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-olive/15">
-            <MealIcon className="h-6 w-6" />
-          </span>
-        )}
-        <div className="min-w-0">
-          <p className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-charcoal/40">
-            {label}
-            {slot.pinned && (
-              <PinIcon filled className="h-3.5 w-3.5" aria-label="Pinned — kept when shuffling" />
-            )}
-          </p>
-          <p className="truncate text-sm font-semibold">{recipe.title}</p>
         </div>
-      </Link>
-      <div className="flex shrink-0 gap-0.5">
-        <button
-          type="button"
-          aria-label={`Shuffle ${label} to a different recipe`}
-          onClick={() => shuffleSlot(dayIndex, mealIndex)}
-          className="rounded-lg p-1.5 text-charcoal/40 transition-colors hover:bg-olive/15 hover:text-charcoal"
-        >
-          <ShuffleIcon className="h-4 w-4" />
-        </button>
-        <ActionMenu
-          ariaLabel={`More actions for ${label}: ${recipe.title}`}
-          items={[
-            {
-              label: slot.pinned ? 'Unpin' : 'Pin (keep when shuffling)',
-              icon: PinIcon,
-              onSelect: () => togglePinSlot(dayIndex, mealIndex),
-            },
-            {
-              label: 'Change recipe…',
-              icon: PencilIcon,
-              onSelect: () => setPicking(true),
-            },
-            {
-              label: 'Remove meal',
-              icon: TrashIcon,
-              tone: 'danger',
-              onSelect: () => removeMealFromDay(dayIndex, mealIndex),
-            },
-          ]}
-        />
       </div>
+      <ServingsStepper
+        dayIndex={dayIndex}
+        mealIndex={mealIndex}
+        scale={slot.scale ?? 1}
+        baseServings={recipe.servings}
+      />
     </div>
   );
+}
+
+/**
+ * The per-meal servings control. With a base declared on the recipe it reads
+ * "Serves N" and steps a whole serving at a time; without one there's no
+ * honest way to show an absolute count, so it reads as a multiplier ("×1½")
+ * stepping by half. Either way the shopping list scales this meal by it.
+ */
+function ServingsStepper({
+  dayIndex,
+  mealIndex,
+  scale,
+  baseServings,
+}: {
+  dayIndex: number;
+  mealIndex: number;
+  scale: number;
+  baseServings?: number;
+}) {
+  const label = baseServings
+    ? `Serves ${formatScaled(baseServings * scale)}`
+    : `×${formatScaled(scale)}`;
+  const step = baseServings ? 1 / baseServings : 0.5;
+
+  return (
+    <div className="mt-2 flex items-center pl-14">
+      <span
+        role="group"
+        aria-label="Servings for this meal"
+        className="inline-flex h-6 items-center overflow-hidden rounded-full border border-charcoal/15 bg-surface"
+      >
+        <button
+          type="button"
+          aria-label="Fewer servings"
+          onClick={() => setSlotScale(dayIndex, mealIndex, scale - step)}
+          className="grid h-full w-6 place-items-center text-charcoal/50 transition-colors hover:bg-olive/15 hover:text-charcoal"
+        >
+          −
+        </button>
+        <span className="min-w-14 border-x border-charcoal/10 px-1.5 text-center text-xs font-semibold tabular-nums text-charcoal/60">
+          {label}
+        </span>
+        <button
+          type="button"
+          aria-label="More servings"
+          onClick={() => setSlotScale(dayIndex, mealIndex, scale + step)}
+          className="grid h-full w-6 place-items-center text-charcoal/50 transition-colors hover:bg-olive/15 hover:text-charcoal"
+        >
+          +
+        </button>
+      </span>
+      {scale !== 1 && (
+        <span className="ml-2 text-[11px] text-charcoal/40">
+          {baseServings ? `as written: ${baseServings}` : 'of the written recipe'}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** "2", "1.5", "2.25" → trimmed, no trailing zeros; guards float dust. */
+function formatScaled(n: number): string {
+  return String(Math.round(n * 100) / 100);
 }
 
 /** The "＋ Add a meal" affordance: tap to reveal a row of meal-type choices. */

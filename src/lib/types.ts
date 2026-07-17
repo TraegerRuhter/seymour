@@ -34,6 +34,8 @@ export interface Recipe {
   mainIngredient?: string;
   /** Total time to make, in minutes. */
   cookTimeMinutes?: number;
+  /** How many servings the recipe yields as written — the base a plan slot's servings stepper scales against. */
+  servings?: number;
   /** Set on every local edit; compared against the server's row to resolve sync conflicts. Absent until the record has synced at least once. */
   updatedAt?: string;
 }
@@ -50,6 +52,12 @@ export interface MealSlot {
   recipeId: string;
   /** Pinned slots survive "shuffle" untouched — only unpinned slots re-roll. */
   pinned?: boolean;
+  /**
+   * Ingredient multiplier for this one meal (1 = as written). Shown as
+   * "Serves N" when the recipe declares base servings, "×1.5" otherwise;
+   * the shopping list multiplies this meal's ingredient quantities by it.
+   */
+  scale?: number;
 }
 
 export interface MealPlanDay {
@@ -91,7 +99,7 @@ export interface ShoppingListItem {
   /** Ids of the recipes that contributed to this line item (for "show source recipe" links). */
   recipeIds?: string[];
   /** Distinct original ingredient lines merged into this total (only set when a merge actually combined 2+ different phrasings), for a "why this many" breakdown. */
-  sources?: { originalString: string; recipeId?: string }[];
+  sources?: { originalString: string; recipeId?: string; scale?: number }[];
   /** Set on every local checked/manualOverride edit; compared against the server's row to resolve sync conflicts. */
   updatedAt?: string;
 }
