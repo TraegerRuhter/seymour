@@ -4,16 +4,23 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePlanStore, useRecipeStore } from '@/lib/stores';
-import { archiveCurrentPlan, clearCurrentPlan, regeneratePlan } from '@/lib/actions';
+import {
+  archiveCurrentPlan,
+  clearCurrentPlan,
+  fillEmptySlots,
+  regeneratePlan,
+} from '@/lib/actions';
 import MealPlanView from '@/components/MealPlanView';
 import PlanGenerator from '@/components/PlanGenerator';
 import ArchivedPlans from '@/components/ArchivedPlans';
 import { collapse, enter } from '@/lib/motion';
-import { PlanIcon, ShuffleIcon, ArchiveIcon, TrashIcon } from '@/components/icons';
+import { PlanIcon, ShuffleIcon, ArchiveIcon, SparkleIcon, TrashIcon } from '@/components/icons';
 
 export default function PlanPage() {
   const recipeCount = useRecipeStore((s) => Object.keys(s.recipes).length);
   const plan = usePlanStore((s) => s.plan);
+  const hasEmptySlots = plan?.some((day) => day.meals.some((m) => !m.recipeId)) ?? false;
+  const hasPinnedSlots = plan?.some((day) => day.meals.some((m) => m.pinned)) ?? false;
 
   // Generator is tucked away when a plan exists so the plan itself is what you
   // see; "New plan" reveals it.
@@ -64,10 +71,22 @@ export default function PlanPage() {
             <button
               type="button"
               onClick={regeneratePlan}
+              title={
+                hasPinnedSlots ? 'Pinned meals stay put; everything else re-rolls.' : undefined
+              }
               className="btn-secondary px-4 py-2 text-sm"
             >
-              <ShuffleIcon className="h-4 w-4" /> Shuffle
+              <ShuffleIcon className="h-4 w-4" /> {hasPinnedSlots ? 'Shuffle unpinned' : 'Shuffle'}
             </button>
+            {hasEmptySlots && (
+              <button
+                type="button"
+                onClick={fillEmptySlots}
+                className="btn-secondary px-4 py-2 text-sm"
+              >
+                <SparkleIcon className="h-4 w-4" /> Fill empty
+              </button>
+            )}
             <button
               type="button"
               onClick={archiveCurrentPlan}

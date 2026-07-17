@@ -4,10 +4,18 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { usePlanStore, useRecipeStore } from '@/lib/stores';
-import { pickSlotRecipe, shuffleSlot } from '@/lib/actions';
+import {
+  addMealToDay,
+  pickSlotRecipe,
+  removeMealFromDay,
+  shuffleSlot,
+  togglePinSlot,
+} from '@/lib/actions';
 import { MEAL_TYPE_LABELS, recipeFitsMealType, toLocalDateString } from '@/lib/plan';
+import { MEAL_TYPES, type MealType } from '@/lib/types';
 import { enter, fadeRise } from '@/lib/motion';
-import { MEAL_TYPE_ICON, PencilIcon, ShuffleIcon } from './icons';
+import ActionMenu from './ActionMenu';
+import { MEAL_TYPE_ICON, PencilIcon, PinIcon, ShuffleIcon, TrashIcon } from './icons';
 
 function dayHeading(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -19,7 +27,10 @@ function dayHeading(dateStr: string): string {
     : `${weekday} · ${monthDay}`;
 }
 
-/** A single meal tile. Empty slots offer a manual picker; filled slots offer a shuffle (random swap) and a pencil (manual change). */
+/**
+ * A single meal tile. Empty slots offer a manual picker; filled slots offer a
+ * shuffle (random swap) plus a menu with pin, manual change, and remove.
+ */
 function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number }) {
   const slot = usePlanStore((s) => s.plan?.[dayIndex]?.meals[mealIndex]);
   const recipes = useRecipeStore((s) => s.recipes);
@@ -28,6 +39,7 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
   if (!slot) return null;
   const recipe = slot.recipeId ? recipes[slot.recipeId] : undefined;
   const MealIcon = MEAL_TYPE_ICON[slot.type];
+  const label = MEAL_TYPE_LABELS[slot.type];
 
   if (!recipe || picking) {
     const all = Object.values(recipes);
@@ -39,16 +51,12 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
       <div className="rounded-xl border border-dashed border-charcoal/20 p-3">
         <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/40">
           <MealIcon className="h-4 w-4" />
-          {MEAL_TYPE_LABELS[slot.type]}
+          {label}
         </p>
         {picking ? (
           <select
             autoFocus
-            aria-label={
-              recipe
-                ? `Change the recipe for ${MEAL_TYPE_LABELS[slot.type]}`
-                : `Pick a recipe for ${MEAL_TYPE_LABELS[slot.type]}`
-            }
+            aria-label={recipe ? `Change the recipe for ${label}` : `Pick a recipe for ${label}`}
             className="input-base mt-2 py-1.5 text-sm"
             defaultValue={recipe?.id ?? ''}
             onChange={(e) => {
@@ -69,13 +77,22 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
             ))}
           </select>
         ) : (
-          <button
-            type="button"
-            onClick={() => setPicking(true)}
-            className="mt-1 text-sm font-medium text-terracotta hover:underline"
-          >
-            Pick manually
-          </button>
+          <div className="mt-1 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setPicking(true)}
+              className="text-sm font-medium text-terracotta hover:underline"
+            >
+              Pick manually
+            </button>
+            <button
+              type="button"
+              onClick={() => removeMealFromDay(dayIndex, mealIndex)}
+              className="text-sm font-medium text-charcoal/40 hover:text-charcoal hover:underline"
+            >
+              Remove
+            </button>
+          </div>
         )}
       </div>
     );
@@ -98,8 +115,11 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
           </span>
         )}
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/40">
-            {MEAL_TYPE_LABELS[slot.type]}
+          <p className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-charcoal/40">
+            {label}
+            {slot.pinned && (
+              <PinIcon filled className="h-3.5 w-3.5" aria-label="Pinned — kept when shuffling" />
+            )}
           </p>
           <p className="truncate text-sm font-semibold">{recipe.title}</p>
         </div>
@@ -107,21 +127,77 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
       <div className="flex shrink-0 gap-0.5">
         <button
           type="button"
-          aria-label={`Shuffle ${MEAL_TYPE_LABELS[slot.type]} to a different recipe`}
+          aria-label={`Shuffle ${label} to a different recipe`}
           onClick={() => shuffleSlot(dayIndex, mealIndex)}
           className="rounded-lg p-1.5 text-charcoal/40 transition-colors hover:bg-olive/15 hover:text-charcoal"
         >
           <ShuffleIcon className="h-4 w-4" />
         </button>
-        <button
-          type="button"
-          aria-label={`Change the recipe for ${MEAL_TYPE_LABELS[slot.type]}`}
-          onClick={() => setPicking(true)}
-          className="rounded-lg p-1.5 text-charcoal/40 transition-colors hover:bg-olive/15 hover:text-charcoal"
-        >
-          <PencilIcon className="h-4 w-4" />
-        </button>
+        <ActionMenu
+          ariaLabel={`More actions for ${label}: ${recipe.title}`}
+          items={[
+            {
+              label: slot.pinned ? 'Unpin' : 'Pin (keep when shuffling)',
+              icon: PinIcon,
+              onSelect: () => togglePinSlot(dayIndex, mealIndex),
+            },
+            {
+              label: 'Change recipe…',
+              icon: PencilIcon,
+              onSelect: () => setPicking(true),
+            },
+            {
+              label: 'Remove meal',
+              icon: TrashIcon,
+              tone: 'danger',
+              onSelect: () => removeMealFromDay(dayIndex, mealIndex),
+            },
+          ]}
+        />
       </div>
+    </div>
+  );
+}
+
+/** The "＋ Add a meal" affordance: tap to reveal a row of meal-type choices. */
+function AddMeal({ dayIndex }: { dayIndex: number }) {
+  const [choosing, setChoosing] = useState(false);
+
+  if (!choosing) {
+    return (
+      <button
+        type="button"
+        onClick={() => setChoosing(true)}
+        className="w-full rounded-xl p-2 text-sm font-medium text-charcoal/40 transition-colors hover:bg-surface/60 hover:text-charcoal/70"
+      >
+        ＋ Add a meal
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-dashed border-charcoal/20 p-2">
+      {MEAL_TYPES.map((t: MealType) => (
+        <button
+          key={t}
+          type="button"
+          onClick={() => {
+            addMealToDay(dayIndex, t);
+            setChoosing(false);
+          }}
+          className="rounded-full border border-charcoal/15 bg-surface/70 px-2.5 py-1 text-xs font-medium text-charcoal/70 transition-colors hover:bg-olive hover:text-white"
+        >
+          {MEAL_TYPE_LABELS[t]}
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={() => setChoosing(false)}
+        aria-label="Cancel adding a meal"
+        className="ml-auto rounded-full px-2 py-1 text-xs font-medium text-charcoal/40 hover:text-charcoal"
+      >
+        Cancel
+      </button>
     </div>
   );
 }
@@ -155,6 +231,12 @@ export default function MealPlanView() {
             {day.meals.map((_, mealIndex) => (
               <MealTile key={mealIndex} dayIndex={dayIndex} mealIndex={mealIndex} />
             ))}
+            {day.meals.length === 0 && (
+              <p className="rounded-xl border border-dashed border-charcoal/20 p-3 text-sm text-charcoal/50">
+                Nothing planned — eating out?
+              </p>
+            )}
+            <AddMeal dayIndex={dayIndex} />
           </div>
         </motion.section>
       ))}

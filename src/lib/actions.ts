@@ -6,6 +6,7 @@ import {
   type ArchivedPlan,
   type ExportBundle,
   type MealPlanConfig,
+  type MealSlot,
   type MealType,
   type ParsedRecipeData,
   type Recipe,
@@ -13,7 +14,7 @@ import {
 import { parseIngredientLines } from './ingredient-parser';
 import { buildShoppingList, mergeShoppingList } from './aggregate';
 import { normalizeIngredientName } from './normalize';
-import { generateMealPlan, newSeed, planLabel, recipeFitsMealType } from './plan';
+import { generateMealPlan, newSeed, planLabel, recipeFitsMealType, refillPlan } from './plan';
 import {
   clearMealPlanRemote,
   deleteRemote,
@@ -167,11 +168,63 @@ export function generatePlan(days: number, mealTypes: MealType[], seed?: number)
   if (stampedConfig && stampedPlan) void pushMealPlan(stampedConfig, stampedPlan);
 }
 
-/** Re-runs the current configuration with a fresh seed. */
+/**
+ * Re-rolls the current plan with a fresh seed — but only the unpinned slots,
+ * and over the plan's *actual* day/meal structure (user-added and removed
+ * meals survive, unlike regenerating from the original config).
+ */
 export function regeneratePlan(): void {
-  const { config } = usePlanStore.getState();
-  if (!config) return;
-  generatePlan(config.days, config.mealTypes, newSeed());
+  refillCurrentPlan((slot) => !slot.pinned);
+}
+
+/** Draws recipes for empty slots only, leaving every filled slot alone. */
+export function fillEmptySlots(): void {
+  refillCurrentPlan((slot) => !slot.recipeId);
+}
+
+function refillCurrentPlan(shouldRefill: (slot: MealSlot) => boolean): void {
+  const { config, plan } = usePlanStore.getState();
+  if (!config || !plan) return;
+  const recipes = useRecipeStore.getState().recipes;
+  const next = refillPlan(
+    plan,
+    Object.keys(recipes),
+    newSeed(),
+    shouldRefill,
+    (id, type) => {
+      const recipe = recipes[id];
+      return !recipe || recipeFitsMealType(recipe, type);
+    },
+    (id) => recipes[id]?.mainIngredient?.trim().toLowerCase() || undefined,
+  );
+  usePlanStore.getState().setPlan(config, next);
+  regenerateShoppingList();
+  const { config: stampedConfig, plan: stampedPlan } = usePlanStore.getState();
+  if (stampedConfig && stampedPlan) void pushMealPlan(stampedConfig, stampedPlan);
+}
+
+/** Pins or unpins one slot; pinned slots survive a shuffle untouched. */
+export function togglePinSlot(dayIndex: number, mealIndex: number): void {
+  const slot = usePlanStore.getState().plan?.[dayIndex]?.meals[mealIndex];
+  if (!slot) return;
+  usePlanStore.getState().patchSlot(dayIndex, mealIndex, { pinned: !slot.pinned });
+  const day = usePlanStore.getState().plan?.[dayIndex];
+  if (day) void pushMealPlanDay(dayIndex, day);
+}
+
+/** Adds an empty slot of the given meal type to a day. */
+export function addMealToDay(dayIndex: number, type: MealType): void {
+  usePlanStore.getState().addMeal(dayIndex, { type, recipeId: '' });
+  const day = usePlanStore.getState().plan?.[dayIndex];
+  if (day) void pushMealPlanDay(dayIndex, day);
+}
+
+/** Removes a slot from a day entirely (a day can end up with no meals — that's "eating out"). */
+export function removeMealFromDay(dayIndex: number, mealIndex: number): void {
+  usePlanStore.getState().removeMeal(dayIndex, mealIndex);
+  regenerateShoppingList();
+  const day = usePlanStore.getState().plan?.[dayIndex];
+  if (day) void pushMealPlanDay(dayIndex, day);
 }
 
 export function pickSlotRecipe(dayIndex: number, mealIndex: number, recipeId: string): void {

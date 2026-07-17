@@ -78,29 +78,52 @@ export function generateMealPlan(
   isEligible?: (recipeId: string, type: MealType) => boolean,
   getMainIngredient?: (recipeId: string) => string | undefined,
 ): MealPlanDay[] {
-  const rand = mulberry32(config.seed);
   const days: MealPlanDay[] = [];
-  if (recipeIds.length === 0) {
-    for (let d = 0; d < config.days; d++) {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + d);
-      days.push({
-        date: toLocalDateString(date),
-        meals: config.mealTypes.map((type): MealSlot => ({ type, recipeId: '' })),
-      });
-    }
-    return days;
+  for (let d = 0; d < config.days; d++) {
+    const date = new Date(startDate);
+    date.setDate(date.getDate() + d);
+    days.push({
+      date: toLocalDateString(date),
+      meals: config.mealTypes.map((type): MealSlot => ({ type, recipeId: '' })),
+    });
   }
+  return refillPlan(days, recipeIds, config.seed, () => true, isEligible, getMainIngredient);
+}
 
-  // One deck per distinct meal type in this plan, each an independent shuffled
-  // stream over that type's eligible pool (persisting across days, same as the
-  // single shared deck used to).
+/**
+ * Re-draws recipes for the slots `shouldRefill` says yes to, leaving every
+ * other slot exactly as it was. This is the one drawing engine — full
+ * generation ("refill everything" over a blank skeleton), "fill empty
+ * slots", and "shuffle unpinned" are all just different predicates.
+ *
+ * Kept slots still participate in the rules: a refilled slot won't duplicate
+ * a kept recipe within the same day (when alternatives exist), and the
+ * main-ingredient variety preference tracks kept slots as it walks.
+ * Eligibility and deck mechanics match generateMealPlan's long-standing
+ * behavior — one shuffled deck per meal type, reshuffled when exhausted,
+ * falling back to the full collection when a type has zero eligible recipes.
+ */
+export function refillPlan(
+  plan: MealPlanDay[],
+  recipeIds: string[],
+  seed: number,
+  shouldRefill: (slot: MealSlot) => boolean,
+  isEligible?: (recipeId: string, type: MealType) => boolean,
+  getMainIngredient?: (recipeId: string) => string | undefined,
+): MealPlanDay[] {
+  if (recipeIds.length === 0) return plan;
+  const rand = mulberry32(seed);
+
+  // One deck per distinct meal type, created in first-encounter order so the
+  // rand sequence (and therefore the plan) is deterministic for a given seed.
   const decks = new Map<MealType, { ids: string[]; pos: number }>();
-  for (const type of config.mealTypes) {
-    if (decks.has(type)) continue;
-    const eligible = isEligible ? recipeIds.filter((id) => isEligible(id, type)) : recipeIds;
-    const pool = eligible.length > 0 ? eligible : recipeIds;
-    decks.set(type, { ids: seededShuffle(pool, rand), pos: 0 });
+  for (const day of plan) {
+    for (const slot of day.meals) {
+      if (decks.has(slot.type)) continue;
+      const eligible = isEligible ? recipeIds.filter((id) => isEligible(id, slot.type)) : recipeIds;
+      const pool = eligible.length > 0 ? eligible : recipeIds;
+      decks.set(slot.type, { ids: seededShuffle(pool, rand), pos: 0 });
+    }
   }
 
   const lastMainIngredientByType = new Map<MealType, string>();
@@ -132,21 +155,30 @@ export function generateMealPlan(
     return deck.ids[deck.pos++];
   };
 
-  for (let d = 0; d < config.days; d++) {
-    const date = new Date(startDate);
-    date.setDate(date.getDate() + d);
-    const usedToday = new Set<string>();
-    const meals: MealSlot[] = config.mealTypes.map((type) => {
-      const recipeId = draw(type, usedToday);
+  const trackIngredient = (type: MealType, recipeId: string) => {
+    const ingredient = recipeId ? getMainIngredient?.(recipeId) : undefined;
+    if (ingredient) lastMainIngredientByType.set(type, ingredient);
+    else lastMainIngredientByType.delete(type);
+  };
+
+  return plan.map((day) => {
+    // Kept slots claim their recipes up front so a refill earlier in the day
+    // can't duplicate a kept meal later in it.
+    const usedToday = new Set(
+      day.meals.filter((m) => m.recipeId && !shouldRefill(m)).map((m) => m.recipeId),
+    );
+    const meals = day.meals.map((slot): MealSlot => {
+      if (!shouldRefill(slot)) {
+        trackIngredient(slot.type, slot.recipeId);
+        return slot;
+      }
+      const recipeId = draw(slot.type, usedToday);
       usedToday.add(recipeId);
-      const ingredient = getMainIngredient?.(recipeId);
-      if (ingredient) lastMainIngredientByType.set(type, ingredient);
-      else lastMainIngredientByType.delete(type);
-      return { type, recipeId };
+      trackIngredient(slot.type, recipeId);
+      return { ...slot, recipeId };
     });
-    days.push({ date: toLocalDateString(date), meals });
-  }
-  return days;
+    return { ...day, meals };
+  });
 }
 
 export const MEAL_TYPE_LABELS: Record<MealType, string> = {

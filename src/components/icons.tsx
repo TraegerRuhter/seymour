@@ -448,6 +448,16 @@ export function SparkleIcon(p: IconProps) {
   );
 }
 
+export function PinIcon({ filled = false, ...p }: IconProps & { filled?: boolean }) {
+  return (
+    <Svg {...p}>
+      {/* pushpin: head + wedge body + point */}
+      <path d="M9.5 3.5h5l-.8 5 2.8 2.8V13H7.5v-1.7l2.8-2.8z" fill={filled ? T : 'none'} stroke={filled ? TD : 'currentColor'} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M12 13v6.5" stroke={filled ? TD : 'currentColor'} strokeWidth="1.6" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 export function DessertIcon(p: IconProps) {
   return (
     <Svg {...p}>

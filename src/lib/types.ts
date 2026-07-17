@@ -48,6 +48,8 @@ export interface MealSlot {
   type: MealType;
   /** Empty string means the slot is unfilled. */
   recipeId: string;
+  /** Pinned slots survive "shuffle" untouched — only unpinned slots re-roll. */
+  pinned?: boolean;
 }
 
 export interface MealPlanDay {
