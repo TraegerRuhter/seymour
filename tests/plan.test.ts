@@ -5,9 +5,10 @@ import {
   mulberry32,
   planLabel,
   recipeFitsMealType,
+  refillPlan,
   seededShuffle,
 } from '../src/lib/plan.ts';
-import type { MealPlanConfig, MealType, Recipe } from '../src/lib/types.ts';
+import type { MealPlanConfig, MealPlanDay, MealType, Recipe } from '../src/lib/types.ts';
 
 const ids = (n: number) => Array.from({ length: n }, (_, i) => `r${i}`);
 
@@ -158,6 +159,98 @@ test('recipeFitsMealType: untagged recipes fit any meal, tagged recipes are rest
   assert.equal(recipeFitsMealType({ ...base, mealTypes: [] }, 'dinner'), true);
   assert.equal(recipeFitsMealType({ ...base, mealTypes: ['breakfast', 'snack'] }, 'dinner'), false);
   assert.equal(recipeFitsMealType({ ...base, mealTypes: ['dinner'] }, 'dinner'), true);
+});
+
+function makePlan(
+  days: { date: string; meals: { type: MealType; recipeId: string; pinned?: boolean }[] }[],
+): MealPlanDay[] {
+  return days;
+}
+
+test('refillPlan fills only empty slots, leaving filled ones untouched', () => {
+  const plan = makePlan([
+    {
+      date: '2026-07-14',
+      meals: [
+        { type: 'lunch', recipeId: 'r0' },
+        { type: 'dinner', recipeId: '' },
+      ],
+    },
+    { date: '2026-07-15', meals: [{ type: 'dinner', recipeId: 'r1' }] },
+  ]);
+  const next = refillPlan(plan, ids(6), 42, (slot) => !slot.recipeId);
+  assert.equal(next[0].meals[0].recipeId, 'r0', 'filled slot must not change');
+  assert.ok(next[0].meals[1].recipeId, 'empty slot must be filled');
+  assert.equal(next[1].meals[0].recipeId, 'r1');
+});
+
+test('refillPlan re-rolls unpinned slots but never pinned ones', () => {
+  const plan = makePlan([
+    {
+      date: '2026-07-14',
+      meals: [
+        { type: 'dinner', recipeId: 'r0', pinned: true },
+        { type: 'lunch', recipeId: 'r1' },
+      ],
+    },
+  ]);
+  // With many candidates and enough seeds, the unpinned slot changes at least
+  // once while the pinned slot never does.
+  let unpinnedChanged = false;
+  for (let seed = 0; seed < 20; seed++) {
+    const next = refillPlan(plan, ids(10), seed, (slot) => !slot.pinned);
+    assert.equal(next[0].meals[0].recipeId, 'r0', `seed ${seed} touched a pinned slot`);
+    assert.equal(next[0].meals[0].pinned, true, 'pinned flag survives the refill');
+    if (next[0].meals[1].recipeId !== 'r1') unpinnedChanged = true;
+  }
+  assert.ok(unpinnedChanged, 'unpinned slot should re-roll across seeds');
+});
+
+test('refillPlan avoids duplicating a kept recipe within the same day', () => {
+  const plan = makePlan([
+    {
+      date: '2026-07-14',
+      meals: [
+        { type: 'dinner', recipeId: '' },
+        { type: 'lunch', recipeId: 'r3', pinned: true },
+      ],
+    },
+  ]);
+  for (let seed = 0; seed < 30; seed++) {
+    const next = refillPlan(plan, ids(8), seed, (slot) => !slot.recipeId);
+    assert.notEqual(next[0].meals[0].recipeId, 'r3', `seed ${seed} duplicated the kept recipe`);
+  }
+});
+
+test('refillPlan respects meal-type eligibility and is deterministic per seed', () => {
+  const isEligible = (id: string, type: MealType) =>
+    type === 'dessert' ? id === 'r5' : id !== 'r5';
+  const plan = makePlan([
+    {
+      date: '2026-07-14',
+      meals: [
+        { type: 'dinner', recipeId: '' },
+        { type: 'dessert', recipeId: '' },
+      ],
+    },
+  ]);
+  const a = refillPlan(plan, ids(6), 7, () => true, isEligible);
+  const b = refillPlan(plan, ids(6), 7, () => true, isEligible);
+  assert.deepEqual(a, b, 'same seed must produce the same refill');
+  assert.equal(a[0].meals[1].recipeId, 'r5', 'dessert slot must draw the only eligible dessert');
+  assert.notEqual(
+    a[0].meals[0].recipeId,
+    'r5',
+    'dinner slot must not draw the dessert-only recipe',
+  );
+});
+
+test('refillPlan with an empty collection returns the plan unchanged', () => {
+  const plan = makePlan([{ date: '2026-07-14', meals: [{ type: 'dinner', recipeId: '' }] }]);
+  assert.deepEqual(
+    refillPlan(plan, [], 1, () => true),
+    plan,
+  );
 });
 
 test('seededShuffle is deterministic and a permutation', () => {

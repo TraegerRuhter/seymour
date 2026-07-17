@@ -3,7 +3,15 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import localforage from 'localforage';
-import type { ArchivedPlan, MealPlanConfig, MealPlanDay, Recipe, ShoppingListItem } from './types';
+import {
+  MEAL_TYPES,
+  type ArchivedPlan,
+  type MealPlanConfig,
+  type MealPlanDay,
+  type MealSlot,
+  type Recipe,
+  type ShoppingListItem,
+} from './types';
 import type { UnitSystem } from './units';
 
 /**
@@ -93,6 +101,11 @@ interface PlanState {
   setPlan: (config: MealPlanConfig, plan: MealPlanDay[]) => void;
   clearPlan: () => void;
   setSlot: (dayIndex: number, mealIndex: number, recipeId: string) => void;
+  /** Merges a partial update (pin, etc.) into one slot, stamping the day. */
+  patchSlot: (dayIndex: number, mealIndex: number, patch: Partial<MealSlot>) => void;
+  /** Adds an empty slot of the given type to a day, kept in canonical meal order. */
+  addMeal: (dayIndex: number, slot: MealSlot) => void;
+  removeMeal: (dayIndex: number, mealIndex: number) => void;
   /** Replaces a single day wholesale — used when a pull decides the server's copy of that day wins. */
   setDay: (dayIndex: number, day: MealPlanDay) => void;
   clearRecipeFromPlan: (recipeId: string) => void;
@@ -136,6 +149,49 @@ export const usePlanStore = create<PlanState>()(
                   ...day,
                   updatedAt: new Date().toISOString(),
                   meals: day.meals.map((m, mi) => (mi !== mealIndex ? m : { ...m, recipeId })),
+                },
+          );
+          return { plan };
+        }),
+      patchSlot: (dayIndex, mealIndex, patch) =>
+        set((s) => {
+          if (!s.plan) return s;
+          const plan = s.plan.map((day, di) =>
+            di !== dayIndex
+              ? day
+              : {
+                  ...day,
+                  updatedAt: new Date().toISOString(),
+                  meals: day.meals.map((m, mi) => (mi !== mealIndex ? m : { ...m, ...patch })),
+                },
+          );
+          return { plan };
+        }),
+      addMeal: (dayIndex, slot) =>
+        set((s) => {
+          if (!s.plan) return s;
+          const plan = s.plan.map((day, di) => {
+            if (di !== dayIndex) return day;
+            // Insert in canonical order (breakfast → dessert) so a day always
+            // reads top-to-bottom like the day itself, wherever you add from.
+            const order = (t: MealSlot['type']) => MEAL_TYPES.indexOf(t);
+            const at = day.meals.findIndex((m) => order(m.type) > order(slot.type));
+            const meals = [...day.meals];
+            meals.splice(at === -1 ? meals.length : at, 0, slot);
+            return { ...day, updatedAt: new Date().toISOString(), meals };
+          });
+          return { plan };
+        }),
+      removeMeal: (dayIndex, mealIndex) =>
+        set((s) => {
+          if (!s.plan) return s;
+          const plan = s.plan.map((day, di) =>
+            di !== dayIndex
+              ? day
+              : {
+                  ...day,
+                  updatedAt: new Date().toISOString(),
+                  meals: day.meals.filter((_, mi) => mi !== mealIndex),
                 },
           );
           return { plan };
