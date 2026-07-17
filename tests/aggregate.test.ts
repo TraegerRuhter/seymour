@@ -229,6 +229,43 @@ test('buildShoppingList tags each item with the recipes it came from', () => {
   assert.deepEqual(items[0].recipeIds, ['r1', 'r2']);
 });
 
+test('buildShoppingList multiplies a scaled slot’s quantities into the total', () => {
+  const recipes: Record<string, Recipe> = { r1: makeRecipe('r1', ['2 cups flour']) };
+  const plan: MealPlanDay[] = [
+    { date: '2026-07-14', meals: [{ type: 'dinner', recipeId: 'r1', scale: 2 }] },
+  ];
+  const items = buildShoppingList(plan, recipes, 'imperial');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].unit, 'cup');
+  assert.equal(items[0].totalQuantity, 4);
+});
+
+test('buildShoppingList sums mixed scales of the same recipe across slots', () => {
+  const recipes: Record<string, Recipe> = { r1: makeRecipe('r1', ['1 cup milk']) };
+  const plan: MealPlanDay[] = [
+    { date: '2026-07-14', meals: [{ type: 'dinner', recipeId: 'r1' }] },
+    { date: '2026-07-15', meals: [{ type: 'dinner', recipeId: 'r1', scale: 1.5 }] },
+  ];
+  const items = buildShoppingList(plan, recipes, 'imperial');
+  assert.equal(items.length, 1);
+  // 1 + 1.5 cups
+  assert.ok(Math.abs(items[0].totalQuantity - 2.5) < 0.01);
+  // The same line at two scales is worth explaining: both appear as sources,
+  // the scaled one carrying its multiplier.
+  assert.equal(items[0].sources?.length, 2);
+  assert.deepEqual(items[0].sources?.map((s) => s.scale ?? 1).sort(), [1, 1.5]);
+});
+
+test('an unquantified line ("salt to taste") is unaffected by scale', () => {
+  const recipes: Record<string, Recipe> = { r1: makeRecipe('r1', ['salt to taste']) };
+  const plan: MealPlanDay[] = [
+    { date: '2026-07-14', meals: [{ type: 'dinner', recipeId: 'r1', scale: 3 }] },
+  ];
+  const items = buildShoppingList(plan, recipes, 'imperial');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].totalQuantity, 0);
+});
+
 test('buildShoppingList treats an empty staples set the same as none', () => {
   const recipes: Record<string, Recipe> = { r1: makeRecipe('r1', ['1 tsp salt']) };
   const plan: MealPlanDay[] = [{ date: '2026-07-07', meals: [{ type: 'dinner', recipeId: 'r1' }] }];

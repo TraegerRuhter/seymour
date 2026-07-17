@@ -318,8 +318,14 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
             {showBreakdown && (
               <ul className="mt-1 space-y-0.5 border-l-2 border-charcoal/10 pl-3">
                 {item.sources.map((s) => (
-                  <li key={s.originalString} className="truncate text-xs text-charcoal/60">
+                  <li
+                    key={`${s.originalString}|${s.scale ?? 1}`}
+                    className="truncate text-xs text-charcoal/60"
+                  >
                     {s.originalString}
+                    {s.scale != null && s.scale !== 1 && (
+                      <span className="font-medium text-olive-dark"> ×{s.scale}</span>
+                    )}
                     {s.recipeId && recipes[s.recipeId] && (
                       <span className="text-charcoal/40"> · {recipes[s.recipeId].title}</span>
                     )}

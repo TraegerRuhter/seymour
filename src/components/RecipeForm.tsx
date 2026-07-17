@@ -50,6 +50,9 @@ export default function RecipeForm({
   const [cookTime, setCookTime] = useState(
     existing?.cookTimeMinutes != null ? String(existing.cookTimeMinutes) : '',
   );
+  const [servings, setServings] = useState(
+    existing?.servings != null ? String(existing.servings) : '',
+  );
   const [error, setError] = useState('');
 
   function toggleMealType(t: MealType) {
@@ -73,6 +76,7 @@ export default function RecipeForm({
       return;
     }
     const cookTimeMinutes = cookTime.trim() ? Number(cookTime) : undefined;
+    const servingCount = servings.trim() ? Number(servings) : undefined;
     const recipe: Recipe = {
       id: existing?.id ?? nanoid(),
       title: title.trim(),
@@ -89,6 +93,10 @@ export default function RecipeForm({
       mainIngredient: mainIngredient.trim() || undefined,
       cookTimeMinutes:
         cookTimeMinutes != null && !Number.isNaN(cookTimeMinutes) ? cookTimeMinutes : undefined,
+      servings:
+        servingCount != null && !Number.isNaN(servingCount) && servingCount > 0
+          ? servingCount
+          : undefined,
     };
     saveRecipe(recipe);
     router.push(`/recipes/${recipe.id}`);
@@ -154,7 +162,7 @@ export default function RecipeForm({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <label htmlFor="rf-category" className="mb-1 block text-sm font-medium">
             Category <span className="font-normal text-charcoal/40">(optional)</span>
@@ -192,6 +200,21 @@ export default function RecipeForm({
             onChange={(e) => setCookTime(e.target.value)}
             className="input-base"
             placeholder="30"
+          />
+        </div>
+        <div>
+          <label htmlFor="rf-servings" className="mb-1 block text-sm font-medium">
+            Serves <span className="font-normal text-charcoal/40">(optional)</span>
+          </label>
+          <input
+            id="rf-servings"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            value={servings}
+            onChange={(e) => setServings(e.target.value)}
+            className="input-base"
+            placeholder="4"
           />
         </div>
       </div>

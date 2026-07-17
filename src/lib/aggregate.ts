@@ -11,7 +11,7 @@ interface Bucket {
   total: number;
   recipeIds: Set<string>;
   /** Every original line that fed into this bucket, for the "why this many" breakdown. */
-  sources: { originalString: string; recipeId?: string }[];
+  sources: { originalString: string; recipeId?: string; scale?: number }[];
   /**
    * For produce with a known "cup of prepped X ≈ N whole pieces" yield
    * (see produce-yields.ts): prepped-volume contributions ("1 cup chopped
@@ -25,6 +25,8 @@ interface Bucket {
 /** An ingredient tagged with the recipe it came from, for "source recipe" links. */
 export interface SourcedIngredient extends Ingredient {
   recipeId?: string;
+  /** The plan slot's servings multiplier this line arrived with (1 = as written). */
+  scale?: number;
 }
 
 /**
@@ -46,15 +48,19 @@ export function aggregateIngredients(
     if (!name) continue;
 
     const yieldInfo = PRODUCE_YIELDS[name];
+    // A slot's servings multiplier scales this line's quantity before any
+    // unit conversion; unquantified lines ("salt to taste") stay as-is.
+    const scale = ing.scale ?? 1;
+    const quantity = ing.quantity * scale;
 
     let key: string;
     let baseUnit: 'ml' | 'g' | null = null;
     let displayUnit = ing.unit;
-    let amount = ing.quantity;
+    let amount = quantity;
     let volumeMl = 0;
 
-    if (ing.quantity > 0 && ing.unit) {
-      const converted = toBase(ing.quantity, ing.unit);
+    if (quantity > 0 && ing.unit) {
+      const converted = toBase(quantity, ing.unit);
       if (yieldInfo && converted && converted.baseUnit === 'ml') {
         // Route a prepped-volume line ("1 cup chopped onion") into the same
         // bucket as a whole-piece count ("2 onions") for this ingredient.
@@ -93,7 +99,11 @@ export function aggregateIngredients(
     if (amount > 0) bucket.total += amount;
     if (volumeMl > 0) bucket.produceMl += volumeMl;
     if (ing.recipeId) bucket.recipeIds.add(ing.recipeId);
-    bucket.sources.push({ originalString: ing.originalString, recipeId: ing.recipeId });
+    bucket.sources.push({
+      originalString: ing.originalString,
+      recipeId: ing.recipeId,
+      ...(scale !== 1 ? { scale } : {}),
+    });
   }
 
   const items: ShoppingListItem[] = [];
@@ -114,7 +124,9 @@ export function aggregateIngredients(
     // actually combined two differently-worded lines — a bucket built from
     // one recipe's line repeated across several planned meals has nothing
     // to explain.
-    const distinctSources = [...new Map(bucket.sources.map((s) => [s.originalString, s])).values()];
+    const distinctSources = [
+      ...new Map(bucket.sources.map((s) => [`${s.originalString}|${s.scale ?? 1}`, s])).values(),
+    ];
     items.push({
       id: bucket.key,
       ingredientName: bucket.name,
@@ -155,7 +167,15 @@ export function buildShoppingList(
   for (const day of plan) {
     for (const slot of day.meals) {
       const recipe = slot.recipeId ? recipes[slot.recipeId] : undefined;
-      if (recipe) all.push(...recipe.ingredients.map((ing) => ({ ...ing, recipeId: recipe.id })));
+      if (!recipe) continue;
+      const scale = slot.scale ?? 1;
+      all.push(
+        ...recipe.ingredients.map((ing) => ({
+          ...ing,
+          recipeId: recipe.id,
+          ...(scale !== 1 ? { scale } : {}),
+        })),
+      );
     }
   }
   const filtered = staples && staples.size > 0 ? all.filter((i) => !staples.has(i.name)) : all;
