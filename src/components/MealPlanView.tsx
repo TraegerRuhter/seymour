@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { usePlanStore, useRecipeStore } from '@/lib/stores';
@@ -12,10 +12,11 @@ import {
   shuffleSlot,
   togglePinSlot,
 } from '@/lib/actions';
-import { MEAL_TYPE_LABELS, recipeFitsMealType, toLocalDateString } from '@/lib/plan';
+import { MEAL_TYPE_LABELS, toLocalDateString } from '@/lib/plan';
 import { MEAL_TYPES, type MealType } from '@/lib/types';
 import { enter, fadeRise } from '@/lib/motion';
 import ActionMenu from './ActionMenu';
+import RecipePicker from './RecipePicker';
 import { MEAL_TYPE_ICON, PencilIcon, PinIcon, ShuffleIcon, TrashIcon } from './icons';
 
 function dayHeading(dateStr: string): string {
@@ -36,48 +37,26 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
   const slot = usePlanStore((s) => s.plan?.[dayIndex]?.meals[mealIndex]);
   const recipes = useRecipeStore((s) => s.recipes);
   const [picking, setPicking] = useState(false);
+  const tileRef = useRef<HTMLDivElement>(null);
 
   if (!slot) return null;
   const recipe = slot.recipeId ? recipes[slot.recipeId] : undefined;
   const MealIcon = MEAL_TYPE_ICON[slot.type];
   const label = MEAL_TYPE_LABELS[slot.type];
 
+  function pick(recipeId: string) {
+    pickSlotRecipe(dayIndex, mealIndex, recipeId);
+    setPicking(false);
+  }
+
   if (!recipe || picking) {
-    const all = Object.values(recipes);
-    // Same fallback as generation: if meal-type tagging would leave nothing
-    // to pick, show everything rather than an empty dropdown.
-    const fitting = all.filter((r) => recipeFitsMealType(r, slot.type));
-    const pickable = fitting.length > 0 ? fitting : all;
     return (
-      <div className="rounded-xl border border-dashed border-charcoal/20 p-3">
+      <div ref={tileRef} className="rounded-xl border border-dashed border-charcoal/20 p-3">
         <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/40">
           <MealIcon className="h-4 w-4" />
           {label}
         </p>
-        {picking ? (
-          <select
-            autoFocus
-            aria-label={recipe ? `Change the recipe for ${label}` : `Pick a recipe for ${label}`}
-            className="input-base mt-2 py-1.5 text-sm"
-            defaultValue={recipe?.id ?? ''}
-            onChange={(e) => {
-              if (e.target.value) pickSlotRecipe(dayIndex, mealIndex, e.target.value);
-              setPicking(false);
-            }}
-            onBlur={() => setPicking(false)}
-          >
-            {!recipe && (
-              <option value="" disabled>
-                Choose a recipe…
-              </option>
-            )}
-            {pickable.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.title}
-              </option>
-            ))}
-          </select>
-        ) : (
+        {!picking && (
           <div className="mt-1 flex items-center gap-3">
             <button
               type="button"
@@ -95,12 +74,24 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
             </button>
           </div>
         )}
+        {picking && (
+          <RecipePicker
+            anchorRef={tileRef}
+            mealType={slot.type}
+            recipes={Object.values(recipes)}
+            onPick={pick}
+            onClose={() => setPicking(false)}
+          />
+        )}
       </div>
     );
   }
 
   return (
-    <div className="group relative rounded-xl bg-surface/60 p-3 transition-colors hover:bg-surface">
+    <div
+      ref={tileRef}
+      className="group relative rounded-xl bg-surface/60 p-3 transition-colors hover:bg-surface"
+    >
       <div className="flex items-center gap-3">
         <Link href={`/recipes/${recipe.id}`} className="flex min-w-0 flex-1 items-center gap-3">
           {recipe.imageUrl ? (
@@ -164,6 +155,15 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
         scale={slot.scale ?? 1}
         baseServings={recipe.servings}
       />
+      {picking && (
+        <RecipePicker
+          anchorRef={tileRef}
+          mealType={slot.type}
+          recipes={Object.values(recipes)}
+          onPick={pick}
+          onClose={() => setPicking(false)}
+        />
+      )}
     </div>
   );
 }
