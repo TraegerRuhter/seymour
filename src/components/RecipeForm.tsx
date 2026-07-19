@@ -7,7 +7,10 @@ import { MEAL_TYPES, type MealType, type Recipe } from '@/lib/types';
 import { MEAL_TYPE_LABELS } from '@/lib/plan';
 import { parseIngredientLines } from '@/lib/ingredient-parser';
 import { saveRecipe } from '@/lib/actions';
+import { suggestTags } from '@/lib/auto-tag';
+import { useRecipeStore } from '@/lib/stores';
 import ImagePicker from './ImagePicker';
+import { SparkleIcon } from './icons';
 
 /** Pre-fill values for a fresh (non-edit) form, e.g. from the paste-text importer. */
 export interface RecipeFormInitialValues {
@@ -54,10 +57,51 @@ export default function RecipeForm({
     existing?.servings != null ? String(existing.servings) : '',
   );
   const [error, setError] = useState('');
+  const [autoTagNote, setAutoTagNote] = useState('');
+  const recipes = useRecipeStore((s) => s.recipes);
 
   function toggleMealType(t: MealType) {
     setMealTypes((current) =>
       current.includes(t) ? current.filter((x) => x !== t) : [...current, t],
+    );
+  }
+
+  /**
+   * Fills in only the meal-type/category/main-ingredient fields still blank
+   * — never overwrites something the user (or a previous auto-tag) already
+   * set, so running it again after editing the title is always safe.
+   */
+  function applyAutoTag() {
+    const ingredientLines = ingredientsText
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const existingCategories = Object.values(recipes)
+      .map((r) => r.category)
+      .filter((c): c is string => !!c);
+    const suggested = suggestTags(
+      title,
+      parseIngredientLines(ingredientLines).map((i) => i.name),
+      existingCategories,
+    );
+
+    let applied = 0;
+    if (mealTypes.length === 0 && suggested.mealTypes.length > 0) {
+      setMealTypes(suggested.mealTypes);
+      applied++;
+    }
+    if (!category.trim() && suggested.category) {
+      setCategory(suggested.category);
+      applied++;
+    }
+    if (!mainIngredient.trim() && suggested.mainIngredient) {
+      setMainIngredient(suggested.mainIngredient);
+      applied++;
+    }
+    setAutoTagNote(
+      applied > 0
+        ? `Applied ${applied} suggestion${applied === 1 ? '' : 's'} — adjust anything below.`
+        : 'Nothing confident to suggest yet — add a title and ingredients, or tag it yourself below.',
     );
   }
 
@@ -133,13 +177,26 @@ export default function RecipeForm({
 
       <ImagePicker value={imageUrl} onChange={setImageUrl} />
 
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-medium">Tags</h2>
+        <button
+          type="button"
+          onClick={applyAutoTag}
+          className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-terracotta hover:underline"
+        >
+          <SparkleIcon className="h-4 w-4" />
+          Auto-tag from title &amp; ingredients
+        </button>
+      </div>
+      {autoTagNote && <p className="-mt-2 text-xs text-charcoal/50">{autoTagNote}</p>}
+
       <div>
-        <h2 className="mb-2 text-sm font-medium">
+        <h3 className="mb-2 text-sm font-medium">
           Meals{' '}
           <span className="font-normal text-charcoal/40">
             (optional — leave blank to fit any meal)
           </span>
-        </h2>
+        </h3>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Meal types">
           {MEAL_TYPES.map((t) => {
             const on = mealTypes.includes(t);

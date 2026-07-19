@@ -4,10 +4,11 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence } from 'framer-motion';
 import { useRecipeStore } from '@/lib/stores';
+import { autoTagUntaggedRecipes } from '@/lib/actions';
 import { MEAL_TYPES, type MealType } from '@/lib/types';
 import { MEAL_TYPE_LABELS, recipeFitsMealType } from '@/lib/plan';
 import RecipeCard from '@/components/RecipeCard';
-import { PencilIcon, PlateIcon, GridIcon, ListIcon } from '@/components/icons';
+import { PencilIcon, PlateIcon, GridIcon, ListIcon, SparkleIcon } from '@/components/icons';
 
 /** The meal-type filter also offers "untagged" to surface recipes that still need tags. */
 type MealFilter = MealType | 'untagged';
@@ -43,6 +44,7 @@ export default function RecipeLibraryPage() {
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
   const [mealFilter, setMealFilter] = useState<MealFilter | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [tagMessage, setTagMessage] = useState('');
 
   const sortedRecipes = useMemo(
     () => Object.values(recipes).sort((a, b) => +new Date(b.dateAdded) - +new Date(a.dateAdded)),
@@ -77,6 +79,24 @@ export default function RecipeLibraryPage() {
   }, [sortedRecipes, query, mealFilter, categoryFilter]);
 
   const hasActiveFilter = query.trim() !== '' || mealFilter !== null || categoryFilter !== null;
+
+  // Gated on mealTypes/category only, not mainIngredient — plenty of dishes
+  // (a dessert, a salad) legitimately have no main ingredient to suggest, so
+  // counting that too would leave this permanently non-zero.
+  const untaggedCount = useMemo(
+    () =>
+      sortedRecipes.filter((r) => !r.mealTypes || r.mealTypes.length === 0 || !r.category).length,
+    [sortedRecipes],
+  );
+
+  function handleAutoTag() {
+    const count = autoTagUntaggedRecipes();
+    setTagMessage(
+      count > 0
+        ? `Tagged ${count} recipe${count === 1 ? '' : 's'} — review or adjust from each recipe's edit page anytime.`
+        : 'Nothing confident enough to auto-tag right now — recipes missing tags need a title and ingredients to go on.',
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -166,8 +186,19 @@ export default function RecipeLibraryPage() {
                 Clear
               </button>
             )}
+            {untaggedCount > 0 && (
+              <button
+                type="button"
+                onClick={handleAutoTag}
+                className="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-terracotta hover:underline"
+              >
+                <SparkleIcon className="h-4 w-4" />
+                Auto-tag {untaggedCount} recipe{untaggedCount === 1 ? '' : 's'}
+              </button>
+            )}
           </div>
         )}
+        {tagMessage && <p className="text-xs text-charcoal/50">{tagMessage}</p>}
       </div>
 
       {filtered.length === 0 ? (
