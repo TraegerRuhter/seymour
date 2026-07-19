@@ -6,6 +6,7 @@ import type { Recipe } from '@/lib/types';
 import { cardExit, enter, fadeRise, layoutSpring } from '@/lib/motion';
 import { MEAL_TYPE_LABELS } from '@/lib/plan';
 import { BowlIcon } from './icons';
+import StarRating from './StarRating';
 
 export default function RecipeCard({
   recipe,
@@ -88,6 +89,9 @@ export default function RecipeCard({
             </div>
           )}
           <h3 className="line-clamp-2 text-xl font-semibold leading-snug">{recipe.title}</h3>
+          {recipe.rating != null && (
+            <StarRating value={recipe.rating} size="sm" label={`${recipe.rating} out of 5 stars`} />
+          )}
           <p className="mt-1 text-sm text-charcoal/50">
             {recipe.ingredients.length} ingredient{recipe.ingredients.length === 1 ? '' : 's'} ·
             Added {added}

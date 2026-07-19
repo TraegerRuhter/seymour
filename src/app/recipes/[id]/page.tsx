@@ -1,18 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useRecipeStore } from '@/lib/stores';
-import { deleteRecipe } from '@/lib/actions';
+import { deleteRecipe, setRecipeNotes, setRecipeRating } from '@/lib/actions';
 import { displayUnit, formatQuantity } from '@/lib/units';
 import { MEAL_TYPE_LABELS } from '@/lib/plan';
+import StarRating from '@/components/StarRating';
 
 export default function RecipeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const recipe = useRecipeStore((s) => s.recipes[id]);
   const [confirming, setConfirming] = useState(false);
+  const [notesDraft, setNotesDraft] = useState(recipe?.notes ?? '');
+  const [notesSaved, setNotesSaved] = useState(true);
+
+  // Re-sync the draft when navigating between recipes (or when a remote
+  // sync pulls in a newer value) without clobbering in-progress typing.
+  useEffect(() => {
+    setNotesDraft(recipe?.notes ?? '');
+    setNotesSaved(true);
+  }, [recipe?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function commitNotes() {
+    if (!recipe || notesDraft === (recipe.notes ?? '')) return;
+    setRecipeNotes(recipe.id, notesDraft);
+    setNotesSaved(true);
+  }
 
   if (!recipe) {
     return (
@@ -45,6 +61,13 @@ export default function RecipeDetailPage() {
         )}
         <div className="p-6">
           <h1 className="text-3xl font-bold">{recipe.title}</h1>
+          <div className="no-print mt-2">
+            <StarRating
+              value={recipe.rating}
+              onChange={(rating) => setRecipeRating(recipe.id, rating)}
+              label={`Your rating for ${recipe.title}`}
+            />
+          </div>
           {(recipe.category ||
             recipe.mainIngredient ||
             recipe.cookTimeMinutes != null ||
@@ -175,6 +198,30 @@ export default function RecipeDetailPage() {
           </ol>
         </section>
       )}
+
+      <section aria-label="Notes" className="glass-card mt-6 p-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">Notes</h2>
+          <span className="no-print text-xs text-charcoal/40">
+            {notesSaved ? '' : 'Unsaved — click away to save'}
+          </span>
+        </div>
+        <label htmlFor="recipe-notes" className="sr-only">
+          Notes for {recipe.title}
+        </label>
+        <textarea
+          id="recipe-notes"
+          value={notesDraft}
+          onChange={(e) => {
+            setNotesDraft(e.target.value);
+            setNotesSaved(false);
+          }}
+          onBlur={commitNotes}
+          rows={4}
+          placeholder="Tweaks, verdicts, substitutions — anything worth remembering next time…"
+          className="input-base mt-3 text-sm"
+        />
+      </section>
     </article>
   );
 }

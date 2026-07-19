@@ -38,18 +38,25 @@ function FilterChip({
   );
 }
 
+type SortMode = 'newest' | 'rating';
+
 export default function RecipeLibraryPage() {
   const recipes = useRecipeStore((s) => s.recipes);
   const [query, setQuery] = useState('');
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
   const [mealFilter, setMealFilter] = useState<MealFilter | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>('newest');
   const [tagMessage, setTagMessage] = useState('');
 
-  const sortedRecipes = useMemo(
-    () => Object.values(recipes).sort((a, b) => +new Date(b.dateAdded) - +new Date(a.dateAdded)),
-    [recipes],
-  );
+  const sortedRecipes = useMemo(() => {
+    const all = Object.values(recipes);
+    if (sortMode === 'rating') {
+      // Unrated sinks to the bottom rather than reading as "0 stars".
+      return all.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+    }
+    return all.sort((a, b) => +new Date(b.dateAdded) - +new Date(a.dateAdded));
+  }, [recipes, sortMode]);
 
   // Category chips come from the collection itself — grouped case-insensitively,
   // shown with the casing of their first occurrence.
@@ -125,6 +132,18 @@ export default function RecipeLibraryPage() {
             placeholder="Search by title…"
             className="input-base max-w-md"
           />
+          <label htmlFor="recipe-sort" className="sr-only">
+            Sort recipes
+          </label>
+          <select
+            id="recipe-sort"
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as SortMode)}
+            className="input-base w-auto py-2"
+          >
+            <option value="newest">Newest</option>
+            <option value="rating">Top rated</option>
+          </select>
           <button
             type="button"
             onClick={() => setLayout((l) => (l === 'grid' ? 'list' : 'grid'))}
