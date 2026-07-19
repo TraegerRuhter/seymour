@@ -2,12 +2,15 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import type { ParseResult } from '@/lib/types';
+import type { ParseResult, ParsedRecipeData } from '@/lib/types';
 import { recipeFromParsed, saveRecipes } from '@/lib/actions';
 import RecipeForm, { type RecipeFormInitialValues } from '@/components/RecipeForm';
 import PasteImport from '@/components/PasteImport';
+import { SparkleIcon } from '@/components/icons';
 
-type Mode = 'url' | 'manual';
+type Mode = 'url' | 'manual' | 'discover';
+
+const DISCOVER_COUNT_OPTIONS = [1, 2, 3, 4, 5] as const;
 
 function AddRecipe() {
   const router = useRouter();
@@ -21,6 +24,40 @@ function AddRecipe() {
   // Bumped on every successful paste-extraction to force RecipeForm to
   // remount with the new prefill values (it only reads them on mount).
   const [formKey, setFormKey] = useState(0);
+
+  const [discoverQuery, setDiscoverQuery] = useState('');
+  const [discoverCount, setDiscoverCount] = useState<(typeof DISCOVER_COUNT_OPTIONS)[number]>(3);
+  const [discoverBusy, setDiscoverBusy] = useState(false);
+  const [discoverError, setDiscoverError] = useState('');
+
+  async function handleDiscover(e: React.FormEvent) {
+    e.preventDefault();
+    if (!discoverQuery.trim() || discoverBusy) return;
+
+    setDiscoverBusy(true);
+    setDiscoverError('');
+    try {
+      const res = await fetch('/api/discover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: discoverQuery.trim(), count: discoverCount }),
+      });
+      const body = (await res.json().catch(() => null)) as
+        { results: ParsedRecipeData[]; found: number } | { error: string } | null;
+      if (!res.ok || !body || 'error' in body) {
+        setDiscoverError(
+          (body && 'error' in body && body.error) || `Request failed (HTTP ${res.status})`,
+        );
+        return;
+      }
+      saveRecipes(body.results.map(recipeFromParsed));
+      router.push('/recipes');
+    } catch {
+      setDiscoverError('Something went wrong. Check your connection and try again.');
+    } finally {
+      setDiscoverBusy(false);
+    }
+  }
 
   async function handleParse(e: React.FormEvent) {
     e.preventDefault();
@@ -80,16 +117,16 @@ function AddRecipe() {
       <header>
         <h1 className="text-3xl font-bold">Add a recipe</h1>
         <p className="mt-1 text-charcoal/60">
-          Paste recipe URLs and Seymour will extract everything, or type one in by hand.
+          Paste recipe URLs, let Seymour find some for you, or type one in by hand.
         </p>
       </header>
 
       <div
         role="tablist"
         aria-label="Add method"
-        className="inline-flex rounded-full border border-charcoal/15 bg-surface/60 p-1"
+        className="inline-flex flex-wrap rounded-full border border-charcoal/15 bg-surface/60 p-1"
       >
-        {(['url', 'manual'] as const).map((m) => (
+        {(['url', 'discover', 'manual'] as const).map((m) => (
           <button
             key={m}
             role="tab"
@@ -99,7 +136,7 @@ function AddRecipe() {
               mode === m ? 'bg-terracotta text-white' : 'text-charcoal/60 hover:text-charcoal'
             }`}
           >
-            {m === 'url' ? 'From a URL' : 'Enter manually'}
+            {m === 'url' ? 'From a URL' : m === 'discover' ? 'Discover' : 'Enter manually'}
           </button>
         ))}
       </div>
@@ -165,6 +202,77 @@ function AddRecipe() {
               or enter it manually
             </button>
           </div>
+        </form>
+      ) : mode === 'discover' ? (
+        <form onSubmit={handleDiscover} className="space-y-4">
+          <div>
+            <label htmlFor="discover-query" className="mb-1 block text-sm font-medium">
+              What are you looking for?
+            </label>
+            <input
+              id="discover-query"
+              value={discoverQuery}
+              onChange={(e) => setDiscoverQuery(e.target.value)}
+              className="input-base"
+              placeholder="chicken, quick vegetarian dinners, weeknight pasta…"
+              disabled={discoverBusy}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="discover-count" className="mb-1 block text-sm font-medium">
+              How many
+            </label>
+            <select
+              id="discover-count"
+              value={discoverCount}
+              onChange={(e) =>
+                setDiscoverCount(Number(e.target.value) as (typeof DISCOVER_COUNT_OPTIONS)[number])
+              }
+              disabled={discoverBusy}
+              className="input-base w-auto py-2"
+            >
+              {DISCOVER_COUNT_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n} recipe{n === 1 ? '' : 's'}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {discoverError && (
+            <p
+              role="alert"
+              className="rounded-xl bg-terracotta/10 px-4 py-3 text-sm text-terracotta-dark"
+            >
+              {discoverError}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={discoverBusy || !discoverQuery.trim()}
+          >
+            {discoverBusy ? (
+              <>
+                <span
+                  aria-hidden
+                  className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                />
+                Searching…
+              </>
+            ) : (
+              <>
+                <SparkleIcon className="h-4 w-4" />
+                Find recipes
+              </>
+            )}
+          </button>
+          <p className="text-xs text-charcoal/40">
+            Seymour finds real recipe pages from well-known cooking sites and adds only the ones it
+            can actually read — nothing gets added on faith.
+          </p>
         </form>
       ) : (
         <div className="space-y-4">
