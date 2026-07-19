@@ -458,6 +458,14 @@ export function PinIcon({ filled = false, ...p }: IconProps & { filled?: boolean
   );
 }
 
+export function StarIcon({ filled = false, ...p }: IconProps & { filled?: boolean }) {
+  return (
+    <Svg {...p}>
+      <path d="M12 3.5l2.47 5.18 5.53.66-4.1 3.97 1.06 5.69L12 16.1l-4.96 2.9 1.06-5.69-4.1-3.97 5.53-.66z" fill={filled ? T : 'none'} stroke={filled ? TD : 'currentColor'} strokeWidth="1.4" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 export function DessertIcon(p: IconProps) {
   return (
     <Svg {...p}>

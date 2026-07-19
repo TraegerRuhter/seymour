@@ -36,6 +36,10 @@ export interface Recipe {
   cookTimeMinutes?: number;
   /** How many servings the recipe yields as written — the base a plan slot's servings stepper scales against. */
   servings?: number;
+  /** 0.5–5 in half-star steps. Undefined means unrated (never fewer than 0.5 — there's no "0 star" rating). */
+  rating?: number;
+  /** Free-text notes the user keeps on the recipe (tweaks, verdicts, substitutions) — not part of the recipe itself. */
+  notes?: string;
   /** Set on every local edit; compared against the server's row to resolve sync conflicts. Absent until the record has synced at least once. */
   updatedAt?: string;
 }

@@ -68,6 +68,8 @@ interface RecipeRow {
   category: string | null;
   main_ingredient: string | null;
   cook_time_minutes: number | null;
+  rating: number | null;
+  notes: string | null;
   updated_at: string;
 }
 
@@ -84,6 +86,8 @@ function rowToRecipe(row: RecipeRow): Recipe {
     category: row.category ?? undefined,
     mainIngredient: row.main_ingredient ?? undefined,
     cookTimeMinutes: row.cook_time_minutes ?? undefined,
+    rating: row.rating ?? undefined,
+    notes: row.notes ?? undefined,
     updatedAt: row.updated_at,
   };
 }
@@ -102,6 +106,8 @@ function recipeToRow(userId: string, recipe: Recipe) {
     category: recipe.category ?? null,
     main_ingredient: recipe.mainIngredient ?? null,
     cook_time_minutes: recipe.cookTimeMinutes ?? null,
+    rating: recipe.rating ?? null,
+    notes: recipe.notes ?? null,
     // updated_at is intentionally omitted — the server trigger sets it.
   };
 }

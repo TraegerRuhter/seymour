@@ -198,6 +198,31 @@ export function saveRecipe(recipe: Recipe): void {
   void pushRecipe(stamped);
 }
 
+/** Sets (or clears, with `undefined`) a recipe's star rating. Clamped to 0.5–5 in half-star steps. */
+export function setRecipeRating(id: string, rating: number | undefined): void {
+  const recipe = useRecipeStore.getState().recipes[id];
+  if (!recipe) return;
+  const clamped =
+    rating == null ? undefined : Math.min(5, Math.max(0.5, Math.round(rating * 2) / 2));
+  const stamped: Recipe = { ...recipe, rating: clamped, updatedAt: new Date().toISOString() };
+  useRecipeStore.getState().updateRecipe(stamped);
+  void pushRecipe(stamped);
+}
+
+/** Sets a recipe's freeform notes (tweaks, verdicts, substitutions). */
+export function setRecipeNotes(id: string, notes: string): void {
+  const recipe = useRecipeStore.getState().recipes[id];
+  if (!recipe) return;
+  const trimmed = notes.trim();
+  const stamped: Recipe = {
+    ...recipe,
+    notes: trimmed || undefined,
+    updatedAt: new Date().toISOString(),
+  };
+  useRecipeStore.getState().updateRecipe(stamped);
+  void pushRecipe(stamped);
+}
+
 /** Deletes a recipe, clears any plan slots that referenced it, and re-aggregates. */
 export function deleteRecipe(id: string): void {
   useRecipeStore.getState().removeRecipe(id);

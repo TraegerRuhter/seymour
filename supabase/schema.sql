@@ -50,9 +50,17 @@ create table if not exists public.recipes (
   category text,
   main_ingredient text,
   cook_time_minutes integer,
+  rating numeric,
+  notes text,
   updated_at timestamptz not null default now(),
   primary key (user_id, id)
 );
+
+-- Added after the initial release — `create table if not exists` above is a
+-- no-op on a database that already has this table, so existing projects need
+-- these explicitly. Safe to re-run.
+alter table public.recipes add column if not exists rating numeric;
+alter table public.recipes add column if not exists notes text;
 
 alter table public.recipes enable row level security;
 
