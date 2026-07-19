@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { ParsedRecipeData } from '@/lib/types';
 import { parseOne } from '@/lib/parse-url';
 import { suggestRecipeUrls } from '@/lib/ai-discover';
-import { clientIp, isRateLimited } from '@/lib/rate-limit';
+import { isRateLimited, requestIdentity } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 // Same reasoning as /api/parse: the reader-proxy fallback can take 10-25s
@@ -16,7 +16,7 @@ const MAX_COUNT = 5;
 const RATE_LIMIT = 8;
 
 export async function POST(req: NextRequest) {
-  if (isRateLimited(`discover:${clientIp(req)}`, RATE_LIMIT)) {
+  if (isRateLimited(`discover:${await requestIdentity(req)}`, RATE_LIMIT)) {
     return NextResponse.json(
       { error: 'Rate limit exceeded. Try again in a minute.' },
       { status: 429 },

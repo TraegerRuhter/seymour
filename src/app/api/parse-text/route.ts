@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractRecipeViaAI } from '@/lib/ai-extract';
 import { extractRecipeFromText } from '@/lib/text-extract';
-import { clientIp, isRateLimited } from '@/lib/rate-limit';
+import { isRateLimited, requestIdentity } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -10,7 +10,7 @@ const MAX_TEXT_LENGTH = 50_000;
 const RATE_LIMIT = 30;
 
 export async function POST(req: NextRequest) {
-  if (isRateLimited(`parse-text:${clientIp(req)}`, RATE_LIMIT)) {
+  if (isRateLimited(`parse-text:${await requestIdentity(req)}`, RATE_LIMIT)) {
     return NextResponse.json(
       { error: 'Rate limit exceeded. Try again in a minute.' },
       { status: 429 },
