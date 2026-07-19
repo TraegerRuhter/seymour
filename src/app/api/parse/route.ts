@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseOne } from '@/lib/parse-url';
-import { clientIp, isRateLimited } from '@/lib/rate-limit';
+import { isRateLimited, requestIdentity } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 // Reader-proxy rendering can take 10–20s; raise the function budget above
@@ -12,7 +12,7 @@ const MAX_URLS_PER_REQUEST = 10;
 const RATE_LIMIT = 30;
 
 export async function POST(req: NextRequest) {
-  if (isRateLimited(`parse:${clientIp(req)}`, RATE_LIMIT)) {
+  if (isRateLimited(`parse:${await requestIdentity(req)}`, RATE_LIMIT)) {
     return NextResponse.json(
       { error: 'Rate limit exceeded. Try again in a minute.' },
       { status: 429 },
