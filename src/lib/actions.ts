@@ -12,6 +12,7 @@ import {
   type Recipe,
 } from './types';
 import { parseIngredientLines } from './ingredient-parser';
+import { suggestTags } from './auto-tag';
 import { buildShoppingList, mergeShoppingList } from './aggregate';
 import { normalizeIngredientName } from './normalize';
 import { generateMealPlan, newSeed, planLabel, recipeFitsMealType, refillPlan } from './plan';
@@ -105,16 +106,82 @@ export function removePantryStaple(name: string): void {
   void pushPantryStaples(usePantryStore.getState().staples);
 }
 
+/**
+ * Builds a Recipe from scraped/AI-extracted data and silently pre-tags it
+ * (meal type / category / main ingredient) — this path has no manual review
+ * step (see handleParse in the add-recipe page), so auto-tagging here is the
+ * only way a bulk URL import gets tagged at all without extra per-recipe
+ * work. Suggestions only ever fill fields the parser left blank, and every
+ * field stays a normal editable field afterward (RecipeForm/edit page).
+ */
 export function recipeFromParsed(data: ParsedRecipeData): Recipe {
+  const ingredients = parseIngredientLines(data.ingredientLines);
+  const existingCategories = Object.values(useRecipeStore.getState().recipes)
+    .map((r) => r.category)
+    .filter((c): c is string => !!c);
+  const suggested = suggestTags(
+    data.title,
+    ingredients.map((i) => i.name),
+    existingCategories,
+  );
   return {
     id: nanoid(),
     title: data.title,
     sourceUrl: data.sourceUrl,
     imageUrl: data.imageUrl,
-    ingredients: parseIngredientLines(data.ingredientLines),
+    ingredients,
     instructions: data.instructions.filter((s) => s.trim()),
     dateAdded: new Date().toISOString(),
+    mealTypes: suggested.mealTypes.length ? suggested.mealTypes : undefined,
+    category: suggested.category,
+    mainIngredient: suggested.mainIngredient,
   };
+}
+
+/**
+ * Retroactively suggests tags for every recipe missing mealTypes, category,
+ * or mainIngredient — recipes added before auto-tagging existed, or ones
+ * that never got manually tagged. Only ever fills a field that's currently
+ * blank; a value the user already set (or already cleared) is left alone.
+ * Returns how many recipes actually changed.
+ */
+export function autoTagUntaggedRecipes(): number {
+  const all = Object.values(useRecipeStore.getState().recipes);
+  const existingCategories = all.map((r) => r.category).filter((c): c is string => !!c);
+  const updated: Recipe[] = [];
+  for (const recipe of all) {
+    const needsMealTypes = !recipe.mealTypes || recipe.mealTypes.length === 0;
+    const needsCategory = !recipe.category;
+    const needsMainIngredient = !recipe.mainIngredient;
+    if (!needsMealTypes && !needsCategory && !needsMainIngredient) continue;
+
+    const suggested = suggestTags(
+      recipe.title,
+      recipe.ingredients.map((i) => i.name),
+      existingCategories,
+    );
+    const gotSuggestion =
+      (needsMealTypes && suggested.mealTypes.length > 0) ||
+      (needsCategory && !!suggested.category) ||
+      (needsMainIngredient && !!suggested.mainIngredient);
+    if (!gotSuggestion) continue;
+
+    updated.push({
+      ...recipe,
+      mealTypes:
+        needsMealTypes && suggested.mealTypes.length ? suggested.mealTypes : recipe.mealTypes,
+      category: needsCategory && suggested.category ? suggested.category : recipe.category,
+      mainIngredient:
+        needsMainIngredient && suggested.mainIngredient
+          ? suggested.mainIngredient
+          : recipe.mainIngredient,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+  if (updated.length === 0) return 0;
+  useRecipeStore.getState().addRecipes(updated);
+  for (const recipe of updated) void pushRecipe(recipe);
+  return updated.length;
 }
 
 export function saveRecipes(recipes: Recipe[]): void {
