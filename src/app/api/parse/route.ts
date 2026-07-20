@@ -12,7 +12,7 @@ const MAX_URLS_PER_REQUEST = 10;
 const RATE_LIMIT = 30;
 
 export async function POST(req: NextRequest) {
-  if (isRateLimited(`parse:${await requestIdentity(req)}`, RATE_LIMIT)) {
+  if (await isRateLimited(`parse:${await requestIdentity(req)}`, RATE_LIMIT)) {
     return NextResponse.json(
       { error: 'Rate limit exceeded. Try again in a minute.' },
       { status: 429 },

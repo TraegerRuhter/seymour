@@ -16,7 +16,7 @@ const MAX_COUNT = 5;
 const RATE_LIMIT = 8;
 
 export async function POST(req: NextRequest) {
-  if (isRateLimited(`discover:${await requestIdentity(req)}`, RATE_LIMIT)) {
+  if (await isRateLimited(`discover:${await requestIdentity(req)}`, RATE_LIMIT)) {
     return NextResponse.json(
       { error: 'Rate limit exceeded. Try again in a minute.' },
       { status: 429 },

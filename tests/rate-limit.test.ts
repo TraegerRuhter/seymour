@@ -2,20 +2,20 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { clientIp, isRateLimited, requestIdentity } from '../src/lib/rate-limit.ts';
 
-test('isRateLimited allows up to the limit, then blocks', () => {
+test('isRateLimited allows up to the limit, then blocks', async () => {
   const key = `test-${Math.random()}`;
   for (let i = 0; i < 3; i++) {
-    assert.equal(isRateLimited(key, 3), false);
+    assert.equal(await isRateLimited(key, 3), false);
   }
-  assert.equal(isRateLimited(key, 3), true);
+  assert.equal(await isRateLimited(key, 3), true);
 });
 
-test('isRateLimited tracks separate keys independently', () => {
+test('isRateLimited tracks separate keys independently', async () => {
   const a = `a-${Math.random()}`;
   const b = `b-${Math.random()}`;
-  isRateLimited(a, 1);
-  assert.equal(isRateLimited(a, 1), true);
-  assert.equal(isRateLimited(b, 1), false);
+  await isRateLimited(a, 1);
+  assert.equal(await isRateLimited(a, 1), true);
+  assert.equal(await isRateLimited(b, 1), false);
 });
 
 test('clientIp reads the first address from x-forwarded-for', () => {
