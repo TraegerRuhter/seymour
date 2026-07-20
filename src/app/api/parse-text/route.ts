@@ -10,7 +10,7 @@ const MAX_TEXT_LENGTH = 50_000;
 const RATE_LIMIT = 30;
 
 export async function POST(req: NextRequest) {
-  if (isRateLimited(`parse-text:${await requestIdentity(req)}`, RATE_LIMIT)) {
+  if (await isRateLimited(`parse-text:${await requestIdentity(req)}`, RATE_LIMIT)) {
     return NextResponse.json(
       { error: 'Rate limit exceeded. Try again in a minute.' },
       { status: 429 },
