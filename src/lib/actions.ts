@@ -317,9 +317,54 @@ export function togglePinSlot(dayIndex: number, mealIndex: number): void {
 
 /** Adds an empty slot of the given meal type to a day. */
 export function addMealToDay(dayIndex: number, type: MealType): void {
-  usePlanStore.getState().addMeal(dayIndex, { type, recipeId: '' });
+  usePlanStore.getState().addMeal(dayIndex, { type, recipeId: '', id: nanoid() });
   const day = usePlanStore.getState().plan?.[dayIndex];
   if (day) void pushMealPlanDay(dayIndex, day);
+}
+
+/**
+ * Moves a meal to a new position — reordering within one day, or dragging it
+ * onto another day entirely. Order has no effect on the shopping list (same
+ * recipes/scales either way), so this only touches the plan, not aggregation.
+ */
+export function moveMealSlot(
+  fromDayIndex: number,
+  fromMealIndex: number,
+  toDayIndex: number,
+  toMealIndex: number,
+): void {
+  usePlanStore.getState().moveMeal(fromDayIndex, fromMealIndex, toDayIndex, toMealIndex);
+  const plan = usePlanStore.getState().plan;
+  if (!plan) return;
+  void pushMealPlanDay(fromDayIndex, plan[fromDayIndex]);
+  if (toDayIndex !== fromDayIndex) void pushMealPlanDay(toDayIndex, plan[toDayIndex]);
+}
+
+/**
+ * Backfills a stable id on any slot that predates drag-and-drop (persisted
+ * before this field existed). Only touches days that actually need it, and
+ * is a no-op — no store write, no sync push — once every slot already has one.
+ */
+export function ensureMealIds(): void {
+  const { plan } = usePlanStore.getState();
+  if (!plan) return;
+  let touchedAny = false;
+  const touchedDays: number[] = [];
+  const next = plan.map((day, dayIndex) => {
+    if (day.meals.every((m) => m.id)) return day;
+    touchedAny = true;
+    touchedDays.push(dayIndex);
+    return {
+      ...day,
+      updatedAt: new Date().toISOString(),
+      meals: day.meals.map((m) => (m.id ? m : { ...m, id: nanoid() })),
+    };
+  });
+  if (!touchedAny) return;
+  for (const dayIndex of touchedDays) {
+    usePlanStore.getState().setDay(dayIndex, next[dayIndex]);
+    void pushMealPlanDay(dayIndex, next[dayIndex]);
+  }
 }
 
 /** Removes a slot from a day entirely (a day can end up with no meals — that's "eating out"). */

@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
+import { arrayMove } from '@dnd-kit/sortable';
 import localforage from 'localforage';
 import {
   MEAL_TYPES,
@@ -106,6 +107,13 @@ interface PlanState {
   /** Adds an empty slot of the given type to a day, kept in canonical meal order. */
   addMeal: (dayIndex: number, slot: MealSlot) => void;
   removeMeal: (dayIndex: number, mealIndex: number) => void;
+  /** Moves a slot to a new position, within one day (reorder) or across two (drag-and-drop). */
+  moveMeal: (
+    fromDayIndex: number,
+    fromMealIndex: number,
+    toDayIndex: number,
+    toMealIndex: number,
+  ) => void;
   /** Replaces a single day wholesale — used when a pull decides the server's copy of that day wins. */
   setDay: (dayIndex: number, day: MealPlanDay) => void;
   clearRecipeFromPlan: (recipeId: string) => void;
@@ -194,6 +202,30 @@ export const usePlanStore = create<PlanState>()(
                   meals: day.meals.filter((_, mi) => mi !== mealIndex),
                 },
           );
+          return { plan };
+        }),
+      moveMeal: (fromDayIndex, fromMealIndex, toDayIndex, toMealIndex) =>
+        set((s) => {
+          if (!s.plan) return s;
+          const fromDay = s.plan[fromDayIndex];
+          if (!fromDay || !fromDay.meals[fromMealIndex]) return s;
+          const now = new Date().toISOString();
+          const plan = [...s.plan];
+
+          if (fromDayIndex === toDayIndex) {
+            const meals = arrayMove(fromDay.meals, fromMealIndex, toMealIndex);
+            plan[fromDayIndex] = { ...fromDay, updatedAt: now, meals };
+            return { plan };
+          }
+
+          const toDay = s.plan[toDayIndex];
+          if (!toDay) return s;
+          const fromMeals = [...fromDay.meals];
+          const [moved] = fromMeals.splice(fromMealIndex, 1);
+          const toMeals = [...toDay.meals];
+          toMeals.splice(toMealIndex, 0, moved);
+          plan[fromDayIndex] = { ...fromDay, updatedAt: now, meals: fromMeals };
+          plan[toDayIndex] = { ...toDay, updatedAt: now, meals: toMeals };
           return { plan };
         }),
       setDay: (dayIndex, day) =>

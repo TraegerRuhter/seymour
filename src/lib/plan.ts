@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid';
 import type { MealPlanConfig, MealPlanDay, MealSlot, MealType, Recipe } from './types';
 
 /**
@@ -84,7 +85,7 @@ export function generateMealPlan(
     date.setDate(date.getDate() + d);
     days.push({
       date: toLocalDateString(date),
-      meals: config.mealTypes.map((type): MealSlot => ({ type, recipeId: '' })),
+      meals: config.mealTypes.map((type): MealSlot => ({ type, recipeId: '', id: nanoid() })),
     });
   }
   return refillPlan(days, recipeIds, config.seed, () => true, isEligible, getMainIngredient);
@@ -168,14 +169,17 @@ export function refillPlan(
       day.meals.filter((m) => m.recipeId && !shouldRefill(m)).map((m) => m.recipeId),
     );
     const meals = day.meals.map((slot): MealSlot => {
-      if (!shouldRefill(slot)) {
-        trackIngredient(slot.type, slot.recipeId);
-        return slot;
+      // Defensive default: backfills an id for a slot persisted before
+      // drag-and-drop existed, same spirit as ensureMealIds() in actions.ts.
+      const withId = slot.id ? slot : { ...slot, id: nanoid() };
+      if (!shouldRefill(withId)) {
+        trackIngredient(withId.type, withId.recipeId);
+        return withId;
       }
-      const recipeId = draw(slot.type, usedToday);
+      const recipeId = draw(withId.type, usedToday);
       usedToday.add(recipeId);
-      trackIngredient(slot.type, recipeId);
-      return { ...slot, recipeId };
+      trackIngredient(withId.type, recipeId);
+      return { ...withId, recipeId };
     });
     return { ...day, meals };
   });
