@@ -1,11 +1,32 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  closestCorners,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { usePlanStore, useRecipeStore } from '@/lib/stores';
 import {
   addMealToDay,
+  ensureMealIds,
+  moveMealSlot,
   pickSlotRecipe,
   removeMealFromDay,
   setSlotScale,
@@ -13,11 +34,11 @@ import {
   togglePinSlot,
 } from '@/lib/actions';
 import { MEAL_TYPE_LABELS, toLocalDateString } from '@/lib/plan';
-import { MEAL_TYPES, type MealType } from '@/lib/types';
+import { MEAL_TYPES, type MealPlanDay, type MealType } from '@/lib/types';
 import { enter, fadeRise } from '@/lib/motion';
 import ActionMenu from './ActionMenu';
 import RecipePicker from './RecipePicker';
-import { MEAL_TYPE_ICON, PencilIcon, PinIcon, ShuffleIcon, TrashIcon } from './icons';
+import { GripIcon, MEAL_TYPE_ICON, PencilIcon, PinIcon, ShuffleIcon, TrashIcon } from './icons';
 
 function dayHeading(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -39,6 +60,15 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
   const [picking, setPicking] = useState(false);
   const tileRef = useRef<HTMLDivElement>(null);
 
+  // Falls back to a placeholder id for the rare frame where a slot hasn't
+  // been backfilled yet (ensureMealIds runs on mount) — useSortable can't be
+  // called conditionally, so this keeps the hook order stable either way.
+  const sortableId = slot?.id ?? `pending-${dayIndex}-${mealIndex}`;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: sortableId,
+  });
+  const dragStyle = { transform: CSS.Transform.toString(transform), transition };
+
   if (!slot) return null;
   const recipe = slot.recipeId ? recipes[slot.recipeId] : undefined;
   const MealIcon = MEAL_TYPE_ICON[slot.type];
@@ -49,10 +79,30 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
     setPicking(false);
   }
 
+  const gripHandle = (
+    <button
+      type="button"
+      aria-label={`Drag to move ${label}`}
+      {...attributes}
+      {...listeners}
+      className="touch-none shrink-0 cursor-grab self-stretch rounded-lg text-charcoal/25 transition-colors hover:bg-charcoal/5 hover:text-charcoal/60 active:cursor-grabbing"
+    >
+      <GripIcon className="h-4 w-4" />
+    </button>
+  );
+
   if (!recipe || picking) {
     return (
-      <div ref={tileRef} className="rounded-xl border border-dashed border-charcoal/20 p-3">
+      <div
+        ref={(node) => {
+          tileRef.current = node;
+          setNodeRef(node);
+        }}
+        style={dragStyle}
+        className={`rounded-xl border border-dashed border-charcoal/20 p-3 ${isDragging ? 'opacity-30' : ''}`}
+      >
         <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/40">
+          {gripHandle}
           <MealIcon className="h-4 w-4" />
           {label}
         </p>
@@ -89,10 +139,15 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
 
   return (
     <div
-      ref={tileRef}
-      className="group relative rounded-xl bg-surface/60 p-3 transition-colors hover:bg-surface"
+      ref={(node) => {
+        tileRef.current = node;
+        setNodeRef(node);
+      }}
+      style={dragStyle}
+      className={`group relative rounded-xl bg-surface/60 p-3 transition-colors hover:bg-surface ${isDragging ? 'opacity-30' : ''}`}
     >
       <div className="flex items-center gap-3">
+        {gripHandle}
         <Link href={`/recipes/${recipe.id}`} className="flex min-w-0 flex-1 items-center gap-3">
           {recipe.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -275,43 +330,142 @@ function AddMeal({ dayIndex }: { dayIndex: number }) {
 }
 
 /**
+ * One day's meal list, both a sortable list (for reordering within the day)
+ * and a droppable container in its own right (so an empty day, or dropping
+ * past the last item, still registers as a valid target).
+ */
+function DayMealList({ dayIndex, day }: { dayIndex: number; day: MealPlanDay }) {
+  const { setNodeRef } = useDroppable({ id: `day:${dayIndex}` });
+  const itemIds = day.meals.map((m, i) => m.id ?? `pending-${dayIndex}-${i}`);
+
+  return (
+    <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+      <div ref={setNodeRef} className="space-y-2">
+        {day.meals.map((_, mealIndex) => (
+          <MealTile key={itemIds[mealIndex]} dayIndex={dayIndex} mealIndex={mealIndex} />
+        ))}
+        {day.meals.length === 0 && (
+          <p className="rounded-xl border border-dashed border-charcoal/20 p-3 text-sm text-charcoal/50">
+            Nothing planned — eating out?
+          </p>
+        )}
+        <AddMeal dayIndex={dayIndex} />
+      </div>
+    </SortableContext>
+  );
+}
+
+/**
  * Day-by-day plan: horizontally scrollable snap cards on mobile,
- * a wrapping multi-column grid on desktop.
+ * a wrapping multi-column grid on desktop. Meals can be dragged to reorder
+ * within a day or dropped onto another day entirely (grip handle on each
+ * tile — the rest of the tile stays click/tap-only so the drag can't
+ * accidentally steal a link or button press).
  */
 export default function MealPlanView() {
   const plan = usePlanStore((s) => s.plan);
+  const recipes = useRecipeStore((s) => s.recipes);
+  const [activeLocation, setActiveLocation] = useState<{
+    dayIndex: number;
+    mealIndex: number;
+  } | null>(null);
+
+  useEffect(() => {
+    ensureMealIds();
+  }, []);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const locationById = useMemo(() => {
+    const map = new Map<string, { dayIndex: number; mealIndex: number }>();
+    plan?.forEach((day, dayIndex) => {
+      day.meals.forEach((slot, mealIndex) => {
+        if (slot.id) map.set(slot.id, { dayIndex, mealIndex });
+      });
+    });
+    return map;
+  }, [plan]);
+
   if (!plan || plan.length === 0) return null;
 
   const todayStr = toLocalDateString(new Date());
+  const activeSlot = activeLocation
+    ? plan[activeLocation.dayIndex]?.meals[activeLocation.mealIndex]
+    : undefined;
+  const activeRecipe = activeSlot?.recipeId ? recipes[activeSlot.recipeId] : undefined;
+  const ActiveMealIcon = activeSlot ? MEAL_TYPE_ICON[activeSlot.type] : undefined;
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveLocation(locationById.get(String(event.active.id)) ?? null);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveLocation(null);
+    if (!plan) return;
+    const { active, over } = event;
+    if (!over) return;
+    const from = locationById.get(String(active.id));
+    if (!from) return;
+
+    const overId = String(over.id);
+    let toDayIndex: number;
+    let toMealIndex: number;
+    if (overId.startsWith('day:')) {
+      toDayIndex = Number(overId.slice(4));
+      toMealIndex = plan[toDayIndex]?.meals.length ?? 0;
+    } else {
+      const to = locationById.get(overId);
+      if (!to) return;
+      toDayIndex = to.dayIndex;
+      toMealIndex = to.mealIndex;
+    }
+
+    if (from.dayIndex === toDayIndex && from.mealIndex === toMealIndex) return;
+    moveMealSlot(from.dayIndex, from.mealIndex, toDayIndex, toMealIndex);
+  }
 
   return (
-    <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 lg:mx-0 lg:grid lg:snap-none lg:grid-cols-3 lg:overflow-visible lg:px-0 xl:grid-cols-4">
-      {plan.map((day, dayIndex) => (
-        <motion.section
-          key={day.date}
-          aria-label={dayHeading(day.date)}
-          variants={fadeRise}
-          initial="initial"
-          animate="animate"
-          transition={{ ...enter, delay: Math.min(dayIndex * 0.04, 0.3) }}
-          className={`glass-card w-72 shrink-0 snap-start p-4 lg:w-auto ${
-            day.date === todayStr ? 'ring-2 ring-terracotta/60' : ''
-          }`}
-        >
-          <h3 className="mb-3 font-semibold">{dayHeading(day.date)}</h3>
-          <div className="space-y-2">
-            {day.meals.map((_, mealIndex) => (
-              <MealTile key={mealIndex} dayIndex={dayIndex} mealIndex={mealIndex} />
-            ))}
-            {day.meals.length === 0 && (
-              <p className="rounded-xl border border-dashed border-charcoal/20 p-3 text-sm text-charcoal/50">
-                Nothing planned — eating out?
-              </p>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 lg:mx-0 lg:grid lg:snap-none lg:grid-cols-3 lg:overflow-visible lg:px-0 xl:grid-cols-4">
+        {plan.map((day, dayIndex) => (
+          <motion.section
+            key={day.date}
+            aria-label={dayHeading(day.date)}
+            variants={fadeRise}
+            initial="initial"
+            animate="animate"
+            transition={{ ...enter, delay: Math.min(dayIndex * 0.04, 0.3) }}
+            className={`glass-card w-72 shrink-0 snap-start p-4 lg:w-auto ${
+              day.date === todayStr ? 'ring-2 ring-terracotta/60' : ''
+            }`}
+          >
+            <h3 className="mb-3 font-semibold">{dayHeading(day.date)}</h3>
+            <DayMealList dayIndex={dayIndex} day={day} />
+          </motion.section>
+        ))}
+      </div>
+      <DragOverlay>
+        {activeSlot && (
+          <div className="flex items-center gap-2 rounded-xl bg-surface p-3 shadow-card-hover">
+            {ActiveMealIcon && (
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-olive/15">
+                <ActiveMealIcon className="h-5 w-5" />
+              </span>
             )}
-            <AddMeal dayIndex={dayIndex} />
+            <span className="truncate text-sm font-semibold">
+              {activeRecipe?.title ?? MEAL_TYPE_LABELS[activeSlot.type]}
+            </span>
           </div>
-        </motion.section>
-      ))}
-    </div>
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 }

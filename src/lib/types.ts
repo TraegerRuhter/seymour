@@ -54,6 +54,14 @@ export interface MealSlot {
   type: MealType;
   /** Empty string means the slot is unfilled. */
   recipeId: string;
+  /**
+   * Stable identity for drag-and-drop — array position isn't stable enough
+   * on its own since reordering is exactly what changes it. Optional only
+   * because slots persisted before drag-and-drop existed don't have one yet;
+   * ensureMealIds() in actions.ts backfills those the first time a plan with
+   * missing ids loads.
+   */
+  id?: string;
   /** Pinned slots survive "shuffle" untouched — only unpinned slots re-roll. */
   pinned?: boolean;
   /**

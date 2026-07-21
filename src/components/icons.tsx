@@ -340,6 +340,20 @@ export function GridIcon(p: IconProps) {
   );
 }
 
+/** Drag handle: two columns of three dots, the universal "grab here" affordance. */
+export function GripIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <circle cx="9" cy="6" r="1.5" fill="currentColor" />
+      <circle cx="9" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="9" cy="18" r="1.5" fill="currentColor" />
+      <circle cx="15" cy="6" r="1.5" fill="currentColor" />
+      <circle cx="15" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="15" cy="18" r="1.5" fill="currentColor" />
+    </Svg>
+  );
+}
+
 export function ListIcon(p: IconProps) {
   return (
     <Svg {...p}>

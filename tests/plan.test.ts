@@ -12,12 +12,25 @@ import type { MealPlanConfig, MealPlanDay, MealType, Recipe } from '../src/lib/t
 
 const ids = (n: number) => Array.from({ length: n }, (_, i) => `r${i}`);
 
+// Every slot now carries a stable nanoid for drag-and-drop, generated fresh
+// (not seeded) on each call — determinism only ever meant "the same recipe
+// choices," never "the same ids," so strip them before comparing.
+const stripIds = (plan: MealPlanDay[]) =>
+  plan.map((day) => ({
+    ...day,
+    meals: day.meals.map((slot) => {
+      const copy = { ...slot };
+      delete copy.id;
+      return copy;
+    }),
+  }));
+
 test('same seed produces the same plan', () => {
   const config: MealPlanConfig = { days: 7, mealTypes: ['breakfast', 'lunch', 'dinner'], seed: 42 };
   const start = new Date(2026, 6, 7);
   const a = generateMealPlan(ids(10), config, start);
   const b = generateMealPlan(ids(10), config, start);
-  assert.deepEqual(a, b);
+  assert.deepEqual(stripIds(a), stripIds(b));
 });
 
 test('different seeds produce different plans (usually)', () => {
@@ -236,7 +249,7 @@ test('refillPlan respects meal-type eligibility and is deterministic per seed', 
   ]);
   const a = refillPlan(plan, ids(6), 7, () => true, isEligible);
   const b = refillPlan(plan, ids(6), 7, () => true, isEligible);
-  assert.deepEqual(a, b, 'same seed must produce the same refill');
+  assert.deepEqual(stripIds(a), stripIds(b), 'same seed must produce the same refill');
   assert.equal(a[0].meals[1].recipeId, 'r5', 'dessert slot must draw the only eligible dessert');
   assert.notEqual(
     a[0].meals[0].recipeId,
