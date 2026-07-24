@@ -86,3 +86,18 @@ export async function assertPublicHostname(hostname: string, lookup: LookupFn = 
     throw new UnsafeUrlError('That address isn’t allowed.');
   }
 }
+
+/**
+ * Guards a post-login redirect target against open-redirect tricks. A path
+ * like `${origin}${next}` looks safely pinned to this site's own origin, but
+ * isn't: with `next = "@evil.com"` the concatenated string parses as
+ * `https://<this-origin>@evil.com` — valid URL syntax where the origin
+ * becomes HTTP userinfo and `evil.com` becomes the actual host. Only a path
+ * that's unambiguously relative to this origin (starts with exactly one
+ * `/`, no scheme, no userinfo, no protocol-relative `//`) is safe to use.
+ */
+export function isSafeRedirectPath(path: string): boolean {
+  if (!path.startsWith('/') || path.startsWith('//')) return false;
+  if (path.includes('@') || path.includes('\\')) return false;
+  return true;
+}
