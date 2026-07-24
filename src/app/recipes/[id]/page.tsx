@@ -7,6 +7,7 @@ import { useRecipeStore } from '@/lib/stores';
 import { deleteRecipe, setRecipeNotes, setRecipeRating } from '@/lib/actions';
 import { displayUnit, formatQuantity } from '@/lib/units';
 import { MEAL_TYPE_LABELS } from '@/lib/plan';
+import { isHttpUrl } from '@/lib/link-safety';
 import StarRating from '@/components/StarRating';
 
 export default function RecipeDetailPage() {
@@ -110,7 +111,7 @@ export default function RecipeDetailPage() {
             })}
           </p>
           <div className="no-print mt-4 flex flex-wrap items-center gap-3">
-            {recipe.sourceUrl && (
+            {recipe.sourceUrl && isHttpUrl(recipe.sourceUrl) && (
               <a
                 href={recipe.sourceUrl}
                 target="_blank"

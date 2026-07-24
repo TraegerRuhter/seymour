@@ -1,4 +1,5 @@
 import type { ParsedRecipeData } from './types';
+import { isHttpUrl } from './link-safety';
 
 /**
  * Recipe discovery backed by Spoonacular's recipe search API — a real,
@@ -53,12 +54,19 @@ export function mapSpoonacularResults(results: SpoonacularRecipe[]): ParsedRecip
       .map((s) => s.step?.trim())
       .filter((s): s is string => !!s);
 
+    // Prefer the recipe's real source page; Spoonacular's own hosted copy is
+    // the fallback for the (rare) result with no external one. Neither is
+    // validated by Spoonacular against a scheme allowlist, and this ends up
+    // rendered as a link href, so a non-http(s) value (this API aggregates
+    // from arbitrary third-party sites) is dropped rather than trusted.
+    const sourceUrl = [r.sourceUrl, r.spoonacularSourceUrl].find(
+      (u): u is string => !!u && isHttpUrl(u),
+    );
+
     return [
       {
         title,
-        // Prefer the recipe's real source page; Spoonacular's own hosted
-        // copy is the fallback for the (rare) result with no external one.
-        sourceUrl: r.sourceUrl || r.spoonacularSourceUrl || '',
+        sourceUrl: sourceUrl ?? '',
         imageUrl: r.image || undefined,
         ingredientLines,
         instructions,
