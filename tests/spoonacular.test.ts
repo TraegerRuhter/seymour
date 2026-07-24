@@ -34,6 +34,23 @@ test('falls back to the Spoonacular-hosted source when no external sourceUrl is 
   assert.equal(recipe.sourceUrl, 'https://spoonacular.com/recipes/x-1');
 });
 
+test('drops a non-http(s) sourceUrl rather than trusting it, falling back to the hosted source', () => {
+  const [recipe] = mapSpoonacularResults([
+    makeResult({
+      sourceUrl: 'javascript:alert(1)',
+      spoonacularSourceUrl: 'https://spoonacular.com/recipes/x-1',
+    }),
+  ]);
+  assert.equal(recipe.sourceUrl, 'https://spoonacular.com/recipes/x-1');
+});
+
+test('an entirely non-http(s) source (both fields) maps to an empty sourceUrl', () => {
+  const [recipe] = mapSpoonacularResults([
+    makeResult({ sourceUrl: 'javascript:alert(1)', spoonacularSourceUrl: 'javascript:alert(2)' }),
+  ]);
+  assert.equal(recipe.sourceUrl, '');
+});
+
 test('drops a result missing a title', () => {
   const results = mapSpoonacularResults([makeResult({ title: undefined })]);
   assert.equal(results.length, 0);
