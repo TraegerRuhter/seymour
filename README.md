@@ -170,6 +170,18 @@ That command runs the unit tests, TypeScript type checking, and a production
 Next.js build. The same command runs in GitHub Actions for pushes to `main` and
 pull requests.
 
+End-to-end tests (Playwright, under `e2e/`) drive a real browser through the
+core flows — adding a recipe, generating a plan and reordering it by drag,
+the shopping list, and settings — against `next dev`. They're hermetic (no
+network calls, no API keys) so they run the same locally and in CI:
+
+```bash
+npm run e2e
+```
+
+CI runs them in a separate `e2e` job alongside `check`, installing Chromium
+via `npx playwright install --with-deps chromium` first.
+
 ## Architecture notes
 
 - **Thin backend, rich client** — the only server code is `/api/parse`. All state lives in
