@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   assertPublicHostname,
   isPrivateOrReservedIp,
+  isSafeRedirectPath,
   UnsafeUrlError,
 } from '../src/lib/url-safety.ts';
 
@@ -100,4 +101,28 @@ test('assertPublicHostname rejects when the lookup fails', async () => {
 
 test('assertPublicHostname rejects when the lookup returns no addresses', async () => {
   await assert.rejects(() => assertPublicHostname('example.com', async () => []), UnsafeUrlError);
+});
+
+test('isSafeRedirectPath accepts an ordinary same-origin path', () => {
+  assert.equal(isSafeRedirectPath('/settings'), true);
+  assert.equal(isSafeRedirectPath('/recipes/abc123'), true);
+  assert.equal(isSafeRedirectPath('/'), true);
+});
+
+test('isSafeRedirectPath rejects the userinfo trick (origin + "@host" reparses as a different host)', () => {
+  assert.equal(isSafeRedirectPath('@evil.com'), false);
+  assert.equal(isSafeRedirectPath('/ok@evil.com'), false);
+});
+
+test('isSafeRedirectPath rejects a protocol-relative path', () => {
+  assert.equal(isSafeRedirectPath('//evil.com'), false);
+});
+
+test('isSafeRedirectPath rejects a path that does not start with "/"', () => {
+  assert.equal(isSafeRedirectPath('evil.com'), false);
+  assert.equal(isSafeRedirectPath('https://evil.com'), false);
+});
+
+test('isSafeRedirectPath rejects backslash tricks', () => {
+  assert.equal(isSafeRedirectPath('/\\evil.com'), false);
 });
