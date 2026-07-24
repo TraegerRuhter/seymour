@@ -46,7 +46,12 @@ const BREAKFAST_WORDS = [
   'omelet',
   'omelette',
   'french toast',
-  'granola',
+  // Bare "granola" is deliberately absent: it's genuinely ambiguous between
+  // granola-as-cereal (breakfast) and "granola bar" (snack, below), and
+  // since breakfast is checked first, keeping it here made "granola bar"
+  // unreachable — the more specific snack phrase never got a chance to
+  // match. Left untagged rather than guessed, same as any other ambiguous
+  // title.
   'oatmeal',
   'porridge',
   'breakfast',
@@ -145,10 +150,15 @@ function includesAny(haystack: string, words: string[]): boolean {
  * Returns [] when nothing is confident enough to tag, same as an untagged
  * recipe today.
  */
-export function suggestMealTypes(title: string, ingredientNames: string[]): MealType[] {
+function hasProteinSignal(title: string, ingredientNames: string[]): boolean {
   const t = title.toLowerCase();
   const ingredientText = ingredientNames.join(' ').toLowerCase();
-  const hasProtein = includesAny(t, PROTEIN_WORDS) || includesAny(ingredientText, PROTEIN_WORDS);
+  return includesAny(t, PROTEIN_WORDS) || includesAny(ingredientText, PROTEIN_WORDS);
+}
+
+export function suggestMealTypes(title: string, ingredientNames: string[]): MealType[] {
+  const t = title.toLowerCase();
+  const hasProtein = hasProteinSignal(title, ingredientNames);
 
   if (
     includesAny(t, STRONG_DESSERT_WORDS) ||
@@ -201,7 +211,11 @@ const CATEGORY_HINTS: [string, string][] = [
  * splintering them into near-duplicates ("Soup" vs. "Soups"). Falls back to
  * a small canonical guess when nothing already in use matches the title.
  */
-export function suggestCategory(title: string, existingCategories: string[]): string | undefined {
+export function suggestCategory(
+  title: string,
+  ingredientNames: string[],
+  existingCategories: string[],
+): string | undefined {
   const t = title.toLowerCase();
   // Trailing-s-insensitive so "Soups" still matches a "Tomato Soup" title.
   const singular = (s: string) => s.trim().toLowerCase().replace(/s$/, '');
@@ -210,7 +224,15 @@ export function suggestCategory(title: string, existingCategories: string[]): st
     return stem && matchesWord(t, stem);
   });
   if (existing) return existing;
-  const hint = CATEGORY_HINTS.find(([word]) => matchesWord(t, word));
+
+  // "cake"/"pie" are the same savory/dessert ambiguity suggestMealTypes
+  // already guards against ("chicken pot pie", "crab cakes") — without this,
+  // the two functions could confidently disagree on the same recipe's tags.
+  const hasProtein = hasProteinSignal(title, ingredientNames);
+  const hints = hasProtein
+    ? CATEGORY_HINTS.filter(([word]) => !AMBIGUOUS_DESSERT_WORDS.includes(word))
+    : CATEGORY_HINTS;
+  const hint = hints.find(([word]) => matchesWord(t, word));
   return hint?.[1];
 }
 
@@ -237,7 +259,7 @@ export function suggestTags(
 ): TagSuggestions {
   return {
     mealTypes: suggestMealTypes(title, ingredientNames),
-    category: suggestCategory(title, existingCategories),
+    category: suggestCategory(title, ingredientNames, existingCategories),
     mainIngredient: suggestMainIngredient(ingredientNames),
   };
 }

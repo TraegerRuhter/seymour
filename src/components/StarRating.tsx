@@ -51,6 +51,7 @@ export default function StarRating({
                   aria-label={`Rate ${star - 0.5} stars`}
                   onMouseEnter={() => setHover(star - 0.5)}
                   onFocus={() => setHover(star - 0.5)}
+                  onBlur={() => setHover(null)}
                   onClick={() => onChange?.(value === star - 0.5 ? undefined : star - 0.5)}
                   className="absolute inset-y-0 left-0 w-1/2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta/60"
                 />
@@ -59,6 +60,7 @@ export default function StarRating({
                   aria-label={`Rate ${star} stars`}
                   onMouseEnter={() => setHover(star)}
                   onFocus={() => setHover(star)}
+                  onBlur={() => setHover(null)}
                   onClick={() => onChange?.(value === star ? undefined : star)}
                   className="absolute inset-y-0 right-0 w-1/2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta/60"
                 />

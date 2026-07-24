@@ -33,6 +33,14 @@ test('snack words are tagged snack', () => {
   assert.deepEqual(suggestMealTypes('Spicy Black Bean Dip', []), ['snack']);
 });
 
+test('"granola bar" is tagged snack, not shadowed by the more generic "granola"', () => {
+  assert.deepEqual(suggestMealTypes('No-Bake Granola Bars', []), ['snack']);
+});
+
+test('bare "granola" (no bar/cereal context) is left untagged rather than guessed', () => {
+  assert.deepEqual(suggestMealTypes('Homemade Granola', []), []);
+});
+
 test('a savory dish with a protein is lunch and dinner', () => {
   assert.deepEqual(
     suggestMealTypes('Weeknight Chicken Curry', ['chicken thighs', 'curry powder']),
@@ -47,13 +55,24 @@ test('an ambiguous dish with no protein and no keyword signal is left untagged',
 });
 
 test('suggestCategory prefers a category already used in the collection over the canonical guess', () => {
-  assert.equal(suggestCategory('Tomato Soup', ['Soups']), 'Soups');
-  assert.equal(suggestCategory('Tomato Soup', []), 'Soup');
+  assert.equal(suggestCategory('Tomato Soup', [], ['Soups']), 'Soups');
+  assert.equal(suggestCategory('Tomato Soup', [], []), 'Soup');
 });
 
 test('suggestCategory falls back to undefined when nothing matches', () => {
-  assert.equal(suggestCategory('Grandma’s Casserole Surprise', []), 'Casserole');
-  assert.equal(suggestCategory('Mystery Bowl', []), undefined);
+  assert.equal(suggestCategory('Grandma’s Casserole Surprise', [], []), 'Casserole');
+  assert.equal(suggestCategory('Mystery Bowl', [], []), undefined);
+});
+
+test('suggestCategory does not call a savory dish "Dessert" just because of "cake"/"pie" (matches suggestMealTypes)', () => {
+  assert.equal(suggestCategory('Crab Cakes', ['crab', 'breadcrumbs'], []), undefined);
+  assert.equal(suggestCategory('Chicken Pot Pie', ['chicken', 'peas'], []), undefined);
+  assert.equal(suggestCategory('Shepherd’s Pie', ['ground lamb', 'peas'], []), undefined);
+});
+
+test('suggestCategory still guesses Dessert for "cake"/"pie" with no protein signal', () => {
+  assert.equal(suggestCategory('Chocolate Cake', [], []), 'Dessert');
+  assert.equal(suggestCategory('Apple Pie', [], []), 'Dessert');
 });
 
 test('suggestMainIngredient finds the first protein-ish ingredient in listed order', () => {
