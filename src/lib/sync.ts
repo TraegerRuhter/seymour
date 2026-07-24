@@ -31,6 +31,19 @@ function currentUserId(): string | null {
 }
 
 /**
+ * True once a pull's results are no longer safe to write into the local
+ * store: the signed-in user signed out, or switched to a different account,
+ * while this pull's network round trip was in flight. Every `pull*` function
+ * below checks this right before touching the store — without it, a slow
+ * pull that resolves after sign-out (or after a different user signs in on
+ * the same device) would write the previous user's cloud data into the new
+ * session's local state.
+ */
+export function userChangedDuring(expectedUserId: string): boolean {
+  return currentUserId() !== expectedUserId;
+}
+
+/**
  * Pure last-write-wins comparator: whichever of `local`/`remote` has the
  * later `updatedAt` wins; a value with no counterpart always wins by
  * default. Ties (including two undefined `updatedAt`s) favor `local`, so a
@@ -129,17 +142,50 @@ export async function pushRecipe(recipe: Recipe): Promise<void> {
   }
 }
 
-/** Deletes a recipe remotely and records a tombstone so other devices drop it too. Best-effort, same as `pushRecipe`. */
+/**
+ * Retries an operation that resolves (rather than throws) `{ error }` on
+ * failure — the shape every Supabase query returns. Used only for the
+ * tombstone write in `deleteRemote`, below, where losing the result to a
+ * transient blip is worse than elsewhere: it's what every other device
+ * actually relies on to drop this record (see the tombstone-wins checks in
+ * `pullRecipes`/`pullArchivedPlans`), so silently failing it once can let a
+ * stale device push the "deleted" record back up later.
+ */
+export async function withRetries<T extends { error: unknown }>(
+  fn: () => PromiseLike<T>,
+  attempts = 3,
+  baseDelayMs = 300,
+): Promise<T> {
+  let result: T;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    result = await fn();
+    if (!result.error) return result;
+    if (attempt < attempts - 1) {
+      await new Promise((resolve) => setTimeout(resolve, baseDelayMs * (attempt + 1)));
+    }
+  }
+  return result!;
+}
+
+/**
+ * Deletes a recipe (or archived plan) remotely and records a tombstone so
+ * other devices drop it too. The row delete is best-effort, same as
+ * `pushRecipe` — losing it just leaves an orphaned row invisible to every
+ * client, since the tombstone (retried above) is what pulls actually check
+ * first. Local deletion has already happened by the time callers reach this
+ * (see `deleteRecipe` in actions.ts), so there's no "undo" if both ultimately
+ * fail — only the next successful sync attempt reconciles it.
+ */
 export async function deleteRemote(entity: SyncEntity, id: string): Promise<void> {
   const supabase = getSupabaseClient();
   const userId = currentUserId();
   if (!supabase || !userId) return;
   const table = TABLE_BY_ENTITY[entity];
   try {
-    await Promise.all([
-      supabase.from(table).delete().eq('user_id', userId).eq('id', id),
+    await withRetries(() =>
       supabase.from('deleted_records').upsert({ user_id: userId, entity, record_id: id }),
-    ]);
+    );
+    await supabase.from(table).delete().eq('user_id', userId).eq('id', id);
   } catch {
     // Offline or unreachable — nothing to do until the next sync attempt.
   }
@@ -174,6 +220,7 @@ export async function pullRecipes(): Promise<void> {
   } catch {
     return; // Offline or unreachable — try again on the next pull.
   }
+  if (userChangedDuring(userId)) return;
 
   const remoteById = new Map((rows ?? []).map((row) => [row.id, rowToRecipe(row)]));
   const deletedAt = new Map<string, string>(
@@ -264,6 +311,7 @@ export async function pullShoppingItemStates(): Promise<void> {
   } catch {
     return;
   }
+  if (userChangedDuring(userId)) return;
 
   const remoteById = new Map<string, CheckState>(
     (rows ?? []).map((row) => [
@@ -439,6 +487,7 @@ export async function pullMealPlan(): Promise<void> {
   } catch {
     return;
   }
+  if (userChangedDuring(userId)) return;
 
   const { config: localConfig, plan: localPlan, setPlan, setDay } = usePlanStore.getState();
   const remoteConfig = configRow ? rowToConfig(configRow) : undefined;
@@ -550,6 +599,7 @@ export async function pullArchivedPlans(): Promise<void> {
   } catch {
     return;
   }
+  if (userChangedDuring(userId)) return;
 
   const deletedIds = new Set((tombstoneRows ?? []).map((t) => t.record_id));
   const { archivedPlans: local, pushArchived } = usePlanStore.getState();
@@ -608,6 +658,7 @@ export async function pullPantryStaples(): Promise<void> {
   } catch {
     return;
   }
+  if (userChangedDuring(userId)) return;
 
   const { staples, updatedAt, replaceAll } = usePantryStore.getState();
   const localState: WholeBlobState = { updatedAt: updatedAt ?? undefined };
@@ -655,6 +706,7 @@ export async function pullSettings(): Promise<void> {
   } catch {
     return;
   }
+  if (userChangedDuring(userId)) return;
 
   const { unitSystem, updatedAt, setUnitSystem } = useSettingsStore.getState();
   const localState: WholeBlobState = { updatedAt: updatedAt ?? undefined };
