@@ -8,6 +8,7 @@ import {
   htmlToText,
 } from './scrape';
 import { extractRecipeViaAI } from './ai-extract';
+import { assertPublicHostname, UnsafeUrlError } from './url-safety';
 
 /**
  * One URL → one recipe, or a reason it failed. Shared by the "paste URLs"
@@ -72,6 +73,18 @@ export async function parseOne(url: string): Promise<ParseResult> {
     }
   } catch {
     return { status: 'error', url, message: 'Not a valid http(s) URL.' };
+  }
+
+  // Refuse to fetch anything that resolves to a private/internal address —
+  // this server-side fetch is reachable by anyone who can call the API, so
+  // without this check it doubles as an open proxy into internal services.
+  try {
+    await assertPublicHostname(target.hostname);
+  } catch (e) {
+    if (e instanceof UnsafeUrlError) {
+      return { status: 'error', url, message: 'Not a valid http(s) URL.' };
+    }
+    throw e;
   }
 
   // 1) Direct fetch, then extract.

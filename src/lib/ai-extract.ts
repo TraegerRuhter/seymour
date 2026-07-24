@@ -56,12 +56,22 @@ export async function extractRecipeViaAI({
   const content = body.choices?.[0]?.message?.content;
   if (!content) return null;
 
-  const parsed = JSON.parse(content) as {
+  // response_format: json_object should guarantee valid JSON, but a model
+  // response is never fully trustworthy — treat malformed content the same
+  // as "no recipe found" rather than throwing, so this function's contract
+  // (throws only on a failed request, returns null otherwise) holds even if
+  // a future caller forgets to wrap the call in a try/catch.
+  let parsed: {
     title?: string | null;
     imageUrl?: string | null;
     ingredientLines?: string[];
     instructions?: string[];
   };
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    return null;
+  }
   if (
     !parsed.title ||
     !Array.isArray(parsed.ingredientLines) ||

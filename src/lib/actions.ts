@@ -512,6 +512,7 @@ export function validateBundle(data: unknown): data is ExportBundle {
     return false;
   if (typeof b.recipes !== 'object' || b.recipes === null) return false;
   for (const r of Object.values(b.recipes)) {
+    if (typeof r !== 'object' || r === null) return false;
     if (typeof r.id !== 'string' || typeof r.title !== 'string') return false;
     if (!Array.isArray(r.ingredients) || !Array.isArray(r.instructions)) return false;
   }
