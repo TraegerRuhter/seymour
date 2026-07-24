@@ -119,3 +119,15 @@ test('validateBundle rejects garbage without throwing', () => {
   assert.equal(validateBundle({}), false);
   assert.equal(validateBundle({ version: 0 }), false);
 });
+
+test('validateBundle rejects a non-object recipe entry without throwing', () => {
+  const corrupted = {
+    version: CURRENT_BUNDLE_VERSION,
+    exportedAt: new Date().toISOString(),
+    recipes: { '1': null },
+    mealPlan: null,
+    mealPlanConfig: null,
+    shoppingList: [],
+  };
+  assert.equal(validateBundle(corrupted), false);
+});
