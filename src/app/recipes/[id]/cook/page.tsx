@@ -41,7 +41,13 @@ export default function CookModePage() {
   useEffect(() => {
     if (finished) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'ArrowRight' || e.key === ' ') {
+      // Space is also how a keyboard user presses whatever they've tabbed to,
+      // and claiming it globally means tabbing to "Back" and hitting space
+      // sends you forwards. Arrows are safe to take unconditionally — no
+      // control here does anything with them.
+      const target = e.target as HTMLElement | null;
+      const onAControl = !!target?.closest('button, a, input, textarea, select, [tabindex]');
+      if (e.key === 'ArrowRight' || (e.key === ' ' && !onAControl)) {
         e.preventDefault();
         next();
       } else if (e.key === 'ArrowLeft') {

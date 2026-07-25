@@ -17,10 +17,10 @@ test.describe('Cook log', () => {
 
   test('logging a cook records it, and it survives a reload', async ({ page }) => {
     await page.getByRole('button', { name: 'Cooked it' }).click();
-    await expect(page.getByText(/Made once · last today/i)).toBeVisible();
+    await expect(page.getByText(/Made once · Today/)).toBeVisible();
 
     await page.reload();
-    await expect(page.getByText(/Made once · last today/i)).toBeVisible();
+    await expect(page.getByText(/Made once · Today/)).toBeVisible();
   });
 
   test('cooking twice reads as a count, not a repeat of "once"', async ({ page }) => {

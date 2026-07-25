@@ -123,7 +123,10 @@ export default function RecipeDetailPage() {
           </p>
           {cooks > 0 && (
             <p className="mt-1 text-sm font-medium text-zest-strong">
-              Made {cooks === 1 ? 'once' : `${cooks} times`} · last {lastCooked.toLowerCase()}
+              {/* No "last" prefix: describeLastCooked already returns whole
+                  phrases, so prefixing produced "last 3 days ago" and, worst
+                  of all, "last last week". */}
+              Made {cooks === 1 ? 'once' : `${cooks} times`} · {lastCooked}
             </p>
           )}
           <div className="no-print mt-4 flex flex-wrap items-center gap-3">
