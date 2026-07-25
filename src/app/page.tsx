@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { usePlanStore, useRecipeStore, useShoppingStore } from '@/lib/stores';
 import { MEAL_TYPE_LABELS, toLocalDateString } from '@/lib/plan';
 import RecipeCard from '@/components/RecipeCard';
+import SeymourSays from '@/components/SeymourSays';
 import ShoppingList from '@/components/ShoppingList';
 import { InboxIcon, DiceIcon, ChefPlantIcon, MEAL_TYPE_ICON } from '@/components/icons';
+import { seymourSays } from '@/lib/seymour-says';
 
 export default function DashboardPage() {
   const recipes = useRecipeStore((s) => s.recipes);
@@ -18,6 +20,7 @@ export default function DashboardPage() {
     [recipes],
   );
   const remaining = useMemo(() => items.filter((i) => !i.checked).length, [items]);
+  const line = useMemo(() => seymourSays({ recipes: recipeList }), [recipeList]);
   const today = useMemo(() => plan?.find((d) => d.date === toLocalDateString(new Date())), [plan]);
   const todayMeals = useMemo(
     () => today?.meals.filter((m) => m.recipeId && recipes[m.recipeId]) ?? [],
@@ -30,11 +33,15 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-bold">
           {recipeList.length === 0 ? 'Welcome to Seymour' : 'Feed me, Seymour'}
         </h1>
-        <p className="mt-1 text-charcoal/60">
-          {recipeList.length === 0
-            ? 'Save your first recipe and Seymour will do the rest.'
-            : `${recipeList.length} recipe${recipeList.length === 1 ? '' : 's'} in your collection.`}
-        </p>
+        {/* Seymour speaks when he has something earned to say; otherwise the
+            header stays plain rather than manufacturing a line. */}
+        {line ? (
+          <SeymourSays text={line.text} />
+        ) : (
+          <p className="mt-1 text-charcoal/60">
+            {`${recipeList.length} recipe${recipeList.length === 1 ? '' : 's'} in your collection.`}
+          </p>
+        )}
       </header>
 
       {todayMeals.length > 0 && (
