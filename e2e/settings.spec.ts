@@ -35,7 +35,7 @@ test.describe('Settings', () => {
     await expect(page.getByText('olive oil')).toBeVisible();
 
     await page.getByRole('button', { name: 'Remove olive oil from the spice rack' }).click();
-    await expect(page.getByText('Nothing yet')).toBeVisible();
+    await expect(page.getByText('Nothing on the rack yet')).toBeVisible();
   });
 
   test('data summary reflects recipe count, and reset-all clears it', async ({ page }) => {

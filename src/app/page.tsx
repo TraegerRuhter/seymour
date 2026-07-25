@@ -120,9 +120,10 @@ export default function DashboardPage() {
       {recipeList.length === 0 ? (
         <section className="rounded-2xl border border-dashed border-charcoal/20 p-10 text-center">
           <ChefPlantIcon className="animate-float mx-auto h-16 w-16" />
-          <h2 className="mt-3 text-xl font-semibold">Your kitchen is empty</h2>
+          <h2 className="mt-3 text-xl font-semibold">Nothing in the box</h2>
           <p className="mx-auto mt-1 max-w-sm text-charcoal/60">
-            Paste a recipe URL and Seymour will pull out the title, ingredients, and steps for you.
+            Paste a recipe URL and I&apos;ll pull out the title, ingredients and steps. Then we can
+            talk about dinner.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-3">
             <Link href="/add" className="btn-primary">

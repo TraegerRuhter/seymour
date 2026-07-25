@@ -20,9 +20,9 @@ export default function ShoppingListPage() {
           <h1 className="text-3xl font-bold">Shopping list</h1>
           <p className="mt-1 flex items-center gap-1.5 text-charcoal/60" aria-live="polite">
             {items.length === 0
-              ? 'Nothing here yet.'
+              ? 'Nothing to shop for.'
               : remaining === 0
-                ? 'All done — happy cooking!'
+                ? 'All done. Bring it home.'
                 : `${remaining} of ${items.length} item${items.length === 1 ? '' : 's'} left`}
             {items.length > 0 && remaining === 0 && <SparkleIcon className="h-4 w-4" />}
           </p>

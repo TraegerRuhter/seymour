@@ -92,3 +92,15 @@ test.describe('Recipes', () => {
     ).toBeVisible();
   });
 });
+
+test('a page that does not exist is handled in character, with a way back', async ({ page }) => {
+  await page.goto('/this-page-is-not-real');
+  await expect(page.getByRole('heading', { name: /nothing on this plate/i })).toBeVisible();
+  // The joke is that something ate it, so the mascot — not a dinner plate —
+  // should be the illustration. Scoped to <main>: the header renders the same
+  // mascot, and an unscoped locator would match both.
+  await expect(page.getByRole('main').getByRole('img', { name: 'Seymour' })).toBeVisible();
+  // Charm is fine here, but the user still needs an exit.
+  await page.getByRole('link', { name: /back to the kitchen/i }).click();
+  await expect(page).toHaveURL(/\/$/);
+});

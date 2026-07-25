@@ -466,7 +466,7 @@ export default function ShoppingList({
   if (items.length === 0) {
     return (
       <p className="rounded-2xl border border-dashed border-charcoal/20 p-6 text-center text-charcoal/50">
-        Your shopping list is empty. Generate a meal plan and it will fill itself in.
+        Nothing to buy yet. Plan some meals and this fills itself in.
       </p>
     );
   }

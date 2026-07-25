@@ -4,7 +4,7 @@ import { addRecipeManually } from './helpers';
 test.describe('Shopping list', () => {
   test('an empty list points you at the planner', async ({ page }) => {
     await page.goto('/shopping-list');
-    await expect(page.getByText('Nothing here yet.')).toBeVisible();
+    await expect(page.getByText('Nothing to shop for.')).toBeVisible();
   });
 
   test('generating a plan populates the list, and checking items off tracks progress', async ({
