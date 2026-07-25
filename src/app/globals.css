@@ -51,6 +51,352 @@ body {
   }
 }
 
+/* ==========================================================================
+   The recipe box — index cards (light) / kitchen chalkboard (dark)
+   --------------------------------------------------------------------------
+   Deliberately scoped to `.index-card` rather than the global palette: this
+   is the first surface in the "Recipe Box" direction (see
+   docs/design-prospectus.md §4B), and the rest of the app stays on the
+   existing palette until this has earned its place.
+
+   The whole material flips on one axis. In light it's paper: dark marks
+   multiplied onto light stock. In dark it's a chalkboard: light marks
+   screened onto slate. Same rule underneath — use leaves a mark — which is
+   why wear survives the theme switch instead of being a light-mode flourish.
+   ========================================================================== */
+.index-card {
+  --stock: #fcfaf4;
+  --stock-ink: #1f242b;
+  --stock-ink-soft: #5c6270;
+  --rule: #bccada;
+  --rule-accent: #c0554a;
+  --pen: #24487a;
+  --mark: 122 84 44;
+  --mark-blend: multiply;
+  --grain-blend: multiply;
+  --grain-opacity: 0.35;
+  --tape: 255 250 226;
+}
+
+.dark .index-card {
+  --stock: #202826;
+  --stock-ink: #e9e7de;
+  --stock-ink-soft: #98a19b;
+  --rule: #46534e;
+  --rule-accent: #c97b6e;
+  --pen: #9fc2e8;
+  --mark: 233 231 222;
+  --mark-blend: screen;
+  --grain-blend: overlay;
+  --grain-opacity: 0.2;
+  --tape: 236 240 236;
+}
+
+.index-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 15.5rem;
+  overflow: hidden;
+  border-radius: 3px;
+  background-color: var(--stock);
+  /* Paper fibre / chalk dust. A data-URI feTurbulence keeps this a pure CSS
+     concern — no filter element to render once and reference by id. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  background-blend-mode: var(--grain-blend);
+  color: var(--stock-ink);
+  box-shadow:
+    0 1px 1px rgb(0 0 0 / 0.16),
+    0 8px 20px rgb(0 0 0 / 0.16);
+  transition:
+    transform 0.18s,
+    box-shadow 0.18s;
+}
+.index-card:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 1px 1px rgb(0 0 0 / 0.2),
+    0 14px 30px rgb(0 0 0 / 0.22);
+}
+/* Body ruling + the red margin rule under the header. */
+.index-card::before {
+  content: '';
+  position: absolute;
+  inset: 3.6rem 0 0;
+  background: repeating-linear-gradient(to bottom, transparent 0 25px, var(--rule) 25px 26px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.index-card::after {
+  content: '';
+  position: absolute;
+  inset: 3.55rem 0 auto;
+  height: 1.5px;
+  background: var(--rule-accent);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.ic-head {
+  position: relative;
+  z-index: 2;
+  min-height: 3.6rem;
+  padding: 0.875rem 6.25rem 0.625rem 1.125rem;
+}
+.ic-head.no-photo {
+  padding-right: 1.125rem;
+}
+.ic-cat {
+  /* Holds its line even when a recipe has nothing to be filed under, so an
+     uncategorised card's title still lines up with its neighbours'. */
+  display: block;
+  min-height: 0.95rem;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--stock-ink-soft);
+}
+.ic-title {
+  margin-top: 0.1875rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ic-body {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  padding: 0.75rem 1.125rem 1rem;
+}
+.ic-ing {
+  display: grid;
+  gap: 0;
+}
+.ic-ing li {
+  display: grid;
+  grid-template-columns: 3.9rem 1fr;
+  gap: 0.625rem;
+  font-size: 0.8rem;
+  line-height: 26px;
+}
+.ic-ing .q {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.72rem;
+  color: var(--pen);
+  font-variant-numeric: tabular-nums;
+}
+.ic-ing .n {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ic-more {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.68rem;
+  color: var(--stock-ink-soft);
+  line-height: 26px;
+}
+
+.ic-foot {
+  position: relative;
+  z-index: 2;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+  padding: 0.5rem 1.125rem 0.8125rem;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.05em;
+  color: var(--stock-ink-soft);
+}
+.ic-tally {
+  font-weight: 700;
+  color: var(--pen);
+  white-space: nowrap;
+}
+
+/* --- A photo, taped on. Absent entirely when the recipe has no image. --- */
+.ic-photo {
+  position: absolute;
+  top: 0.8125rem;
+  right: 0.875rem;
+  z-index: 3;
+  width: 4.75rem;
+  padding: 4px 4px 11px;
+  background: #fdfcf8;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.22),
+    0 5px 12px rgb(0 0 0 / 0.2);
+  transform: rotate(3.5deg);
+}
+.ic-photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+.ic-photo::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  translate: -50% 0;
+  width: 44px;
+  height: 17px;
+  rotate: -1.5deg;
+  background: linear-gradient(
+    100deg,
+    rgb(var(--tape) / 0.28),
+    rgb(var(--tape) / 0.5) 35%,
+    rgb(var(--tape) / 0.42)
+  );
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.14);
+  border-inline: 1px solid rgb(255 255 255 / 0.22);
+}
+
+/* --- Wear. Driven by cook count via wearLevel() in lib/cook-log.ts. ------ */
+.ic-mark {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  mix-blend-mode: var(--mark-blend);
+  border-radius: 50%;
+}
+/* Coffee ring on paper; a wiped chalk ghost on the board. */
+.ic-mark--ring {
+  border: 3px solid rgb(var(--mark) / 0.16);
+  box-shadow: inset 0 0 10px rgb(var(--mark) / 0.05);
+}
+.ic-mark--blot {
+  background: rgb(var(--mark) / 0.1);
+  filter: blur(3px);
+  border-radius: 46% 54% 58% 42% / 52% 44% 56% 48%;
+}
+/* A softened corner, as if the card has been handled. Cut to the page
+   behind it, so it works on paper and on slate without recolouring. */
+.ic-corner {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  pointer-events: none;
+  width: 3.5rem;
+  height: 3.5rem;
+  background: radial-gradient(
+    circle at 100% 100%,
+    rgb(var(--mark) / 0.2),
+    rgb(var(--mark) / 0.07) 46%,
+    transparent 72%
+  );
+  mix-blend-mode: var(--mark-blend);
+}
+.index-card[data-wear='loved'] .ic-corner {
+  width: 4.75rem;
+  height: 4.75rem;
+}
+/* Tape yellows and the print starts to curl once a card is well used. */
+.index-card[data-wear='loved'] .ic-photo {
+  transform: rotate(-2.5deg);
+}
+.index-card[data-wear='loved'] .ic-photo::before {
+  background: linear-gradient(100deg, rgb(226 200 140 / 0.4), rgb(236 214 160 / 0.52));
+}
+
+/* Four deterministic mark placements, picked from the recipe id, so two
+   equally-loved cards don't wear identically. */
+.index-card[data-variant='0'] .ic-mark--ring {
+  width: 4.9rem;
+  height: 4.9rem;
+  top: 7.5rem;
+  right: 0.875rem;
+}
+.index-card[data-variant='1'] .ic-mark--ring {
+  width: 5.8rem;
+  height: 5.8rem;
+  top: 6rem;
+  right: -1.1rem;
+}
+.index-card[data-variant='2'] .ic-mark--ring {
+  width: 4.4rem;
+  height: 4.4rem;
+  top: 9rem;
+  left: -0.75rem;
+}
+.index-card[data-variant='3'] .ic-mark--ring {
+  width: 5.2rem;
+  height: 5.2rem;
+  top: 5.5rem;
+  left: 1.5rem;
+}
+.index-card[data-variant='0'] .ic-mark--blot {
+  width: 3.4rem;
+  height: 2.6rem;
+  top: 11.5rem;
+  left: 1.5rem;
+}
+.index-card[data-variant='1'] .ic-mark--blot {
+  width: 2.6rem;
+  height: 2.2rem;
+  top: 4.5rem;
+  left: 1.25rem;
+}
+.index-card[data-variant='2'] .ic-mark--blot {
+  width: 3.9rem;
+  height: 2.9rem;
+  top: 10rem;
+  right: 1.75rem;
+}
+.index-card[data-variant='3'] .ic-mark--blot {
+  width: 3rem;
+  height: 2.4rem;
+  top: 12rem;
+  right: 2.5rem;
+}
+
+/* A ruled row for the library's list view, so both views share one material. */
+.index-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6875rem 0.5rem;
+  border-bottom: 1px solid rgb(var(--color-ink) / 0.12);
+  transition: color 0.12s;
+}
+.index-row:hover {
+  color: rgb(var(--color-ink));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .index-card,
+  .index-card:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* Print: the card should read as a clean recipe card, not a worn one. */
+@media print {
+  .index-card {
+    background-image: none;
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  .ic-mark,
+  .ic-corner {
+    display: none !important;
+  }
+}
+
 /* Gentle idle float for empty-state illustrations */
 @keyframes float-gentle {
   0%,

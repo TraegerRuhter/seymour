@@ -7,7 +7,7 @@ import { useRecipeStore } from '@/lib/stores';
 import { autoTagUntaggedRecipes } from '@/lib/actions';
 import { MEAL_TYPES, type MealType } from '@/lib/types';
 import { MEAL_TYPE_LABELS, recipeFitsMealType } from '@/lib/plan';
-import RecipeCard from '@/components/RecipeCard';
+import IndexCard, { IndexRow } from '@/components/IndexCard';
 import { PencilIcon, PlateIcon, GridIcon, ListIcon, SparkleIcon } from '@/components/icons';
 
 /** The meal-type filter also offers "untagged" to surface recipes that still need tags. */
@@ -248,15 +248,15 @@ export default function RecipeLibraryPage() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           <AnimatePresence mode="popLayout" initial={false}>
             {filtered.map((r) => (
-              <RecipeCard key={r.id} recipe={r} />
+              <IndexCard key={r.id} recipe={r} />
             ))}
           </AnimatePresence>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-0">
           <AnimatePresence mode="popLayout" initial={false}>
             {filtered.map((r) => (
-              <RecipeCard key={r.id} recipe={r} layout="list" />
+              <IndexRow key={r.id} recipe={r} />
             ))}
           </AnimatePresence>
         </div>
