@@ -127,13 +127,21 @@ export default function RecipeDetailPage() {
             </p>
           )}
           <div className="no-print mt-4 flex flex-wrap items-center gap-3">
+            {/* Cook mode logs the cook itself when you reach the end, so this
+                stays for the ordinary case: you cooked it from memory, or off
+                a printout, and are recording it after the fact. */}
+            {recipe.instructions.length > 0 && (
+              <Link href={`/recipes/${recipe.id}/cook`} className="btn-primary px-4 py-1.5 text-sm">
+                Start cooking
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => {
                 logCook(recipe.id);
                 setJustCooked(true);
               }}
-              className="btn-primary px-4 py-1.5 text-sm"
+              className="btn-secondary px-4 py-1.5 text-sm"
             >
               Cooked it
             </button>

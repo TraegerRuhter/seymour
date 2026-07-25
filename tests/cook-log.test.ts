@@ -10,6 +10,7 @@ import {
   removeLastCook,
   wearLevel,
 } from '../src/lib/cook-log.ts';
+import { cookModeSignOff } from '../src/lib/seymour-says.ts';
 
 test('a recipe with no log reads as never made', () => {
   assert.equal(cookCount({}), 0);
@@ -101,4 +102,17 @@ test('describeLastCooked scales its phrasing with distance', () => {
 
 test('describeLastCooked tolerates a malformed timestamp', () => {
   assert.equal(describeLastCooked('not-a-date'), 'Never made');
+});
+
+test('the cook-mode sign-off counts the cook that just happened', () => {
+  assert.equal(cookModeSignOff(1), "First time. I'll remember it.");
+  assert.equal(cookModeSignOff(2), 'Twice now. It must have gone well.');
+  assert.equal(cookModeSignOff(4), '4 times now.');
+  assert.equal(cookModeSignOff(10), '10 times. You know this one by heart.');
+  assert.equal(cookModeSignOff(30), '30 times. This one is yours.');
+});
+
+test('the sign-off never leaves you with nothing, even on a count of zero', () => {
+  // Defensive: a failed log write shouldn't produce a blank closing screen.
+  assert.equal(cookModeSignOff(0), "First time. I'll remember it.");
 });
