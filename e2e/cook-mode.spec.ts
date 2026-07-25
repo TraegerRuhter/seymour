@@ -97,6 +97,21 @@ test.describe('Cook mode', () => {
     }
   });
 
+  test('space activates whatever you have tabbed to, rather than always meaning next', async ({
+    page,
+  }) => {
+    await addCurry(page);
+    await page.getByRole('link', { name: 'Start cooking' }).click();
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
+    await expect(page.getByText('Step 2 of 3')).toBeVisible();
+
+    // Claiming space globally sent a keyboard user who had tabbed to "Back"
+    // forwards instead.
+    await page.getByRole('button', { name: 'Back' }).focus();
+    await page.keyboard.press(' ');
+    await expect(page.getByText('Step 1 of 3')).toBeVisible();
+  });
+
   test('a recipe with no steps says so instead of opening an empty cook mode', async ({ page }) => {
     await addRecipeManually(page, {
       title: 'Charred Broccoli',
