@@ -204,7 +204,7 @@ Rough sizing. `S` = an afternoon, `M` = a day or two, `L` = a real project.
 | 5 | **Retire Inter.** A display face with a point of view is the fastest way to stop looking generated. | S | High | shipped (#72) |
 | 6 | **Repalette.** Move off cream+terracotta. Deep botanical green, bone, one acidic accent. | M | High | shipped (this PR) |
 | 7 | **Break the five-identical-screens pattern.** Let the plan look like a week, the list look like a list, the recipe look like a card. | L | High | — |
-| 8 | **Time-of-day awareness.** The app knows it's 5pm; it could lead with dinner. Almost nothing does this well and it's nearly free. | S | Med | — |
+| 8 | **Time-of-day awareness.** The app knows it's 5pm; it could lead with dinner. Almost nothing does this well and it's nearly free. | S | Med | shipped (#74) |
 | 9 | **"Seymour says"** — one contextual, opinionated line on the dashboard, driven by rules over your own data. Enormous personality-per-byte. | M | High | shipped (#70) |
 | 10 | **Reactive motion at thresholds** — a chomp when the last item is checked off, a lean when a plan lands. Replace generic fade-rise. | M | Med | — |
 | 11 | **Cook mode** — the guided, hands-messy cooking view (big type, screen stays awake, one step at a time). Genuinely useful *and* a threshold moment. | L | High | — |
