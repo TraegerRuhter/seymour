@@ -4,7 +4,14 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useRecipeStore } from '@/lib/stores';
-import { deleteRecipe, setRecipeNotes, setRecipeRating } from '@/lib/actions';
+import {
+  deleteRecipe,
+  logCook,
+  setRecipeNotes,
+  setRecipeRating,
+  undoLastCook,
+} from '@/lib/actions';
+import { cookCount, describeLastCooked, lastCookedAt } from '@/lib/cook-log';
 import { displayUnit, formatQuantity } from '@/lib/units';
 import { MEAL_TYPE_LABELS } from '@/lib/plan';
 import { isHttpUrl } from '@/lib/link-safety';
@@ -15,6 +22,7 @@ export default function RecipeDetailPage() {
   const router = useRouter();
   const recipe = useRecipeStore((s) => s.recipes[id]);
   const [confirming, setConfirming] = useState(false);
+  const [justCooked, setJustCooked] = useState(false);
   const [notesDraft, setNotesDraft] = useState(recipe?.notes ?? '');
   const [notesSaved, setNotesSaved] = useState(true);
 
@@ -46,6 +54,9 @@ export default function RecipeDetailPage() {
     deleteRecipe(recipe.id);
     router.push('/recipes');
   }
+
+  const cooks = cookCount(recipe);
+  const lastCooked = describeLastCooked(lastCookedAt(recipe));
 
   return (
     <article className="mx-auto max-w-3xl print-serif">
@@ -110,7 +121,40 @@ export default function RecipeDetailPage() {
               year: 'numeric',
             })}
           </p>
+          {cooks > 0 && (
+            <p className="mt-1 text-sm font-medium text-olive-dark">
+              Made {cooks === 1 ? 'once' : `${cooks} times`} · last {lastCooked.toLowerCase()}
+            </p>
+          )}
           <div className="no-print mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                logCook(recipe.id);
+                setJustCooked(true);
+              }}
+              className="btn-primary px-4 py-1.5 text-sm"
+            >
+              Cooked it
+            </button>
+            {justCooked && (
+              <span
+                role="status"
+                className="inline-flex items-center gap-2 text-sm text-charcoal/60"
+              >
+                Logged.
+                <button
+                  type="button"
+                  onClick={() => {
+                    undoLastCook(recipe.id);
+                    setJustCooked(false);
+                  }}
+                  className="font-medium text-terracotta hover:underline"
+                >
+                  Undo
+                </button>
+              </span>
+            )}
             {recipe.sourceUrl && isHttpUrl(recipe.sourceUrl) && (
               <a
                 href={recipe.sourceUrl}

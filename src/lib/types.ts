@@ -40,6 +40,13 @@ export interface Recipe {
   rating?: number;
   /** Free-text notes the user keeps on the recipe (tweaks, verdicts, substitutions) — not part of the recipe itself. */
   notes?: string;
+  /**
+   * ISO timestamps of every time this was actually cooked, ascending. The
+   * app's only record of an *event* rather than intent or inventory — see
+   * `src/lib/cook-log.ts`. Absent on every recipe saved before the cook log
+   * existed, which reads correctly as "never made".
+   */
+  cookedAt?: string[];
   /** Set on every local edit; compared against the server's row to resolve sync conflicts. Absent until the record has synced at least once. */
   updatedAt?: string;
 }
