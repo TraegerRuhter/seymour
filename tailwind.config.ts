@@ -22,9 +22,11 @@ const config: Config = {
         },
       },
       fontFamily: {
-        // Inter is loaded via next/font in layout.tsx and exposed as
-        // --font-inter; the system stack is the fallback until it swaps in.
-        sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // All three are loaded via next/font in layout.tsx; the stacks after
+        // each variable are the fallback until the webfont swaps in.
+        sans: ['var(--font-text)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'Georgia', 'ui-serif', 'serif'],
+        typewriter: ['var(--font-typewriter)', 'ui-monospace', 'Menlo', 'monospace'],
       },
       boxShadow: {
         card: '0 4px 20px rgb(0 0 0 / 0.06)',

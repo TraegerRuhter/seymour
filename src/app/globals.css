@@ -31,6 +31,28 @@ body {
   @apply bg-cream text-charcoal antialiased;
 }
 
+/* Every heading takes the display face, so this is one rule rather than a
+   font-display class sprinkled across forty components. SOFT rounds the
+   terminals off the stems — the difference between "serif" and "warm".
+   WONK (the single-storey g, the swashy leg) only earns its keep at size,
+   so it stays off below h1; on a 14px section label it just reads as a
+   rendering bug. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: theme('fontFamily.display');
+  font-variation-settings:
+    'SOFT' 40,
+    'WONK' 0;
+}
+h1 {
+  font-variation-settings:
+    'SOFT' 60,
+    'WONK' 1;
+  letter-spacing: -0.02em;
+}
+
 /* Visible, consistent keyboard focus */
 :focus-visible {
   @apply outline-none ring-2 ring-terracotta ring-offset-2 ring-offset-cream;
@@ -65,6 +87,13 @@ body {
    why wear survives the theme switch instead of being a light-mode flourish.
    ========================================================================== */
 .index-card {
+  /* Height of the ruled header zone. The body ruling and the red margin rule
+     are absolutely positioned, so they read this rather than each carrying
+     their own literal — otherwise the ingredient rows drift off their lines
+     the moment the header changes. Sized to hold two lines of title: the
+     display face is wider than the sans it replaced, so two-line titles are
+     now the common case rather than the exception. */
+  --ic-head-h: 4.95rem;
   --stock: #fcfaf4;
   --stock-ink: #1f242b;
   --stock-ink-soft: #5c6270;
@@ -122,7 +151,7 @@ body {
 .index-card::before {
   content: '';
   position: absolute;
-  inset: 3.6rem 0 0;
+  inset: var(--ic-head-h) 0 0;
   background: repeating-linear-gradient(to bottom, transparent 0 25px, var(--rule) 25px 26px);
   opacity: 0.5;
   pointer-events: none;
@@ -130,7 +159,7 @@ body {
 .index-card::after {
   content: '';
   position: absolute;
-  inset: 3.55rem 0 auto;
+  inset: calc(var(--ic-head-h) - 0.05rem) 0 auto;
   height: 1.5px;
   background: var(--rule-accent);
   opacity: 0.6;
@@ -140,7 +169,7 @@ body {
 .ic-head {
   position: relative;
   z-index: 2;
-  min-height: 3.6rem;
+  min-height: var(--ic-head-h);
   padding: 0.875rem 6.25rem 0.625rem 1.125rem;
 }
 .ic-head.no-photo {
@@ -151,7 +180,7 @@ body {
      uncategorised card's title still lines up with its neighbours'. */
   display: block;
   min-height: 0.95rem;
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-family: theme('fontFamily.typewriter');
   font-size: 0.6rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -173,7 +202,12 @@ body {
   position: relative;
   z-index: 2;
   flex: 1;
-  padding: 0.75rem 1.125rem 1rem;
+  /* The top padding is tuned, not round: it drops the first row so its
+     baseline lands on the first ruling line rather than floating between
+     lines. Every later row follows for free, because the rows and the
+     ruling share the same 26px rhythm. Measured against the text face — if
+     that changes, re-measure. */
+  padding: 0.4375rem 1.125rem 1rem;
 }
 .ic-ing {
   display: grid;
@@ -187,7 +221,7 @@ body {
   line-height: 26px;
 }
 .ic-ing .q {
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-family: theme('fontFamily.typewriter');
   font-size: 0.72rem;
   color: var(--pen);
   font-variant-numeric: tabular-nums;
@@ -198,7 +232,7 @@ body {
   white-space: nowrap;
 }
 .ic-more {
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-family: theme('fontFamily.typewriter');
   font-size: 0.68rem;
   color: var(--stock-ink-soft);
   line-height: 26px;
@@ -213,7 +247,7 @@ body {
   justify-content: space-between;
   gap: 0.625rem;
   padding: 0.5rem 1.125rem 0.8125rem;
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-family: theme('fontFamily.typewriter');
   font-size: 0.64rem;
   letter-spacing: 0.05em;
   color: var(--stock-ink-soft);
@@ -437,7 +471,9 @@ body {
     backdrop-filter: none !important;
   }
   .print-serif {
-    font-family: Georgia, 'Times New Roman', serif;
+    /* A printed recipe should look like the app it came out of, and Fraunces
+       has an optical-size axis that holds up at body sizes on paper. */
+    font-family: theme('fontFamily.display');
   }
   main {
     padding: 0 !important;
