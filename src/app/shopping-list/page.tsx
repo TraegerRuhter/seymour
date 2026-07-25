@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePlanStore, useShoppingStore } from '@/lib/stores';
 import ShoppingList from '@/components/ShoppingList';
-import { SparkleIcon } from '@/components/icons';
+import ChompingSeymour from '@/components/ChompingSeymour';
 
 export default function ShoppingListPage() {
   const items = useShoppingStore((s) => s.items);
@@ -24,7 +24,11 @@ export default function ShoppingListPage() {
               : remaining === 0
                 ? 'All done. Bring it home.'
                 : `${remaining} of ${items.length} item${items.length === 1 ? '' : 's'} left`}
-            {items.length > 0 && remaining === 0 && <SparkleIcon className="h-4 w-4" />}
+            {/* Mounted for the whole life of a non-empty list, not just when
+                it's finished, so it can see the moment you finish it. */}
+            {items.length > 0 && (
+              <ChompingSeymour done={remaining === 0} className="h-7 w-7 shrink-0" />
+            )}
           </p>
         </div>
         {checkedCount > 0 && (

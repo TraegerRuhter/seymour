@@ -84,6 +84,73 @@ h1 {
   letter-spacing: -0.02em;
 }
 
+/* ==========================================================================
+   The chomp
+   --------------------------------------------------------------------------
+   Seymour snaps his jaws shut when you finish something — currently the last
+   item on a shopping list. One threshold, deliberately: a mascot that reacts
+   to everything is a mascot you stop looking at.
+
+   Each half hinges on the mouth line, which is why `fill-box` is doing the
+   work here rather than a pair of magic coordinates. The upper group's
+   bounding box ends exactly at the mouth, the lower group's begins there, so
+   "bottom center" and "top center" are the same point in space and both
+   halves close onto it.
+
+   Silent for anyone who has asked for less motion.
+   ========================================================================== */
+.sey-jaw {
+  transform-box: fill-box;
+}
+.sey-jaw--upper {
+  transform-origin: bottom center;
+}
+.sey-jaw--lower {
+  transform-origin: top center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sey-chomping .sey-jaw--upper {
+    animation: sey-chomp-upper 700ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  }
+  .sey-chomping .sey-jaw--lower {
+    animation: sey-chomp-lower 700ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  }
+}
+
+/* Shut fast, hold for a beat, then open with a little overshoot — the hold is
+   what makes it read as a bite rather than a flicker. */
+@keyframes sey-chomp-upper {
+  0% {
+    transform: scaleY(1);
+  }
+  22%,
+  44% {
+    transform: scaleY(0.32);
+  }
+  72% {
+    transform: scaleY(1.1);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+@keyframes sey-chomp-lower {
+  0% {
+    transform: scaleY(1);
+  }
+  22%,
+  44% {
+    transform: scaleY(0.32);
+  }
+  72% {
+    transform: scaleY(1.12);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
 /* Visible, consistent keyboard focus */
 :focus-visible {
   @apply outline-none ring-2 ring-moss ring-offset-2 ring-offset-bone;
