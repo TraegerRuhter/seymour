@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Courier_Prime, Fraunces, Karla } from 'next/font/google';
 import './globals.css';
 import BottomNav from '@/components/BottomNav';
 import Header from '@/components/Header';
@@ -7,12 +7,43 @@ import AppProviders from '@/components/AppProviders';
 import { AuthProvider } from '@/lib/auth';
 import { THEME_INIT_SCRIPT } from '@/lib/theme-script';
 
-// Self-hosted by Next at build time (no runtime request to Google, no layout
-// shift). Exposed as a CSS variable that Tailwind's font-sans stack points at.
-const inter = Inter({
+// All three are self-hosted by Next at build time (no runtime request to
+// Google, no layout shift) and exposed as CSS variables that Tailwind's font
+// stacks point at.
+
+/**
+ * Display face. Fraunces is the point of this trio: a soft, slightly wonky
+ * old-style serif whose SOFT and WONK axes exist specifically to undo the
+ * neutrality of a default UI sans. It carries every heading and the wordmark.
+ */
+const fraunces = Fraunces({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-inter',
+  variable: '--font-display',
+  axes: ['SOFT', 'WONK'],
+});
+
+/**
+ * Text face. Karla is a grotesque with enough irregularity to feel printed
+ * rather than screen-native, while staying legible down at ingredient-list
+ * sizes — the work surfaces still have to be scannable with wet hands.
+ */
+const karla = Karla({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-text',
+});
+
+/**
+ * Typewriter. Only used inside the recipe index cards, where the metadata is
+ * meant to read as typed onto the stock. A system mono renders as SF Mono or
+ * Consolas — crisp and modern, which is exactly the wrong century.
+ */
+const courierPrime = Courier_Prime({
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['400', '700'],
+  variable: '--font-typewriter',
 });
 
 export const metadata: Metadata = {
@@ -56,7 +87,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     // suppressHydrationWarning: the theme init script may add .dark to <html>
     // before React hydrates.
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${fraunces.variable} ${karla.variable} ${courierPrime.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>

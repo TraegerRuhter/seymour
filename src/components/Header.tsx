@@ -20,7 +20,11 @@ export default function Header() {
             feed me
             <span className="absolute -bottom-1 left-3 h-2 w-2 rotate-45 bg-terracotta" />
           </span>
-          <span className="text-xl font-bold tracking-tight">Seymour</span>
+          {/* The wordmark is the one place the display face gets to be fully
+              wonky — it's a name, not an interface label. */}
+          <span className="font-display text-2xl font-semibold tracking-tight [font-variation-settings:'SOFT'_80,'WONK'_1]">
+            Seymour
+          </span>
         </span>
       </Link>
     </header>
