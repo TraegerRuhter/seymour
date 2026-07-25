@@ -221,12 +221,13 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
           id={inputId}
           checked={item.checked}
           onChange={() => toggleShoppingItem(item.id)}
-          className="peer absolute inset-0 h-6 w-6 cursor-pointer appearance-none rounded-full border-2 border-charcoal/25 transition-colors checked:border-olive checked:bg-olive"
+          className="peer absolute inset-0 h-6 w-6 cursor-pointer appearance-none rounded-full border-2 border-charcoal/25 transition-colors checked:border-zest checked:bg-zest"
         />
         <svg
           viewBox="0 0 24 24"
           aria-hidden
-          className="pointer-events-none absolute inset-0 h-6 w-6 p-1 text-white"
+          // The tick sits on the acid fill, where white is 1.7:1 and ink is 9.8:1.
+          className="pointer-events-none absolute inset-0 h-6 w-6 p-1 text-zest-ink"
         >
           <motion.path
             d="M5 13l4 4L19 7"
@@ -284,7 +285,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
             <span ref={labelTextRef} className={`block ${expanded ? '' : 'truncate'}`}>
               {label}
               {item.manualOverride && (
-                <span className="ml-2 rounded-full bg-terracotta/10 px-2 py-0.5 text-xs text-terracotta">
+                <span className="ml-2 rounded-full bg-moss/10 px-2 py-0.5 text-xs text-moss">
                   edited
                 </span>
               )}
@@ -324,7 +325,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
                   >
                     {s.originalString}
                     {s.scale != null && s.scale !== 1 && (
-                      <span className="font-medium text-olive-dark"> ×{s.scale}</span>
+                      <span className="font-medium text-zest-strong"> ×{s.scale}</span>
                     )}
                     {s.recipeId && recipes[s.recipeId] && (
                       <span className="text-charcoal/40"> · {recipes[s.recipeId].title}</span>
@@ -439,7 +440,7 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
       className="h-2 w-full overflow-hidden rounded-full bg-charcoal/10"
     >
       <motion.div
-        className="h-full rounded-full bg-olive"
+        className="h-full rounded-full bg-zest"
         initial={false}
         animate={{ width: `${pct}%` }}
         transition={{ type: 'spring', stiffness: 200, damping: 30 }}

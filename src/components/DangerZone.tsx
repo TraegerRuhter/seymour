@@ -33,7 +33,7 @@ function ConfirmButton({
             onConfirm();
             setArmed(false);
           }}
-          className="rounded-full bg-terracotta px-3 py-1.5 text-sm font-semibold text-white hover:bg-terracotta-dark"
+          className="rounded-full bg-clay px-3 py-1.5 text-sm font-semibold text-white hover:brightness-90"
         >
           Confirm
         </button>
@@ -53,7 +53,7 @@ function ConfirmButton({
       type="button"
       onClick={() => setArmed(true)}
       disabled={disabled}
-      className="rounded-full border border-terracotta/30 px-4 py-2 text-sm font-medium text-terracotta-dark transition-colors hover:bg-terracotta/10 disabled:cursor-not-allowed disabled:opacity-40"
+      className="rounded-full border border-clay/30 px-4 py-2 text-sm font-medium text-clay transition-colors hover:bg-clay/10 disabled:cursor-not-allowed disabled:opacity-40"
     >
       {label}
     </button>
@@ -69,7 +69,7 @@ export default function DangerZone() {
   const everythingEmpty = recipeCount === 0 && archivedCount === 0 && !hasPlan && itemCount === 0;
 
   return (
-    <section aria-label="Manage data" className="glass-card space-y-4 border-terracotta/20 p-5">
+    <section aria-label="Manage data" className="glass-card space-y-4 border-clay/20 p-5">
       <div>
         <h2 className="text-xl font-semibold">Manage data</h2>
         <p className="mt-1 text-sm text-charcoal/60">
@@ -125,7 +125,7 @@ export default function DangerZone() {
 
         <li className="flex flex-wrap items-center justify-between gap-3 border-t border-charcoal/10 pt-3">
           <div>
-            <p className="text-sm font-semibold text-terracotta-dark">Reset everything</p>
+            <p className="text-sm font-semibold text-clay">Reset everything</p>
             <p className="text-xs text-charcoal/50">
               Wipe all recipes, plans (including archive), the shopping list, and pantry staples.
             </p>

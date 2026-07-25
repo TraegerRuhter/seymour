@@ -66,12 +66,12 @@ export default function RecipeCard({
           {(recipe.category || recipe.cookTimeMinutes != null || recipe.mealTypes?.length) && (
             <div className="mb-1.5 flex flex-wrap gap-1.5">
               {recipe.category && (
-                <span className="rounded-full bg-terracotta/10 px-2 py-0.5 text-xs font-medium text-terracotta-dark">
+                <span className="rounded-full bg-moss/10 px-2 py-0.5 text-xs font-medium text-moss-strong">
                   {recipe.category}
                 </span>
               )}
               {recipe.cookTimeMinutes != null && (
-                <span className="rounded-full bg-olive/10 px-2 py-0.5 text-xs font-medium text-olive-dark">
+                <span className="rounded-full bg-moss/10 px-2 py-0.5 text-xs font-medium text-zest-strong">
                   {recipe.cookTimeMinutes} min
                 </span>
               )}
@@ -126,7 +126,7 @@ function Thumb({
     );
   }
   return (
-    <div aria-hidden className={`${className} flex items-center justify-center bg-olive/15`}>
+    <div aria-hidden className={`${className} flex items-center justify-center bg-moss/12`}>
       <BowlIcon className="h-1/2 w-1/2 max-h-12 max-w-12 opacity-80" />
     </div>
   );

@@ -55,7 +55,7 @@ export default function PlanGenerator({
               onClick={() => setDays(d)}
               className={`min-w-11 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                 days === d
-                  ? 'bg-terracotta text-white'
+                  ? 'bg-moss text-white'
                   : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
               }`}
             >
@@ -75,7 +75,7 @@ export default function PlanGenerator({
                 key={t}
                 className={`inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                   on
-                    ? 'bg-olive text-white'
+                    ? 'bg-zest text-zest-ink'
                     : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
                 }`}
               >
@@ -91,7 +91,7 @@ export default function PlanGenerator({
           })}
         </div>
         {mealTypes.length === 0 && (
-          <p className="mt-2 text-sm text-terracotta-dark" role="alert">
+          <p className="mt-2 text-sm text-moss-strong" role="alert">
             Pick at least one meal type.
           </p>
         )}

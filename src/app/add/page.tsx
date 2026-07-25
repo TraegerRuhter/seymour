@@ -133,7 +133,7 @@ function AddRecipe() {
             aria-selected={mode === m}
             onClick={() => setMode(m)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              mode === m ? 'bg-terracotta text-white' : 'text-charcoal/60 hover:text-charcoal'
+              mode === m ? 'bg-moss text-white' : 'text-charcoal/60 hover:text-charcoal'
             }`}
           >
             {m === 'url' ? 'From a URL' : m === 'discover' ? 'Discover' : 'Enter manually'}
@@ -169,7 +169,7 @@ function AddRecipe() {
           {errors.length > 0 && (
             <ul
               role="alert"
-              className="space-y-1 rounded-xl bg-terracotta/10 px-4 py-3 text-sm text-terracotta-dark"
+              className="space-y-1 rounded-xl bg-moss/10 px-4 py-3 text-sm text-moss-strong"
             >
               {errors.map((e, i) => (
                 <li key={i}>
@@ -197,7 +197,7 @@ function AddRecipe() {
             <button
               type="button"
               onClick={() => setMode('manual')}
-              className="text-sm font-medium text-terracotta hover:underline"
+              className="text-sm font-medium text-moss hover:underline"
             >
               or enter it manually
             </button>
@@ -241,10 +241,7 @@ function AddRecipe() {
           </div>
 
           {discoverError && (
-            <p
-              role="alert"
-              className="rounded-xl bg-terracotta/10 px-4 py-3 text-sm text-terracotta-dark"
-            >
+            <p role="alert" className="rounded-xl bg-moss/10 px-4 py-3 text-sm text-moss-strong">
               {discoverError}
             </p>
           )}

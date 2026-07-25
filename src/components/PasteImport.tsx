@@ -72,7 +72,7 @@ export default function PasteImport({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-terracotta hover:underline"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-moss hover:underline"
       >
         <ClipboardIcon className="h-4 w-4" />
         Paste page text instead
@@ -104,10 +104,7 @@ export default function PasteImport({
       </div>
 
       {error && (
-        <p
-          role="alert"
-          className="rounded-xl bg-terracotta/10 px-4 py-2 text-sm text-terracotta-dark"
-        >
+        <p role="alert" className="rounded-xl bg-moss/10 px-4 py-2 text-sm text-moss-strong">
           {error}
         </p>
       )}

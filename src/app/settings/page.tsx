@@ -182,7 +182,7 @@ export default function SettingsPage() {
               onClick={() => setThemePref(opt.value)}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                 theme === opt.value
-                  ? 'bg-terracotta text-white'
+                  ? 'bg-moss text-white'
                   : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
               }`}
             >
@@ -209,7 +209,7 @@ export default function SettingsPage() {
               onClick={() => setUnitSystem(opt.value)}
               className={`inline-flex items-baseline gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                 unitSystem === opt.value
-                  ? 'bg-terracotta text-white'
+                  ? 'bg-moss text-white'
                   : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
               }`}
             >
@@ -248,7 +248,7 @@ export default function SettingsPage() {
             {staples.map((name) => (
               <li
                 key={name}
-                className="inline-flex items-center gap-1.5 rounded-full bg-olive/15 px-3 py-1 text-sm capitalize"
+                className="inline-flex items-center gap-1.5 rounded-full bg-moss/12 px-3 py-1 text-sm capitalize"
               >
                 {name}
                 <button
@@ -301,9 +301,7 @@ export default function SettingsPage() {
           <p
             role="status"
             className={`rounded-xl px-4 py-2 text-sm ${
-              message.kind === 'ok'
-                ? 'bg-olive/15 text-olive-dark'
-                : 'bg-terracotta/10 text-terracotta-dark'
+              message.kind === 'ok' ? 'bg-moss/12 text-zest-strong' : 'bg-moss/10 text-moss-strong'
             }`}
           >
             {message.text}

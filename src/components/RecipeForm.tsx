@@ -182,7 +182,7 @@ export default function RecipeForm({
         <button
           type="button"
           onClick={applyAutoTag}
-          className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-terracotta hover:underline"
+          className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-moss hover:underline"
         >
           <SparkleIcon className="h-4 w-4" />
           Auto-tag from title &amp; ingredients
@@ -208,7 +208,7 @@ export default function RecipeForm({
                 onClick={() => toggleMealType(t)}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   on
-                    ? 'bg-olive text-white'
+                    ? 'bg-zest text-zest-ink'
                     : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
                 }`}
               >
@@ -305,10 +305,7 @@ export default function RecipeForm({
       </div>
 
       {error && (
-        <p
-          role="alert"
-          className="rounded-xl bg-terracotta/10 px-4 py-2 text-sm text-terracotta-dark"
-        >
+        <p role="alert" className="rounded-xl bg-moss/10 px-4 py-2 text-sm text-moss-strong">
           {error}
         </p>
       )}

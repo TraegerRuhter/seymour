@@ -15,10 +15,10 @@ export default function Header() {
           {/* "feed me" speech bubble — a nod to the hungry plant */}
           <span
             aria-hidden
-            className="absolute bottom-full left-0 mb-1.5 -rotate-6 rounded-full bg-terracotta px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-sm transition-transform group-hover:-rotate-2"
+            className="absolute bottom-full left-0 mb-1.5 -rotate-6 rounded-full bg-zest px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-zest-ink shadow-sm transition-transform group-hover:-rotate-2"
           >
             feed me
-            <span className="absolute -bottom-1 left-3 h-2 w-2 rotate-45 bg-terracotta" />
+            <span className="absolute -bottom-1 left-3 h-2 w-2 rotate-45 bg-zest" />
           </span>
           {/* The wordmark is the one place the display face gets to be fully
               wonky — it's a name, not an interface label. */}

@@ -106,7 +106,7 @@ export default function ImagePicker({
           }}
           onDragLeave={() => setDragOver(false)}
           className={`flex-1 rounded-xl border border-dashed px-3 py-2 transition-colors ${
-            dragOver ? 'border-terracotta bg-terracotta/5' : 'border-charcoal/20'
+            dragOver ? 'border-moss bg-moss/5' : 'border-charcoal/20'
           }`}
         >
           <input
@@ -122,7 +122,7 @@ export default function ImagePicker({
             <button
               type="button"
               onClick={() => fileInput.current?.click()}
-              className="font-medium text-terracotta hover:underline"
+              className="font-medium text-moss hover:underline"
             >
               Choose file
             </button>
@@ -138,7 +138,7 @@ export default function ImagePicker({
         </div>
       </div>
       {error && (
-        <p role="alert" className="mt-1.5 text-xs text-terracotta-dark">
+        <p role="alert" className="mt-1.5 text-xs text-moss-strong">
           {error}
         </p>
       )}

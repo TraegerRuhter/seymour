@@ -29,7 +29,7 @@ function FilterChip({
       onClick={onClick}
       className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
         on
-          ? 'bg-olive text-white'
+          ? 'bg-zest text-zest-ink'
           : 'border border-charcoal/15 bg-surface/70 text-charcoal/60 hover:bg-surface hover:text-charcoal'
       }`}
     >
@@ -200,7 +200,7 @@ export default function RecipeLibraryPage() {
                   setMealFilter(null);
                   setCategoryFilter(null);
                 }}
-                className="ml-1 text-sm font-medium text-terracotta hover:underline"
+                className="ml-1 text-sm font-medium text-moss hover:underline"
               >
                 Clear
               </button>
@@ -209,7 +209,7 @@ export default function RecipeLibraryPage() {
               <button
                 type="button"
                 onClick={handleAutoTag}
-                className="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-terracotta hover:underline"
+                className="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-moss hover:underline"
               >
                 <SparkleIcon className="h-4 w-4" />
                 Auto-tag {untaggedCount} recipe{untaggedCount === 1 ? '' : 's'}

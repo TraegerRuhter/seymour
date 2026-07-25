@@ -60,7 +60,7 @@ export default function ArchivedPlans() {
                   <button
                     type="button"
                     onClick={() => restoreArchivedPlan(a.id)}
-                    className="rounded-full px-3 py-1.5 text-sm font-medium text-terracotta transition-colors hover:bg-terracotta/10"
+                    className="rounded-full px-3 py-1.5 text-sm font-medium text-moss transition-colors hover:bg-moss/10"
                   >
                     Restore
                   </button>
@@ -86,7 +86,7 @@ export default function ArchivedPlans() {
                   clearArchivedPlans();
                   setConfirmClear(false);
                 }}
-                className="font-semibold text-terracotta-dark hover:underline"
+                className="font-semibold text-clay hover:underline"
               >
                 Yes, delete all
               </button>
@@ -102,7 +102,7 @@ export default function ArchivedPlans() {
             <button
               type="button"
               onClick={() => setConfirmClear(true)}
-              className="text-sm font-medium text-terracotta-dark hover:underline"
+              className="text-sm font-medium text-moss-strong hover:underline"
             >
               Delete all archived
             </button>

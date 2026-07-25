@@ -40,7 +40,7 @@ export default function ShoppingListPage() {
 
       <p className="text-sm text-charcoal/50">
         Already stocked on something?{' '}
-        <Link href="/settings#pantry" className="font-medium text-terracotta hover:underline">
+        <Link href="/settings#pantry" className="font-medium text-moss hover:underline">
           Add it to your spice rack
         </Link>{' '}
         to keep it off this list.
@@ -49,7 +49,7 @@ export default function ShoppingListPage() {
       {items.length === 0 && !plan && (
         <p className="text-sm text-charcoal/60">
           The list fills itself from your meal plan —{' '}
-          <Link href="/plan" className="font-medium text-terracotta hover:underline">
+          <Link href="/plan" className="font-medium text-moss hover:underline">
             generate one
           </Link>{' '}
           to get started.

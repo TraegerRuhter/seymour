@@ -2,11 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Semantic palette. Dark mode flips these (class strategy, see lib/theme.ts). */
+/* Semantic palette. Dark mode flips these (class strategy, see lib/theme.ts).
+   ---------------------------------------------------------------------------
+   Deep botanical green on bone, with one acidic accent — see
+   docs/design-prospectus.md §6.6. The palette this replaced was warm cream +
+   terracotta, which the artifact-design skill names as one of the four
+   reliable tells of a generated design.
+
+   Every colour lives here rather than in tailwind.config.ts, so a token can
+   hold different values per theme and `text-moss` resolves correctly in both.
+   Two strengths per hue, because one is never enough: the base is a *fill*
+   (something legible sits on top of it) and `-strong` is *text* (it sits on
+   the page and has to clear 4.5:1 at small sizes).
+
+   Terracotta survives in exactly one place: Seymour's pot, in the logo. It's
+   a clay pot. It was never supposed to be the button colour. */
 :root {
-  --color-bg: 250 247 242; /* warm cream */
-  --color-ink: 45 45 42; /* charcoal */
-  --color-surface: 255 255 255; /* card / control surfaces */
+  --color-bg: 235 232 221; /* bone */
+  --color-ink: 23 28 24; /* near-black, faintly green */
+  --color-surface: 251 250 245; /* card / control surfaces */
+  --color-moss: 46 94 78; /* primary fill — white on it, 7.4:1 */
+  --color-moss-strong: 36 76 63; /* links & small text — 8.4:1 on bone */
+  --color-zest: 183 206 63; /* accent fill — ink on it, 9.8:1 */
+  --color-zest-strong: 95 110 24; /* accent text — 4.9:1 on bone */
+  --color-clay: 163 70 48; /* destructive only — 5.3:1 on bone */
+  /* The acid is the one hue that does NOT flip between themes, so whatever
+     sits on top of it must not flip either — `text-charcoal` would invert to
+     bone in dark mode and leave 1.5:1 on an acid pill. */
+  --color-zest-ink: 23 28 24;
   color-scheme: light;
 
   /* iOS safe-area insets — 0 in a normal browser tab / on non-notched
@@ -21,14 +44,22 @@
 }
 
 .dark {
-  --color-bg: 26 24 21; /* warm near-black */
-  --color-ink: 240 235 227; /* warm off-white */
-  --color-surface: 44 40 36; /* elevated warm surface */
+  --color-bg: 17 22 20; /* slate — the same green-black, turned all the way down */
+  --color-ink: 232 230 220; /* bone, now doing the writing */
+  --color-surface: 29 37 33;
+  /* Both greens lighten so they still read as raised / clickable against
+     slate; the acid is bright enough to serve as both fill and text there. */
+  --color-moss: 63 122 102; /* white on it, 5.0:1; 3.7:1 against the page */
+  --color-moss-strong: 143 193 172; /* 9.1:1 on slate */
+  --color-zest: 183 206 63;
+  --color-zest-strong: 183 206 63; /* 10.4:1 on slate — no darkening needed */
+  --color-clay: 232 145 122; /* 7.6:1 on slate */
+  --color-zest-ink: 23 28 24; /* deliberately unchanged — see above */
   color-scheme: dark;
 }
 
 body {
-  @apply bg-cream text-charcoal antialiased;
+  @apply bg-bone text-charcoal antialiased;
 }
 
 /* Every heading takes the display face, so this is one rule rather than a
@@ -55,7 +86,7 @@ h1 {
 
 /* Visible, consistent keyboard focus */
 :focus-visible {
-  @apply outline-none ring-2 ring-terracotta ring-offset-2 ring-offset-cream;
+  @apply outline-none ring-2 ring-moss ring-offset-2 ring-offset-bone;
 }
 
 @layer components {
@@ -63,13 +94,13 @@ h1 {
     @apply rounded-2xl border border-white/40 bg-surface/70 shadow-card backdrop-blur-md dark:border-white/10;
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-terracotta px-5 py-2.5 font-medium text-white shadow-md transition-colors hover:bg-terracotta-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-moss px-5 py-2.5 font-medium text-white shadow-md transition-colors hover:bg-moss-strong active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-full border border-charcoal/15 bg-surface/80 px-5 py-2.5 font-medium text-charcoal shadow-sm transition-colors hover:bg-surface active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
   }
   .input-base {
-    @apply w-full rounded-xl border border-charcoal/15 bg-surface/80 px-4 py-2.5 text-charcoal placeholder:text-charcoal/40 focus:border-terracotta;
+    @apply w-full rounded-xl border border-charcoal/15 bg-surface/80 px-4 py-2.5 text-charcoal placeholder:text-charcoal/40 focus:border-moss;
   }
 }
 

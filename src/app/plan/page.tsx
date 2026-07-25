@@ -55,7 +55,7 @@ export default function PlanPage() {
           <PlanIcon className="animate-float mx-auto h-16 w-16" />
           <p className="mt-3 text-charcoal/60">
             I can&apos;t make a plan out of nothing —{' '}
-            <Link href="/add" className="font-medium text-terracotta hover:underline">
+            <Link href="/add" className="font-medium text-moss hover:underline">
               add a few
             </Link>{' '}
             and come back.
@@ -95,7 +95,7 @@ export default function PlanPage() {
               <ArchiveIcon className="h-4 w-4" /> Archive
             </button>
             {confirmClear ? (
-              <span className="inline-flex items-center gap-2 rounded-full bg-terracotta/10 px-3 py-1.5 text-sm">
+              <span className="inline-flex items-center gap-2 rounded-full bg-moss/10 px-3 py-1.5 text-sm">
                 Delete this plan?
                 <button
                   type="button"
@@ -103,7 +103,7 @@ export default function PlanPage() {
                     clearCurrentPlan();
                     setConfirmClear(false);
                   }}
-                  className="font-semibold text-terracotta-dark hover:underline"
+                  className="font-semibold text-moss-strong hover:underline"
                 >
                   Yes
                 </button>
@@ -119,7 +119,7 @@ export default function PlanPage() {
               <button
                 type="button"
                 onClick={() => setConfirmClear(true)}
-                className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-terracotta-dark transition-colors hover:bg-terracotta/10"
+                className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-moss-strong transition-colors hover:bg-moss/10"
               >
                 <TrashIcon className="h-4 w-4" /> Delete
               </button>

@@ -136,7 +136,7 @@ export default function RecipePicker({
                     className="h-9 w-9 shrink-0 rounded-lg object-cover"
                   />
                 ) : (
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-olive/15">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-moss/12">
                     <BowlIcon className="h-5 w-5 opacity-80" />
                   </span>
                 )}
@@ -149,7 +149,7 @@ export default function RecipePicker({
                   {(r.category || !fits) && (
                     <span className="mt-0.5 flex flex-wrap gap-1">
                       {r.category && (
-                        <span className="rounded-full bg-terracotta/10 px-1.5 py-0 text-[10px] font-medium text-terracotta-dark">
+                        <span className="rounded-full bg-moss/10 px-1.5 py-0 text-[10px] font-medium text-moss-strong">
                           {r.category}
                         </span>
                       )}
