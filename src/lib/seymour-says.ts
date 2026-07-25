@@ -189,3 +189,21 @@ export function seymourSays({ recipes, now = new Date() }: SeymourInput): Seymou
 
   return undefined;
 }
+
+/**
+ * What Seymour says when you finish cooking something.
+ *
+ * Cook mode ends on a threshold — you're done, hands free, nothing left to
+ * do — which is exactly where he's allowed to speak. Unlike `seymourSays`
+ * this always returns a line: you asked for this screen and then finished it,
+ * so silence would read as the app failing rather than as restraint.
+ *
+ * `count` is the tally *including* the cook that just happened.
+ */
+export function cookModeSignOff(count: number): string {
+  if (count <= 1) return "First time. I'll remember it.";
+  if (count === 2) return 'Twice now. It must have gone well.';
+  if (count >= 25) return `${count} times. This one is yours.`;
+  if (count >= 10) return `${count} times. You know this one by heart.`;
+  return `${count} times now.`;
+}
