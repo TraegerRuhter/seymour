@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { setRecipeNotes, setRecipeRating } from '../src/lib/actions.ts';
+import { logCook, setRecipeNotes, setRecipeRating, undoLastCook } from '../src/lib/actions.ts';
 import { useRecipeStore } from '../src/lib/stores.ts';
 import type { Recipe } from '../src/lib/types.ts';
 
@@ -72,4 +72,41 @@ test('setRecipeNotes with blank text clears notes rather than storing whitespace
 test('setRecipeNotes on a nonexistent recipe is a no-op, not a crash', () => {
   seedRecipe();
   assert.doesNotThrow(() => setRecipeNotes('does-not-exist', 'hello'));
+});
+
+test('logCook records a cook event and stamps updatedAt', () => {
+  seedRecipe();
+  logCook('r1', new Date('2026-05-01T18:00:00.000Z'));
+  const saved = useRecipeStore.getState().recipes.r1;
+  assert.deepEqual(saved.cookedAt, ['2026-05-01T18:00:00.000Z']);
+  assert.ok(saved.updatedAt);
+});
+
+test('logCook accumulates across separate cooks, kept in order', () => {
+  seedRecipe();
+  logCook('r1', new Date('2026-05-03T18:00:00.000Z'));
+  logCook('r1', new Date('2026-05-01T18:00:00.000Z'));
+  assert.deepEqual(useRecipeStore.getState().recipes.r1.cookedAt, [
+    '2026-05-01T18:00:00.000Z',
+    '2026-05-03T18:00:00.000Z',
+  ]);
+});
+
+test('undoLastCook removes only the most recent cook', () => {
+  seedRecipe({ cookedAt: ['2026-05-01T18:00:00.000Z', '2026-05-03T18:00:00.000Z'] });
+  undoLastCook('r1');
+  assert.deepEqual(useRecipeStore.getState().recipes.r1.cookedAt, ['2026-05-01T18:00:00.000Z']);
+});
+
+test('undoing the only cook clears the field rather than leaving an empty array', () => {
+  seedRecipe({ cookedAt: ['2026-05-01T18:00:00.000Z'] });
+  undoLastCook('r1');
+  assert.equal(useRecipeStore.getState().recipes.r1.cookedAt, undefined);
+});
+
+test('logging or undoing an unknown recipe is a no-op, not a crash', () => {
+  seedRecipe();
+  logCook('nope');
+  undoLastCook('nope');
+  assert.equal(useRecipeStore.getState().recipes.r1.cookedAt, undefined);
 });

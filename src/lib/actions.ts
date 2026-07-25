@@ -12,6 +12,7 @@ import {
   type Recipe,
 } from './types';
 import { parseIngredientLines } from './ingredient-parser';
+import { appendCook, removeLastCook } from './cook-log';
 import { suggestTags } from './auto-tag';
 import { buildShoppingList, mergeShoppingList } from './aggregate';
 import { normalizeIngredientName } from './normalize';
@@ -205,6 +206,36 @@ export function setRecipeRating(id: string, rating: number | undefined): void {
   const clamped =
     rating == null ? undefined : Math.min(5, Math.max(0.5, Math.round(rating * 2) / 2));
   const stamped: Recipe = { ...recipe, rating: clamped, updatedAt: new Date().toISOString() };
+  useRecipeStore.getState().updateRecipe(stamped);
+  void pushRecipe(stamped);
+}
+
+/**
+ * Records that a recipe was actually cooked, right now. The one place the app
+ * learns something no amount of planning tells it: what you really eat.
+ */
+export function logCook(id: string, at: Date = new Date()): void {
+  const recipe = useRecipeStore.getState().recipes[id];
+  if (!recipe) return;
+  const stamped: Recipe = {
+    ...recipe,
+    cookedAt: appendCook(recipe.cookedAt, at.toISOString()),
+    updatedAt: new Date().toISOString(),
+  };
+  useRecipeStore.getState().updateRecipe(stamped);
+  void pushRecipe(stamped);
+}
+
+/** Undoes the most recent cook — for the inevitable mis-tap. */
+export function undoLastCook(id: string): void {
+  const recipe = useRecipeStore.getState().recipes[id];
+  if (!recipe || !recipe.cookedAt?.length) return;
+  const remaining = removeLastCook(recipe.cookedAt);
+  const stamped: Recipe = {
+    ...recipe,
+    cookedAt: remaining.length > 0 ? remaining : undefined,
+    updatedAt: new Date().toISOString(),
+  };
   useRecipeStore.getState().updateRecipe(stamped);
   void pushRecipe(stamped);
 }

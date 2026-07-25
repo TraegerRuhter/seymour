@@ -1,4 +1,5 @@
 import { getSupabaseClient } from './supabase';
+import { mergeCookLogs } from './cook-log';
 import {
   useAuthUserStore,
   usePantryStore,
@@ -83,6 +84,7 @@ interface RecipeRow {
   cook_time_minutes: number | null;
   rating: number | null;
   notes: string | null;
+  cooked_at: string[] | null;
   updated_at: string;
 }
 
@@ -101,6 +103,7 @@ function rowToRecipe(row: RecipeRow): Recipe {
     cookTimeMinutes: row.cook_time_minutes ?? undefined,
     rating: row.rating ?? undefined,
     notes: row.notes ?? undefined,
+    cookedAt: row.cooked_at ?? undefined,
     updatedAt: row.updated_at,
   };
 }
@@ -121,6 +124,7 @@ function recipeToRow(userId: string, recipe: Recipe) {
     cook_time_minutes: recipe.cookTimeMinutes ?? null,
     rating: recipe.rating ?? null,
     notes: recipe.notes ?? null,
+    cooked_at: recipe.cookedAt ?? null,
     // updated_at is intentionally omitted — the server trigger sets it.
   };
 }
@@ -246,10 +250,24 @@ export async function pullRecipes(): Promise<void> {
 
     const winner = resolveLastWriteWins(local, remote);
     if (!winner) continue;
+
+    // Cook events are append-only facts, so the log unions instead of
+    // following last-write-wins like every other field: two devices that each
+    // recorded a dinner while offline would otherwise silently drop one of
+    // them. The union is a superset of both sides, so a longer result means
+    // the losing side knew about a cook the winner didn't.
+    const cookedAt =
+      local && remote ? mergeCookLogs(local.cookedAt, remote.cookedAt) : winner.cookedAt;
+    const merged = cookedAt?.length ? { ...winner, cookedAt } : winner;
+    const gained = (side: Recipe | undefined) =>
+      (cookedAt?.length ?? 0) > (side?.cookedAt?.length ?? 0);
+
     if (winner === remote && winner !== local) {
-      addRecipe(winner);
+      addRecipe(merged);
+      if (gained(remote)) void pushRecipe(merged);
     } else if (winner === local && winner !== remote) {
-      void pushRecipe(winner);
+      void pushRecipe(merged);
+      if (gained(local)) addRecipe(merged);
     }
   }
 }

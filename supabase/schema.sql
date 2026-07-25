@@ -52,6 +52,10 @@ create table if not exists public.recipes (
   cook_time_minutes integer,
   rating numeric,
   notes text,
+  -- Every time this recipe was actually cooked, as ISO timestamps ascending.
+  -- Append-only: sync unions the two sides rather than last-write-wins, so a
+  -- dinner recorded offline on one device is never dropped by another.
+  cooked_at jsonb,
   updated_at timestamptz not null default now(),
   primary key (user_id, id)
 );
@@ -61,6 +65,7 @@ create table if not exists public.recipes (
 -- these explicitly. Safe to re-run.
 alter table public.recipes add column if not exists rating numeric;
 alter table public.recipes add column if not exists notes text;
+alter table public.recipes add column if not exists cooked_at jsonb;
 
 alter table public.recipes enable row level security;
 
