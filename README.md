@@ -29,8 +29,11 @@ everything else runs client-side and works offline as an installable PWA.
   entry gets an image field that accepts a URL, a pasted clipboard image (⌘/Ctrl+V), a
   drag-and-drop, or a file picker — pasted/dropped images are stored as data URLs, no
   server upload needed. Either way you review and edit before saving.
-- **Recipe library** — glassmorphism card grid or compact list, live title search, detail
-  view with print styles, edit and delete (with confirmation). Recipes can be tagged with
+- **Recipe library** — a box of index cards (or a compact list), live title search, detail
+  view with print styles, edit and delete (with confirmation). Cards are printed stock in
+  light mode and a kitchen chalkboard in dark, and they **wear with use** — a card you cook
+  from often picks up coffee rings and thumb smudges, driven by its cook log rather than by
+  decoration. Recipes can be tagged with
   which meals they suit (breakfast/lunch/dinner/snack), a free-text category (Soup, Salad,
   Dessert…), a main ingredient (for the plan generator's variety control), and a cook time —
   all optional, shown as badges on the card and detail view.
@@ -66,13 +69,29 @@ everything else runs client-side and works offline as an installable PWA.
   re-aggregation.
 - **Auto re-aggregation** — the list rebuilds whenever the plan or collection changes
   (regenerate, delete, edit…), carrying over checked state and manual edits.
+- **Cook log** — a "Cooked it" button records *when* you actually cooked something, as an
+  append-only list of timestamps. This is the one piece of data the app collects about you
+  that isn't intent or inventory, and several things downstream read from it: card wear, the
+  dashboard's remarks, and each recipe's "made 4 times · last Tuesday" line. Because cooks
+  are facts rather than settings, sync **unions** two devices' logs instead of letting the
+  later write win.
+- **Cook mode** — `/recipes/[id]/cook` walks you through one step at a time at a size you
+  can read from across a worktop, holds the screen awake (Wake Lock, where supported), and
+  keeps the ingredients one tap away. Reaching the end logs the cook for you.
+- **Seymour says** — one contextual line on the dashboard, chosen by ordered rules over your
+  own history. No model, no network, no randomness: every line is earned by something that
+  actually happened, and saying nothing is a common and valid outcome.
+- **Time-of-day awareness** — today's meals are ordered by the clock, so at 5pm dinner leads
+  instead of coming third. The leading card is marked "now" or "next" depending on which is
+  actually true.
 - **Backup** — Settings offers full JSON export and validated import. Both the exported bundle
   and the underlying IndexedDB stores carry a schema version and a migration path, so
   existing recipes/plans and old backup files keep working across app upgrades instead of
   silently resetting (see `src/lib/stores.ts` and `migrateBundle` in `src/lib/actions.ts`).
-- **Dark mode** — light / dark / system theme (Settings → Appearance). The palette is driven
-  by CSS variables, the choice persists in localStorage, a pre-hydration script prevents a
-  light flash, and "system" tracks OS changes live. Printing always uses the light palette.
+- **Dark mode** — light / dark / system theme (Settings → Appearance). Every colour is a CSS
+  variable, so both themes flip from one place; the choice persists in localStorage, a
+  pre-hydration script prevents a light flash, and "system" tracks OS changes live. Printing
+  always uses the light palette.
 - **PWA** — installable, offline-capable (library, plan, and list work without network;
   parsing requires connectivity), viewed recipe images are cached.
 - **Accounts & sync** *(optional)* — sign in to sync your recipes, plan, and shopping list
@@ -83,6 +102,27 @@ everything else runs client-side and works offline as an installable PWA.
 
 Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS · Framer Motion ·
 Zustand (persisted to IndexedDB via localforage) · nanoid · Supabase (optional, for accounts + sync)
+
+## Design
+
+Two documents drive how this looks and how it talks, and they're worth reading before
+changing either:
+
+- **[`docs/design-prospectus.md`](docs/design-prospectus.md)** — the diagnosis and the plan.
+  It starts from a specific complaint (the app worked, but felt like a calculator), names
+  what makes generated interfaces look generated, picks a direction — *the recipe box:
+  material, tactile, worn* — and lists the interventions with a status column so it's clear
+  what's been done.
+- **[`docs/voice.md`](docs/voice.md)** — how Seymour talks, and more importantly *where he's
+  allowed to*. The rule is **personality at the thresholds, never on the work surfaces**:
+  empty states and a finished shopping list get a remark; the recipe form, an ingredient
+  list you're reading with flour on your hands, and any error you need to act on stay plain.
+  If a joke makes an error less actionable, the joke loses.
+
+The type is Fraunces (display), Karla (text) and Courier Prime (the index cards' metadata).
+The palette is deep botanical green on bone with one acidic accent, defined once in
+`src/app/globals.css`; `tests/palette.test.ts` parses those tokens and holds every rendered
+pairing to WCAG AA in both themes, so a colour tweak that breaks contrast fails the build.
 
 ## Getting started
 
@@ -158,7 +198,9 @@ npm test
 ```
 
 Unit tests (Node's built-in runner via `tsx`) cover the ingredient parser, unit
-conversion/formatting, the aggregation engine, and the seeded plan generator.
+conversion/formatting, the aggregation engine, the seeded plan generator, the cook log and
+its merge behaviour, Seymour's rules, the time-of-day ordering, URL/redirect safety, and the
+palette's contrast ratios.
 
 For the full pre-merge validation suite, run:
 
@@ -172,7 +214,9 @@ pull requests.
 
 End-to-end tests (Playwright, under `e2e/`) drive a real browser through the
 core flows — adding a recipe, generating a plan and reordering it by drag,
-the shopping list, and settings — against `next dev`. They're hermetic (no
+the shopping list, settings, cook mode, the index cards' wear, and the
+clock-dependent behaviour (with both the clock and the timezone pinned, so
+they don't drift on a CI runner elsewhere) — against `next dev`. They're hermetic (no
 network calls, no API keys) so they run the same locally and in CI:
 
 ```bash
@@ -184,10 +228,15 @@ via `npx playwright install --with-deps chromium` first.
 
 ## Architecture notes
 
-- **Thin backend, rich client** — the only server code is `/api/parse`. All state lives in
-  three Zustand stores persisted to IndexedDB (`src/lib/stores.ts`); cross-store
-  orchestration (delete cascades, list re-aggregation) is centralized in
-  `src/lib/actions.ts`.
+- **Thin backend, rich client** — the server code is four routes: recipe parsing (`/api/parse`,
+  `/api/parse-text`), Discover (`/api/discover`), and the Supabase auth callback. State lives in
+  Zustand stores persisted to IndexedDB (`src/lib/stores.ts`); cross-store orchestration
+  (delete cascades, list re-aggregation, cook logging) is centralized in
+  `src/lib/actions.ts`, which is also the single place sync hooks into.
+- **Events, not just state** — `cookedAt` is an append-only list of timestamps rather than a
+  `timesCooked` counter, which is what makes union-merging two devices correct instead of
+  lossy. `src/lib/cook-log.ts` is pure and dependency-free; everything that reacts to
+  cooking (wear, remarks, tallies) derives from it rather than storing its own copy.
 - **Parsing pipeline** — the prospectus suggested the `recipe-scraper` npm package; it is
   unmaintained, so the same mechanism it used is implemented natively in
   `src/lib/scrape.ts`: fetch the page and read the schema.org `Recipe` JSON-LD that
