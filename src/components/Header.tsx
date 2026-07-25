@@ -1,10 +1,16 @@
 import Link from 'next/link';
 import Logo from './Logo';
 
-/** Slim top bar with Seymour's mascot and wordmark. */
+/**
+ * Slim top bar with Seymour's mascot and wordmark.
+ *
+ * `no-print` because a printed recipe shouldn't spend its first inch on a
+ * wordmark. The print rules can't simply hide every `<header>` — the recipe's
+ * own title lives in one.
+ */
 export default function Header() {
   return (
-    <header className="mx-auto flex w-full max-w-6xl items-center px-4 pt-[calc(2rem_+_var(--safe-top))] lg:px-8 lg:pt-6">
+    <header className="no-print mx-auto flex w-full max-w-6xl items-center px-4 pt-[calc(2rem_+_var(--safe-top))] lg:px-8 lg:pt-6">
       <Link
         href="/"
         aria-label="Seymour home"
