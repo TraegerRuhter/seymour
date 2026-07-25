@@ -9,6 +9,7 @@ import SeymourSays from '@/components/SeymourSays';
 import ShoppingList from '@/components/ShoppingList';
 import { InboxIcon, DiceIcon, ChefPlantIcon, MEAL_TYPE_ICON } from '@/components/icons';
 import { seymourSays } from '@/lib/seymour-says';
+import { leadTiming, orderFromNow } from '@/lib/time-of-day';
 
 export default function DashboardPage() {
   const recipes = useRecipeStore((s) => s.recipes);
@@ -22,10 +23,16 @@ export default function DashboardPage() {
   const remaining = useMemo(() => items.filter((i) => !i.checked).length, [items]);
   const line = useMemo(() => seymourSays({ recipes: recipeList }), [recipeList]);
   const today = useMemo(() => plan?.find((d) => d.date === toLocalDateString(new Date())), [plan]);
+  // Ordered by the clock rather than by the plan: at 5pm the useful answer is
+  // dinner, and it used to be third in a row of four. Computed at render,
+  // which is safe here because AppProviders holds children back until after
+  // hydration — there is no server pass to disagree with.
   const todayMeals = useMemo(
-    () => today?.meals.filter((m) => m.recipeId && recipes[m.recipeId]) ?? [],
+    () =>
+      orderFromNow(today?.meals.filter((m) => m.recipeId && recipes[m.recipeId]) ?? [], new Date()),
     [recipes, today],
   );
+  const leading = useMemo(() => leadTiming(todayMeals[0]?.type, new Date()), [todayMeals]);
 
   return (
     <div className="space-y-8">
@@ -48,14 +55,20 @@ export default function DashboardPage() {
         <section aria-label="Today's meals">
           <h2 className="mb-3 text-xl font-semibold">On the menu today</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {todayMeals.map((meal) => {
+            {todayMeals.map((meal, i) => {
               const recipe = recipes[meal.recipeId];
               const MealIcon = MEAL_TYPE_ICON[meal.type];
+              // Only the first card, and only when the clock actually backs it
+              // up — calling dinner "now" at 3pm is a small lie, and a label
+              // like this is worth nothing if you can't check it.
+              const timing = i === 0 ? leading : undefined;
               return (
                 <Link
                   key={meal.type}
                   href={`/recipes/${recipe.id}`}
-                  className="glass-card flex items-center gap-3 p-3 transition-shadow hover:shadow-card-hover"
+                  className={`glass-card flex items-center gap-3 p-3 transition-shadow hover:shadow-card-hover ${
+                    timing ? 'ring-1 ring-moss/40' : ''
+                  }`}
                 >
                   {recipe.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -71,8 +84,13 @@ export default function DashboardPage() {
                     </span>
                   )}
                   <div className="min-w-0">
-                    <p className="text-xs font-medium uppercase tracking-wide text-charcoal/40">
+                    <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/40">
                       {MEAL_TYPE_LABELS[meal.type]}
+                      {timing && (
+                        <span className="rounded-full bg-zest px-1.5 py-px text-[10px] font-bold tracking-wider text-zest-ink">
+                          {timing}
+                        </span>
+                      )}
                     </p>
                     <p className="truncate text-sm font-semibold">{recipe.title}</p>
                   </div>
