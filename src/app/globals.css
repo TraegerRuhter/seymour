@@ -568,6 +568,11 @@ h1 {
     border: none !important;
     backdrop-filter: none !important;
   }
+  /* The notes box is worth printing — an empty ruled space to write a verdict
+     in is the point of a paper recipe. Its placeholder is not. */
+  #recipe-notes::placeholder {
+    color: transparent;
+  }
   .print-serif {
     /* A printed recipe should look like the app it came out of, and Fraunces
        has an optical-size axis that holds up at body sizes on paper. */
