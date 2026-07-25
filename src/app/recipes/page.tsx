@@ -225,8 +225,8 @@ export default function RecipeLibraryPage() {
           <PlateIcon className="animate-float mx-auto h-16 w-16" />
           <p className="mt-3 text-charcoal/60">
             {hasActiveFilter
-              ? 'No recipes match these filters.'
-              : 'No recipes yet — add your first one to get started.'}
+              ? 'Nothing matches. Try fewer filters.'
+              : 'The box is empty. Add your first recipe.'}
           </p>
           {!hasActiveFilter && (
             <div className="mt-4 flex flex-wrap justify-center gap-3">

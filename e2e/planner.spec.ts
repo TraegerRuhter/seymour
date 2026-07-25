@@ -37,20 +37,28 @@ test.describe('Meal planner', () => {
     const handles = today.getByRole('button', { name: /Drag to move/ });
     await expect(handles).toHaveCount(3);
 
+    // dnd-kit measures drop-target rects asynchronously, so pressing keys on a
+    // fixed delay races that measurement — an ArrowDown that lands early finds
+    // no droppable under the cursor and the drop commits nothing. Its own
+    // announcements are the honest signal: it names the droppable it is
+    // currently over, so we wait for the drag to start (announced over
+    // itself), then for that announcement to change (moved onto a neighbour).
+    const announcement = page.locator('[id^="DndLiveRegion"]');
+
     await today.getByRole('button', { name: 'Drag to move Breakfast' }).focus();
     await page.keyboard.press('Space');
-    // dnd-kit measures drop-target rects asynchronously once the drag
-    // overlay mounts; waiting for it (rather than pressing immediately)
-    // avoids racing that measurement.
-    await expect(page.locator('.shadow-card-hover')).toBeVisible();
+    await expect(announcement).toContainText(/was moved over droppable area/i);
+    const atStart = await announcement.textContent();
+
     await page.keyboard.press('ArrowDown');
-    await page.waitForTimeout(100);
+    await expect(announcement).not.toHaveText(atStart ?? '');
     await page.keyboard.press('Space');
 
-    const labels = await handles.evaluateAll((els) =>
-      els.map((el) => el.getAttribute('aria-label')),
-    );
-    expect(labels).toEqual(['Drag to move Lunch', 'Drag to move Breakfast', 'Drag to move Dinner']);
+    // Polled rather than read once: the drop still has to round-trip through
+    // the store before the labels reflect the new order.
+    await expect
+      .poll(() => handles.evaluateAll((els) => els.map((el) => el.getAttribute('aria-label'))))
+      .toEqual(['Drag to move Lunch', 'Drag to move Breakfast', 'Drag to move Dinner']);
   });
 
   test('shuffle re-rolls the plan without erroring', async ({ page }) => {

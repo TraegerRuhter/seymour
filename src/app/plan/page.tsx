@@ -54,7 +54,7 @@ export default function PlanPage() {
         <div className="rounded-2xl border border-dashed border-charcoal/20 p-10 text-center">
           <PlanIcon className="animate-float mx-auto h-16 w-16" />
           <p className="mt-3 text-charcoal/60">
-            You need some recipes first —{' '}
+            I can&apos;t make a plan out of nothing —{' '}
             <Link href="/add" className="font-medium text-terracotta hover:underline">
               add a few
             </Link>{' '}

@@ -264,7 +264,7 @@ export default function SettingsPage() {
           </ul>
         ) : (
           <p className="text-sm text-charcoal/40">
-            Nothing yet — add staples like salt, flour, or olive oil.
+            Nothing on the rack yet — add staples like salt, flour, or olive oil.
           </p>
         )}
       </section>

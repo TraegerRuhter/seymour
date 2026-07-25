@@ -42,7 +42,7 @@ export default function RecipeDetailPage() {
   if (!recipe) {
     return (
       <div className="py-16 text-center">
-        <p className="text-charcoal/60">This recipe doesn&apos;t exist (anymore).</p>
+        <p className="text-charcoal/60">That recipe isn&apos;t here. Deleted, or possibly eaten.</p>
         <Link href="/recipes" className="btn-secondary mt-4">
           Back to library
         </Link>
