@@ -41,15 +41,13 @@ export default function BottomNav() {
                 href={tab.href}
                 aria-current={active ? 'page' : undefined}
                 className={`flex min-w-16 flex-col items-center gap-0.5 px-3 py-2.5 text-xs font-medium transition-colors lg:flex-row lg:gap-1.5 lg:rounded-full lg:px-4 lg:text-sm ${
-                  active
-                    ? 'text-terracotta lg:bg-terracotta/10'
-                    : 'text-charcoal/60 hover:text-charcoal'
+                  active ? 'text-moss lg:bg-moss/10' : 'text-charcoal/60 hover:text-charcoal'
                 }`}
               >
                 <span className="relative">
                   <tab.Icon className="h-6 w-6 lg:h-5 lg:w-5" />
                   {tab.href === '/shopping-list' && remaining > 0 && (
-                    <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-terracotta px-1 text-[10px] font-bold leading-none text-white">
+                    <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-moss px-1 text-[10px] font-bold leading-none text-white">
                       {remaining > 99 ? '99+' : remaining}
                     </span>
                   )}

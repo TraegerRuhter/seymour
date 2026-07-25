@@ -1,6 +1,6 @@
 /**
  * Seymour's custom icon set — flat, rounded, two-to-three tone illustrations in
- * the app palette (terracotta / olive / charcoal / cream), used everywhere an
+ * the app palette (moss / zest / charcoal / bone), used everywhere an
  * emoji used to be. All are 24×24 and sized by the caller via className.
  */
 import type { SVGProps, FC } from 'react';
@@ -8,14 +8,17 @@ import type { MealType } from '@/lib/types';
 
 export type IconComponent = FC<SVGProps<SVGSVGElement>>;
 
-// Palette (kept local so icons render identically in light and dark mode).
-const T = '#E07A5F'; // terracotta
-const TD = '#C96547'; // terracotta dark
-const O = '#81B29A'; // olive
-const OD = '#6A9A83'; // olive dark
-const C = '#2D2D2A'; // charcoal
-const K = '#FAF7F2'; // cream
-const M = '#5C2622'; // dark maw (matches the header/app-icon mascot's mouth)
+// Palette (kept local, and literal rather than tokenised, so the illustrations
+// render identically in light and dark mode instead of inverting with the
+// theme). These track the app tokens in globals.css by hand — if that palette
+// moves again, these move with it.
+const T = '#C05F42'; // clay — the pot, and warm accents
+const TD = '#A34630'; // clay, darker
+const O = '#5C9A80'; // moss, leaf weight
+const OD = '#3F7A66'; // moss, stem weight
+const C = '#171C18'; // ink
+const K = '#F2F0E8'; // bone
+const M = '#4A211D'; // dark maw (matches the header/app-icon mascot's mouth)
 
 type IconProps = SVGProps<SVGSVGElement>;
 

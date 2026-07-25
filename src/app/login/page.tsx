@@ -43,7 +43,7 @@ export default function LoginPage() {
         </p>
         <Link
           href="/settings"
-          className="inline-block text-sm font-medium text-terracotta hover:underline"
+          className="inline-block text-sm font-medium text-moss hover:underline"
         >
           Back to Settings
         </Link>
@@ -62,7 +62,7 @@ export default function LoginPage() {
       </header>
 
       {status === 'sent' ? (
-        <p role="status" className="rounded-xl bg-olive/15 px-4 py-3 text-sm text-olive-dark">
+        <p role="status" className="rounded-xl bg-moss/12 px-4 py-3 text-sm text-zest-strong">
           Check {email} for a sign-in link.
         </p>
       ) : (
@@ -85,7 +85,7 @@ export default function LoginPage() {
             {status === 'sending' ? 'Sending…' : 'Send magic link'}
           </button>
           {status === 'error' && (
-            <p role="alert" className="text-sm text-terracotta-dark">
+            <p role="alert" className="text-sm text-moss-strong">
               {errorMessage}
             </p>
           )}

@@ -61,7 +61,7 @@ export default function RecipeDetailPage() {
   return (
     <article className="mx-auto max-w-3xl print-serif">
       <div className="no-print mb-4">
-        <Link href="/recipes" className="text-sm font-medium text-terracotta hover:underline">
+        <Link href="/recipes" className="text-sm font-medium text-moss hover:underline">
           ← Back to library
         </Link>
       </div>
@@ -86,7 +86,7 @@ export default function RecipeDetailPage() {
             recipe.mealTypes?.length) && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {recipe.category && (
-                <span className="rounded-full bg-terracotta/10 px-2.5 py-1 text-xs font-medium text-terracotta-dark">
+                <span className="rounded-full bg-moss/10 px-2.5 py-1 text-xs font-medium text-moss-strong">
                   {recipe.category}
                 </span>
               )}
@@ -96,14 +96,14 @@ export default function RecipeDetailPage() {
                 </span>
               )}
               {recipe.cookTimeMinutes != null && (
-                <span className="rounded-full bg-olive/10 px-2.5 py-1 text-xs font-medium text-olive-dark">
+                <span className="rounded-full bg-moss/10 px-2.5 py-1 text-xs font-medium text-zest-strong">
                   {recipe.cookTimeMinutes} min
                 </span>
               )}
               {recipe.mealTypes?.map((t) => (
                 <span
                   key={t}
-                  className="rounded-full bg-olive/10 px-2.5 py-1 text-xs font-medium text-olive-dark"
+                  className="rounded-full bg-moss/10 px-2.5 py-1 text-xs font-medium text-zest-strong"
                 >
                   {MEAL_TYPE_LABELS[t]}
                 </span>
@@ -122,7 +122,7 @@ export default function RecipeDetailPage() {
             })}
           </p>
           {cooks > 0 && (
-            <p className="mt-1 text-sm font-medium text-olive-dark">
+            <p className="mt-1 text-sm font-medium text-zest-strong">
               Made {cooks === 1 ? 'once' : `${cooks} times`} · last {lastCooked.toLowerCase()}
             </p>
           )}
@@ -149,7 +149,7 @@ export default function RecipeDetailPage() {
                     undoLastCook(recipe.id);
                     setJustCooked(false);
                   }}
-                  className="font-medium text-terracotta hover:underline"
+                  className="font-medium text-moss hover:underline"
                 >
                   Undo
                 </button>
@@ -176,12 +176,12 @@ export default function RecipeDetailPage() {
               Print
             </button>
             {confirming ? (
-              <span className="inline-flex items-center gap-2 rounded-full bg-terracotta/10 px-3 py-1.5 text-sm">
+              <span className="inline-flex items-center gap-2 rounded-full bg-clay/10 px-3 py-1.5 text-sm">
                 Delete this recipe?
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="font-semibold text-terracotta-dark hover:underline"
+                  className="font-semibold text-clay hover:underline"
                 >
                   Yes, delete
                 </button>
@@ -197,7 +197,7 @@ export default function RecipeDetailPage() {
               <button
                 type="button"
                 onClick={() => setConfirming(true)}
-                className="rounded-full px-4 py-1.5 text-sm font-medium text-terracotta-dark transition-colors hover:bg-terracotta/10"
+                className="rounded-full px-4 py-1.5 text-sm font-medium text-clay transition-colors hover:bg-clay/10"
               >
                 Delete
               </button>
@@ -211,11 +211,11 @@ export default function RecipeDetailPage() {
         <ul className="mt-3 space-y-2">
           {recipe.ingredients.map((ing, i) => (
             <li key={i} className="flex items-start gap-2">
-              <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-olive" />
+              <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-moss" />
               <span>
                 {ing.originalString}
                 {ing.quantity > 0 && (
-                  <span className="ml-2 whitespace-nowrap rounded-full bg-olive/15 px-2 py-0.5 text-xs text-charcoal/70">
+                  <span className="ml-2 whitespace-nowrap rounded-full bg-moss/12 px-2 py-0.5 text-xs text-charcoal/70">
                     {formatQuantity(ing.quantity)} {displayUnit(ing.unit, ing.quantity) || '×'}
                   </span>
                 )}
@@ -233,7 +233,7 @@ export default function RecipeDetailPage() {
               <li key={i} className="flex gap-3">
                 <span
                   aria-hidden
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-terracotta/10 text-sm font-semibold text-terracotta-dark"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-moss/10 text-sm font-semibold text-moss-strong"
                 >
                   {i + 1}
                 </span>

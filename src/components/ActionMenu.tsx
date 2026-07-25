@@ -8,7 +8,7 @@ export interface ActionMenuItem {
   label: string;
   icon?: IconComponent;
   onSelect: () => void;
-  /** 'danger' renders in terracotta for destructive actions. */
+  /** 'danger' renders in clay — the only hue reserved for destructive actions. */
   tone?: 'default' | 'danger';
 }
 
@@ -109,7 +109,7 @@ export default function ActionMenu({
                     setOpen(false);
                   }}
                   className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-charcoal/5 ${
-                    item.tone === 'danger' ? 'text-terracotta-dark' : 'text-charcoal'
+                    item.tone === 'danger' ? 'text-clay' : 'text-charcoal'
                   }`}
                 >
                   {Icon && <Icon className="h-4 w-4 shrink-0" />}

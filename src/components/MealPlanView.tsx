@@ -111,7 +111,7 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
             <button
               type="button"
               onClick={() => setPicking(true)}
-              className="text-sm font-medium text-terracotta hover:underline"
+              className="text-sm font-medium text-moss hover:underline"
             >
               Pick manually
             </button>
@@ -158,7 +158,7 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
               className="h-11 w-11 shrink-0 rounded-lg object-cover"
             />
           ) : (
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-olive/15">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-moss/12">
               <MealIcon className="h-6 w-6" />
             </span>
           )}
@@ -177,7 +177,7 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
             type="button"
             aria-label={`Shuffle ${label} to a different recipe`}
             onClick={() => shuffleSlot(dayIndex, mealIndex)}
-            className="rounded-lg p-1.5 text-charcoal/40 transition-colors hover:bg-olive/15 hover:text-charcoal"
+            className="rounded-lg p-1.5 text-charcoal/40 transition-colors hover:bg-moss/12 hover:text-charcoal"
           >
             <ShuffleIcon className="h-4 w-4" />
           </button>
@@ -256,7 +256,7 @@ function ServingsStepper({
           type="button"
           aria-label="Fewer servings"
           onClick={() => setSlotScale(dayIndex, mealIndex, scale - step)}
-          className="grid h-full w-6 place-items-center text-charcoal/50 transition-colors hover:bg-olive/15 hover:text-charcoal"
+          className="grid h-full w-6 place-items-center text-charcoal/50 transition-colors hover:bg-moss/12 hover:text-charcoal"
         >
           −
         </button>
@@ -267,7 +267,7 @@ function ServingsStepper({
           type="button"
           aria-label="More servings"
           onClick={() => setSlotScale(dayIndex, mealIndex, scale + step)}
-          className="grid h-full w-6 place-items-center text-charcoal/50 transition-colors hover:bg-olive/15 hover:text-charcoal"
+          className="grid h-full w-6 place-items-center text-charcoal/50 transition-colors hover:bg-moss/12 hover:text-charcoal"
         >
           +
         </button>
@@ -312,7 +312,7 @@ function AddMeal({ dayIndex }: { dayIndex: number }) {
             addMealToDay(dayIndex, t);
             setChoosing(false);
           }}
-          className="rounded-full border border-charcoal/15 bg-surface/70 px-2.5 py-1 text-xs font-medium text-charcoal/70 transition-colors hover:bg-olive hover:text-white"
+          className="rounded-full border border-charcoal/15 bg-surface/70 px-2.5 py-1 text-xs font-medium text-charcoal/70 transition-colors hover:bg-zest hover:text-zest-ink"
         >
           {MEAL_TYPE_LABELS[t]}
         </button>
@@ -444,7 +444,7 @@ export default function MealPlanView() {
             animate="animate"
             transition={{ ...enter, delay: Math.min(dayIndex * 0.04, 0.3) }}
             className={`glass-card w-72 shrink-0 snap-start p-4 lg:w-auto ${
-              day.date === todayStr ? 'ring-2 ring-terracotta/60' : ''
+              day.date === todayStr ? 'ring-2 ring-moss/60' : ''
             }`}
           >
             <h3 className="mb-3 font-semibold">{dayHeading(day.date)}</h3>
@@ -456,7 +456,7 @@ export default function MealPlanView() {
         {activeSlot && (
           <div className="flex items-center gap-2 rounded-xl bg-surface p-3 shadow-card-hover">
             {ActiveMealIcon && (
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-olive/15">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-moss/12">
                 <ActiveMealIcon className="h-5 w-5" />
               </span>
             )}

@@ -6,20 +6,22 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Semantic tokens driven by CSS variables (see globals.css) so the
+        // Every token is driven by a CSS variable (see globals.css) so the
         // whole palette flips in dark mode while alpha utilities keep working.
-        cream: 'rgb(var(--color-bg) / <alpha-value>)',
+        // `-strong` is the text weight of a hue; the base is its fill weight.
+        bone: 'rgb(var(--color-bg) / <alpha-value>)',
         charcoal: 'rgb(var(--color-ink) / <alpha-value>)',
         surface: 'rgb(var(--color-surface) / <alpha-value>)',
-        terracotta: {
-          DEFAULT: '#E07A5F',
-          dark: '#C96547',
-          light: '#F2A48D',
+        moss: {
+          DEFAULT: 'rgb(var(--color-moss) / <alpha-value>)',
+          strong: 'rgb(var(--color-moss-strong) / <alpha-value>)',
         },
-        olive: {
-          DEFAULT: '#81B29A',
-          dark: '#6A9A83',
+        zest: {
+          DEFAULT: 'rgb(var(--color-zest) / <alpha-value>)',
+          strong: 'rgb(var(--color-zest-strong) / <alpha-value>)',
+          ink: 'rgb(var(--color-zest-ink) / <alpha-value>)',
         },
+        clay: 'rgb(var(--color-clay) / <alpha-value>)',
       },
       fontFamily: {
         // All three are loaded via next/font in layout.tsx; the stacks after

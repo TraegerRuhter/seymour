@@ -53,7 +53,7 @@ export default function StarRating({
                   onFocus={() => setHover(star - 0.5)}
                   onBlur={() => setHover(null)}
                   onClick={() => onChange?.(value === star - 0.5 ? undefined : star - 0.5)}
-                  className="absolute inset-y-0 left-0 w-1/2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta/60"
+                  className="absolute inset-y-0 left-0 w-1/2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss/60"
                 />
                 <button
                   type="button"
@@ -62,7 +62,7 @@ export default function StarRating({
                   onFocus={() => setHover(star)}
                   onBlur={() => setHover(null)}
                   onClick={() => onChange?.(value === star ? undefined : star)}
-                  className="absolute inset-y-0 right-0 w-1/2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta/60"
+                  className="absolute inset-y-0 right-0 w-1/2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss/60"
                 />
               </>
             )}

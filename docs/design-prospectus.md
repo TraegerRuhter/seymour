@@ -195,20 +195,20 @@ codebase is already good at.
 
 Rough sizing. `S` = an afternoon, `M` = a day or two, `L` = a real project.
 
-| # | Move | Size | Payoff |
-|---|---|---|---|
-| 1 | **Voice pass over every string.** Empty states, errors, confirmations, the 404. Currently all neutral-competent. Cheapest personality in the app. | S | High |
-| 2 | **The 404 page.** Free canvas, currently wasted. A hungry plant that ate the page. | S | Med |
-| 3 | **Cook log** (`Cooked it` button + history). See §5. | M | Very high |
-| 4 | **Growth stages for the mascot** tied to collection size / cook streak. | M | High |
-| 5 | **Retire Inter.** A display face with a point of view is the fastest way to stop looking generated. | S | High |
-| 6 | **Repalette.** Move off cream+terracotta. Deep botanical green, bone, one acidic accent. | M | High |
-| 7 | **Break the five-identical-screens pattern.** Let the plan look like a week, the list look like a list, the recipe look like a card. | L | High |
-| 8 | **Time-of-day awareness.** The app knows it's 5pm; it could lead with dinner. Almost nothing does this well and it's nearly free. | S | Med |
-| 9 | **"Seymour says"** — one contextual, opinionated line on the dashboard, driven by rules over your own data. Enormous personality-per-byte. | M | High |
-| 10 | **Reactive motion at thresholds** — a chomp when the last item is checked off, a lean when a plan lands. Replace generic fade-rise. | M | Med |
-| 11 | **Cook mode** — the guided, hands-messy cooking view (big type, screen stays awake, one step at a time). Genuinely useful *and* a threshold moment. | L | High |
-| 12 | **Wear/patina on recipe cards** driven by cook count. | M | Med |
+| # | Move | Size | Payoff | Status |
+|---|---|---|---|---|
+| 1 | **Voice pass over every string.** Empty states, errors, confirmations, the 404. Currently all neutral-competent. Cheapest personality in the app. | S | High | shipped (#71) |
+| 2 | **The 404 page.** Free canvas, currently wasted. A hungry plant that ate the page. | S | Med | shipped (#71) |
+| 3 | **Cook log** (`Cooked it` button + history). See §5. | M | Very high | shipped (#68) |
+| 4 | **Growth stages for the mascot** tied to collection size / cook streak. | M | High | — |
+| 5 | **Retire Inter.** A display face with a point of view is the fastest way to stop looking generated. | S | High | shipped (#72) |
+| 6 | **Repalette.** Move off cream+terracotta. Deep botanical green, bone, one acidic accent. | M | High | shipped (this PR) |
+| 7 | **Break the five-identical-screens pattern.** Let the plan look like a week, the list look like a list, the recipe look like a card. | L | High | — |
+| 8 | **Time-of-day awareness.** The app knows it's 5pm; it could lead with dinner. Almost nothing does this well and it's nearly free. | S | Med | — |
+| 9 | **"Seymour says"** — one contextual, opinionated line on the dashboard, driven by rules over your own data. Enormous personality-per-byte. | M | High | shipped (#70) |
+| 10 | **Reactive motion at thresholds** — a chomp when the last item is checked off, a lean when a plan lands. Replace generic fade-rise. | M | Med | — |
+| 11 | **Cook mode** — the guided, hands-messy cooking view (big type, screen stays awake, one step at a time). Genuinely useful *and* a threshold moment. | L | High | — |
+| 12 | **Wear/patina on recipe cards** driven by cook count. | M | Med | shipped (#69) |
 
 ---
 
