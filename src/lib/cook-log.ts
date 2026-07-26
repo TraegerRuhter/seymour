@@ -102,3 +102,19 @@ export function describeCookCount(count: number): string {
   if (count <= 0) return 'Never made';
   return `${count} ×`;
 }
+
+/**
+ * Picks one of four mark placements from the recipe id, so two equally-worn
+ * recipes don't carry identical stains. Deterministic: the same recipe always
+ * wears the same way, rather than reshuffling on every render.
+ *
+ * Lives here rather than in a component because two surfaces read it — the
+ * card in the library and the opened sheet on the detail page — and a recipe
+ * that stains differently depending on which one you're looking at would give
+ * the whole conceit away.
+ */
+export function markVariant(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) % 100000;
+  return hash % 4;
+}

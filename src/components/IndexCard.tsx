@@ -9,6 +9,7 @@ import {
   describeCookCount,
   describeLastCooked,
   lastCookedAt,
+  markVariant,
   wearLevel,
 } from '@/lib/cook-log';
 import { displayUnit, formatQuantity } from '@/lib/units';
@@ -28,17 +29,6 @@ import { MEAL_TYPE_LABELS } from '@/lib/plan';
 
 /** Ingredients shown before the card falls back to "+ N more". */
 const PREVIEW_LINES = 4;
-
-/**
- * Picks one of four mark placements from the recipe id, so two equally-worn
- * cards don't carry identical stains. Deterministic: the same recipe always
- * wears the same way, rather than reshuffling on every render.
- */
-function markVariant(id: string): number {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) % 100000;
-  return hash % 4;
-}
 
 export default function IndexCard({ recipe }: { recipe: Recipe }) {
   const cooks = cookCount(recipe);

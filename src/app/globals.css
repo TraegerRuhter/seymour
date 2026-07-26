@@ -175,16 +175,20 @@ h1 {
    The recipe box — index cards (light) / kitchen chalkboard (dark)
    --------------------------------------------------------------------------
    Deliberately scoped to `.index-card` rather than the global palette: this
-   is the first surface in the "Recipe Box" direction (see
-   docs/design-prospectus.md §4B), and the rest of the app stays on the
-   existing palette until this has earned its place.
+   is the "Recipe Box" material (see docs/design-prospectus.md §4B), and the
+   rest of the app stays on the existing palette.
+
+   Two surfaces share it, and share these tokens rather than each carrying a
+   copy: `.index-card` is a card in the box, `.recipe-sheet` is the same card
+   pulled out and opened up. If the stock changes, it changes in one place.
 
    The whole material flips on one axis. In light it's paper: dark marks
    multiplied onto light stock. In dark it's a chalkboard: light marks
    screened onto slate. Same rule underneath — use leaves a mark — which is
    why wear survives the theme switch instead of being a light-mode flourish.
    ========================================================================== */
-.index-card {
+.index-card,
+.recipe-sheet {
   /* Height of the ruled header zone. The body ruling and the red margin rule
      are absolutely positioned, so they read this rather than each carrying
      their own literal — otherwise the ingredient rows drift off their lines
@@ -205,7 +209,8 @@ h1 {
   --tape: 255 250 226;
 }
 
-.dark .index-card {
+.dark .index-card,
+.dark .recipe-sheet {
   --stock: #202826;
   --stock-ink: #e9e7de;
   --stock-ink-soft: #98a19b;
@@ -517,8 +522,273 @@ h1 {
 }
 
 /* Print: the card should read as a clean recipe card, not a worn one. */
+/* ==========================================================================
+   The opened card — the recipe detail page
+   --------------------------------------------------------------------------
+   Same stock as `.index-card`, at reading size. The library was a box of index
+   cards and tapping one landed you on a generic rounded panel, which is the
+   exact seam this material was meant to remove.
+
+   The ruling here is decorative rather than a grid the text sits on. On the
+   small card the ingredient rows are a fixed 26px and can be aligned to the
+   lines; a detail page has wrapping ingredients, multi-line steps and a
+   textarea, so pinning everything to a 26px rhythm would either clip text or
+   force a line-height nobody can read a recipe in. Legibility wins; the paper
+   is the point, not the graph paper.
+   ========================================================================== */
+.recipe-sheet {
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  background-color: var(--stock);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  background-blend-mode: var(--grain-blend);
+  color: var(--stock-ink);
+  box-shadow:
+    0 1px 1px rgb(0 0 0 / 0.16),
+    0 10px 28px rgb(0 0 0 / 0.16);
+}
+
+/* The red margin rule, under the title block. Driven by a variable for the
+   same reason the card's is: two absolutely-positioned rules and a padding
+   that must agree, and they will drift apart if each carries its own number. */
+.recipe-sheet {
+  --rs-head-h: 8.5rem;
+}
+.recipe-sheet::after {
+  content: '';
+  position: absolute;
+  inset: var(--rs-head-h) 0 auto;
+  height: 2px;
+  background: var(--rule-accent);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.rs-head {
+  position: relative;
+  z-index: 2;
+  min-height: var(--rs-head-h);
+  padding: 1.5rem 9.5rem 1rem 1.75rem;
+}
+.rs-head.no-photo {
+  padding-right: 1.75rem;
+}
+.rs-cat {
+  display: block;
+  font-family: theme('fontFamily.typewriter');
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--stock-ink-soft);
+}
+.rs-meta {
+  font-family: theme('fontFamily.typewriter');
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--stock-ink-soft);
+}
+.rs-tally {
+  font-family: theme('fontFamily.typewriter');
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--pen);
+}
+.rs-body {
+  position: relative;
+  z-index: 2;
+  padding: 1.5rem 1.75rem 2rem;
+}
+/* Ruling goes behind the ingredient list and nowhere else — the same place
+   the small card rules. Instructions and notes wrap to arbitrary heights, and
+   ruling that can't align with the text on it reads as a rendering fault
+   rather than as paper. The ingredient rows have a fixed line-height, so
+   there they land on the lines. */
+.rs-ing {
+  position: relative;
+}
+.rs-ing::before {
+  content: '';
+  position: absolute;
+  /* -9px, not a round number: it drops the ruling so each line lands one
+     pixel under the text baseline instead of four pixels below it. Measured
+     against the text face, same as the card's. */
+  inset: -9px 0 0;
+  background: repeating-linear-gradient(to bottom, transparent 0 31px, var(--rule) 31px 32px);
+  opacity: 0.45;
+  pointer-events: none;
+}
+.rs-ing li {
+  position: relative;
+  line-height: 32px;
+}
+.rs-body > * {
+  position: relative;
+  z-index: 1;
+}
+.rs-section + .rs-section {
+  margin-top: 2rem;
+}
+.rs-qty {
+  font-family: theme('fontFamily.typewriter');
+  font-size: 0.78rem;
+  color: var(--pen);
+  font-variant-numeric: tabular-nums;
+}
+.rs-step-n {
+  font-family: theme('fontFamily.typewriter');
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--rule-accent);
+}
+/* Writing on the card, not a form control on a page. */
+.rs-notes {
+  width: 100%;
+  resize: vertical;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  color: var(--stock-ink);
+  font-family: inherit;
+}
+.rs-notes::placeholder {
+  color: var(--stock-ink-soft);
+  opacity: 0.75;
+}
+.rs-notes:focus {
+  outline: none;
+  border-bottom-color: var(--rule-accent);
+}
+
+/* A photo, taped on — bigger than the card's, same idea. */
+.rs-photo {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.5rem;
+  z-index: 3;
+  width: 7rem;
+  padding: 6px 6px 16px;
+  background: #fdfcf8;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.22),
+    0 6px 16px rgb(0 0 0 / 0.2);
+  transform: rotate(3deg);
+}
+.rs-photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+.rs-photo::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  translate: -50% 0;
+  width: 58px;
+  height: 21px;
+  rotate: -1.5deg;
+  background: linear-gradient(
+    100deg,
+    rgb(var(--tape) / 0.28),
+    rgb(var(--tape) / 0.5) 35%,
+    rgb(var(--tape) / 0.42)
+  );
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.14);
+  border-inline: 1px solid rgb(255 255 255 / 0.22);
+}
+
+/* Wear, at sheet scale. Same marks and the same per-recipe variant as the
+   card — a recipe that stained one way in the box and another way opened
+   would give the whole conceit away — just placed for a much larger surface
+   and sized in percentages so it holds up from phone to desktop. */
+/* Much smaller and fainter than the proportions the card uses. Scaled
+   straight up, the ring was 440px across and the blot sat as a grey cloud
+   over the instructions — and the instructions are a work surface. Wear on a
+   page you read from has to stay incidental. */
+.recipe-sheet .ic-mark {
+  opacity: 0.55;
+}
+.recipe-sheet .ic-mark--ring {
+  width: 17%;
+  aspect-ratio: 1;
+  height: auto;
+  border-width: 4px;
+}
+.recipe-sheet .ic-mark--blot {
+  width: 12%;
+  aspect-ratio: 1;
+  height: auto;
+  filter: blur(5px);
+}
+.recipe-sheet[data-variant='0'] .ic-mark--ring {
+  top: 34%;
+  right: 6%;
+}
+.recipe-sheet[data-variant='1'] .ic-mark--ring {
+  top: 52%;
+  left: 4%;
+}
+.recipe-sheet[data-variant='2'] .ic-mark--ring {
+  top: 22%;
+  left: 30%;
+}
+.recipe-sheet[data-variant='3'] .ic-mark--ring {
+  bottom: 12%;
+  right: 22%;
+}
+.recipe-sheet[data-variant='0'] .ic-mark--blot {
+  bottom: 16%;
+  left: 8%;
+}
+.recipe-sheet[data-variant='1'] .ic-mark--blot {
+  top: 28%;
+  right: 14%;
+}
+.recipe-sheet[data-variant='2'] .ic-mark--blot {
+  bottom: 22%;
+  right: 8%;
+}
+.recipe-sheet[data-variant='3'] .ic-mark--blot {
+  top: 40%;
+  left: 12%;
+}
+.recipe-sheet .ic-corner {
+  width: 7rem;
+  height: 7rem;
+}
+.recipe-sheet[data-wear='loved'] .ic-corner {
+  width: 9.5rem;
+  height: 9.5rem;
+}
+.recipe-sheet[data-wear='loved'] .rs-photo {
+  transform: rotate(-2.5deg);
+}
+.recipe-sheet[data-wear='loved'] .rs-photo::before {
+  background: linear-gradient(100deg, rgb(226 200 140 / 0.4), rgb(236 214 160 / 0.52));
+}
+
+@media (max-width: 30rem) {
+  .recipe-sheet {
+    --rs-head-h: 7.5rem;
+  }
+  .rs-head {
+    padding: 1.25rem 6.5rem 0.875rem 1.25rem;
+  }
+  .rs-body {
+    padding: 1.25rem 1.25rem 1.75rem;
+  }
+  .rs-photo {
+    width: 5rem;
+    top: 1rem;
+    right: 1rem;
+  }
+}
+
 @media print {
-  .index-card {
+  .index-card,
+  .recipe-sheet {
     background-image: none;
     box-shadow: none;
     border: 1px solid #ddd;
@@ -526,6 +796,11 @@ h1 {
   .ic-mark,
   .ic-corner {
     display: none !important;
+  }
+  /* Coffee rings are charming on screen and a waste of toner on paper. */
+  .recipe-sheet::after,
+  .rs-body::before {
+    display: none;
   }
 }
 
