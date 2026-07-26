@@ -64,7 +64,12 @@ export default function DashboardPage() {
               const timing = i === 0 ? leading : undefined;
               return (
                 <Link
-                  key={meal.type}
+                  // Keyed by slot id, not meal type: a day can hold two
+                  // dinners (nothing stops you adding one), and keying by type
+                  // gave React two children with the same key. The `?? ` covers
+                  // plans saved before slots carried ids — ensureMealIds()
+                  // backfills them, but not before this has already rendered.
+                  key={meal.id ?? `${meal.type}-${i}`}
                   href={`/recipes/${recipe.id}`}
                   className={`glass-card flex items-center gap-3 p-3 transition-shadow hover:shadow-card-hover ${
                     timing ? 'ring-1 ring-moss/40' : ''
