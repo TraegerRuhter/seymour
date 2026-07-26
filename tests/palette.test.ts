@@ -18,7 +18,12 @@ const CSS = readFileSync(new URL('../src/app/globals.css', import.meta.url), 'ut
 function tokens(selector: string): Record<string, [number, number, number]> {
   const start = CSS.indexOf(selector + ' {');
   assert.notEqual(start, -1, `no ${selector} block in globals.css`);
-  const block = CSS.slice(start, CSS.indexOf('\n}', start));
+  // Stop at the block's own closing brace whatever its indentation — `.dark`
+  // is nested inside `@media screen`, so looking for a `}` in column 0 would
+  // sail past it and pick up whatever came next in the media block.
+  const end = CSS.slice(start).search(/\n\s*\}/);
+  assert.notEqual(end, -1, `unterminated ${selector} block in globals.css`);
+  const block = CSS.slice(start, start + end);
   const out: Record<string, [number, number, number]> = {};
   for (const [, name, rgb] of block.matchAll(/--color-([\w-]+):\s*(\d+ \d+ \d+)/g)) {
     const [r, g, b] = rgb.split(' ').map(Number);
