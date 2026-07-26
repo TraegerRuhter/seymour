@@ -1,6 +1,6 @@
 import type { Recipe } from './types';
 import { toLocalDateString } from './plan';
-import { cookCount, lastCookedAt } from './cook-log';
+import { cookCount, describeLastCooked, lastCookedAt } from './cook-log';
 import { growthName, justGrewInto } from './growth';
 
 /**
@@ -173,9 +173,10 @@ export function seymourSays({ recipes, now = new Date() }: SeymourInput): Seymou
     })
     .sort((a, b) => cookCount(b) - cookCount(a))[0];
   if (neglected) {
-    const when = new Date(lastCookedAt(neglected)!).toLocaleDateString(undefined, {
-      month: 'long',
-    });
+    // Via describeLastCooked rather than formatting a month here, so the rule
+    // about when a bare month name is ambiguous lives in one place. This line
+    // only fires at 60+ days, which is exactly the range where it matters.
+    const when = describeLastCooked(lastCookedAt(neglected), now);
     return {
       rule: 'neglected-favourite',
       text: `You've made ${neglected.title} ${cookCount(neglected)} times, but not since ${when}. It's right there.`,

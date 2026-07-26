@@ -151,7 +151,10 @@ function RowMenu({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="true"
         aria-expanded={open}
-        aria-label={`More actions for ${item.ingredientName}`}
+        // itemName, not ingredientName: once you've renamed a row to "oat milk,
+        // 2 cartons", announcing "more actions for milk" names something that
+        // is no longer on screen.
+        aria-label={`More actions for ${itemName(item)}`}
         className="shrink-0 rounded-full p-1.5 text-charcoal/70 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
       >
         <MoreIcon className="h-5 w-5" />
@@ -277,7 +280,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
               autoFocus
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              aria-label={`Edit ${item.ingredientName}`}
+              aria-label={`Edit ${itemName(item)}`}
               className="input-base py-1.5 text-sm"
             />
             <button type="submit" className="btn-primary px-3 py-1.5 text-sm">
@@ -489,6 +492,12 @@ export default function ShoppingList({
 
   const unchecked = items.filter((i) => !i.checked || lingering.has(i.id));
   const checked = items.filter((i) => i.checked && !lingering.has(i.id));
+  // Counted off the real state, not the linger set. The linger exists so a
+  // row can finish its animation before it relocates — it is not a claim that
+  // the item is still unchecked, and the bar is the feedback for having
+  // checked it. Holding it back for 650ms also put it out of step with the
+  // dashboard's "N items to pick up", which counts immediately.
+  const doneCount = items.filter((i) => i.checked).length;
 
   if (items.length === 0) {
     return (
@@ -533,7 +542,7 @@ export default function ShoppingList({
   return (
     <div>
       <div className="mb-5">
-        <ProgressBar done={checked.length} total={items.length} />
+        <ProgressBar done={doneCount} total={items.length} />
       </div>
 
       {CATEGORY_ORDER.filter((cat) => groups.has(cat)).map((cat) => {

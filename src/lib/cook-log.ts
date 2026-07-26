@@ -93,7 +93,12 @@ export function describeLastCooked(iso: string | undefined, now: Date = new Date
   if (days < 7) return `${days} days ago`;
   if (days < 14) return 'Last week';
   if (days < 60) return `${Math.round(days / 7)} weeks ago`;
-  if (days < 365) return then.toLocaleDateString(undefined, { month: 'long' });
+  // A bare month name only means "this year" if it *is* this year. Read in
+  // July, something cooked last October rendered as "October" — a month that
+  // hasn't happened yet. The cutoff is the calendar year rather than a day
+  // count, because that's the thing that actually makes the name ambiguous.
+  if (then.getFullYear() === now.getFullYear())
+    return then.toLocaleDateString(undefined, { month: 'long' });
   return then.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
 
