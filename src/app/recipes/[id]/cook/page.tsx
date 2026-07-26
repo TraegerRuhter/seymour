@@ -7,6 +7,7 @@ import { useRecipeStore } from '@/lib/stores';
 import { logCook } from '@/lib/actions';
 import { cookCount } from '@/lib/cook-log';
 import { cookModeSignOff } from '@/lib/seymour-says';
+import { useGrowthStage } from '@/lib/use-growth';
 import { useWakeLock } from '@/lib/use-wake-lock';
 import Logo from '@/components/Logo';
 
@@ -30,6 +31,8 @@ export default function CookModePage() {
 
   const steps = recipe?.instructions ?? [];
   const lastStep = steps.length - 1;
+
+  const stage = useGrowthStage();
 
   useWakeLock(!finished);
 
@@ -120,7 +123,7 @@ export default function CookModePage() {
 
       {finished ? (
         <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-          <Logo className="animate-float h-24 w-24" />
+          <Logo stage={stage} className="animate-float h-24 w-24" />
           <p className="max-w-md text-2xl">{cookModeSignOff(madeCount)}</p>
           <div className="mt-2 flex flex-wrap justify-center gap-3">
             <Link href={`/recipes/${recipe.id}`} className="btn-primary">

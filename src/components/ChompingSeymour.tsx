@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Logo from './Logo';
+import { useGrowthStage } from '@/lib/use-growth';
 
 const CHOMP_MS = 700;
 
@@ -22,6 +23,7 @@ export default function ChompingSeymour({
   done: boolean;
   className?: string;
 }) {
+  const stage = useGrowthStage();
   const [chomping, setChomping] = useState(false);
   const wasDone = useRef(done);
 
@@ -40,5 +42,5 @@ export default function ChompingSeymour({
   // the finished state, and it would never fire.
   if (!done) return null;
 
-  return <Logo className={`${className}${chomping ? ' sey-chomping' : ''}`} />;
+  return <Logo stage={stage} className={`${className}${chomping ? ' sey-chomping' : ''}`} />;
 }

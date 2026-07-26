@@ -1,14 +1,23 @@
+'use client';
+
 import Link from 'next/link';
 import Logo from './Logo';
+import { useGrowthStage } from '@/lib/use-growth';
 
 /**
  * Slim top bar with Seymour's mascot and wordmark.
+ *
+ * The mascot here tracks how much you've cooked, which is the whole point of
+ * putting growth on the brand mark rather than on a stats page: you don't go
+ * looking for it, you just notice one day that the plant is bigger.
  *
  * `no-print` because a printed recipe shouldn't spend its first inch on a
  * wordmark. The print rules can't simply hide every `<header>` — the recipe's
  * own title lives in one.
  */
 export default function Header() {
+  const stage = useGrowthStage();
+
   return (
     <header className="no-print mx-auto flex w-full max-w-6xl items-center px-4 pt-[calc(2rem_+_var(--safe-top))] lg:px-8 lg:pt-6">
       <Link
@@ -16,7 +25,7 @@ export default function Header() {
         aria-label="Seymour home"
         className="group inline-flex items-center gap-2.5 rounded-full pr-3"
       >
-        <Logo className="h-9 w-9 transition-transform group-hover:-rotate-6" />
+        <Logo stage={stage} className="h-9 w-9 transition-transform group-hover:-rotate-6" />
         <span className="relative inline-block">
           {/* "feed me" speech bubble — a nod to the hungry plant */}
           <span

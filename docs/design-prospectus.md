@@ -200,7 +200,7 @@ Rough sizing. `S` = an afternoon, `M` = a day or two, `L` = a real project.
 | 1 | **Voice pass over every string.** Empty states, errors, confirmations, the 404. Currently all neutral-competent. Cheapest personality in the app. | S | High | shipped (#71) |
 | 2 | **The 404 page.** Free canvas, currently wasted. A hungry plant that ate the page. | S | Med | shipped (#71) |
 | 3 | **Cook log** (`Cooked it` button + history). See §5. | M | Very high | shipped (#68) |
-| 4 | **Growth stages for the mascot** tied to collection size / cook streak. | M | High | — |
+| 4 | **Growth stages for the mascot** tied to collection size / cook streak. | M | High | shipped (#81 — tied to cooks) |
 | 5 | **Retire Inter.** A display face with a point of view is the fastest way to stop looking generated. | S | High | shipped (#72) |
 | 6 | **Repalette.** Move off cream+terracotta. Deep botanical green, bone, one acidic accent. | M | High | shipped (#73) |
 | 7 | **Break the five-identical-screens pattern.** Let the plan look like a week, the list look like a list, the recipe look like a card. | L | High | — |
