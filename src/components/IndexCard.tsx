@@ -119,7 +119,7 @@ export function IndexRow({ recipe }: { recipe: Recipe }) {
     >
       <Link href={`/recipes/${recipe.id}`} className="index-row block text-charcoal/80">
         <span className="truncate font-medium">{recipe.title}</span>
-        <span className="shrink-0 font-mono text-xs tabular-nums text-charcoal/45">
+        <span className="shrink-0 font-mono text-xs tabular-nums text-charcoal/70">
           {cooks > 0 ? describeCookCount(cooks) : '—'}
         </span>
       </Link>

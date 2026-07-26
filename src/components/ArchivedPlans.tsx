@@ -21,7 +21,7 @@ export default function ArchivedPlans() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex items-center gap-2 text-sm font-semibold text-charcoal/60"
+        className="flex items-center gap-2 text-sm font-semibold text-charcoal/70"
       >
         <span
           aria-hidden
@@ -49,7 +49,7 @@ export default function ArchivedPlans() {
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{a.label}</p>
-                    <p className="text-xs text-charcoal/50">
+                    <p className="text-xs text-charcoal/70">
                       Archived{' '}
                       {new Date(a.archivedAt).toLocaleDateString(undefined, {
                         month: 'short',
@@ -60,7 +60,7 @@ export default function ArchivedPlans() {
                   <button
                     type="button"
                     onClick={() => restoreArchivedPlan(a.id)}
-                    className="rounded-full px-3 py-1.5 text-sm font-medium text-moss transition-colors hover:bg-moss/10"
+                    className="rounded-full px-3 py-1.5 text-sm font-medium text-moss-strong transition-colors hover:bg-moss/10"
                   >
                     Restore
                   </button>
@@ -68,7 +68,7 @@ export default function ArchivedPlans() {
                     type="button"
                     onClick={() => deleteArchivedPlan(a.id)}
                     aria-label={`Delete archived plan: ${a.label}`}
-                    className="rounded-full p-1.5 text-charcoal/40 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
+                    className="rounded-full p-1.5 text-charcoal/70 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
                   >
                     <TrashIcon className="h-5 w-5" />
                   </button>
@@ -93,7 +93,7 @@ export default function ArchivedPlans() {
               <button
                 type="button"
                 onClick={() => setConfirmClear(false)}
-                className="text-charcoal/60 hover:underline"
+                className="text-charcoal/70 hover:underline"
               >
                 Cancel
               </button>

@@ -37,13 +37,13 @@ export default function LoginPage() {
     return (
       <div className="mx-auto max-w-md space-y-3 text-center">
         <h1 className="text-2xl font-bold">Sync isn&apos;t set up</h1>
-        <p className="text-sm text-charcoal/60">
+        <p className="text-sm text-charcoal/70">
           This deployment doesn&apos;t have accounts configured. Seymour still works fully without
           one — everything stays in this browser.
         </p>
         <Link
           href="/settings"
-          className="inline-block text-sm font-medium text-moss hover:underline"
+          className="inline-block text-sm font-medium text-moss-strong hover:underline"
         >
           Back to Settings
         </Link>
@@ -55,7 +55,7 @@ export default function LoginPage() {
     <div className="mx-auto max-w-md space-y-6">
       <header>
         <h1 className="text-3xl font-bold">Sign in</h1>
-        <p className="mt-1 text-charcoal/60">
+        <p className="mt-1 text-charcoal/70">
           We&apos;ll email you a link — no password to remember. Signing in is optional; your data
           works fully without an account.
         </p>

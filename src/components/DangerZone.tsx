@@ -40,7 +40,7 @@ function ConfirmButton({
         <button
           type="button"
           onClick={() => setArmed(false)}
-          className="text-charcoal/60 hover:underline"
+          className="text-charcoal/70 hover:underline"
         >
           Cancel
         </button>
@@ -72,7 +72,7 @@ export default function DangerZone() {
     <section aria-label="Manage data" className="glass-card space-y-4 border-clay/20 p-5">
       <div>
         <h2 className="text-xl font-semibold">Manage data</h2>
-        <p className="mt-1 text-sm text-charcoal/60">
+        <p className="mt-1 text-sm text-charcoal/70">
           Clear things out. These can&apos;t be undone — export a backup first if you might want it
           back.
         </p>
@@ -82,7 +82,7 @@ export default function DangerZone() {
         <li className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-medium">Reset shopping list</p>
-            <p className="text-xs text-charcoal/50">Uncheck everything and drop manual edits.</p>
+            <p className="text-xs text-charcoal/70">Uncheck everything and drop manual edits.</p>
           </div>
           <ConfirmButton
             label="Reset list"
@@ -95,7 +95,7 @@ export default function DangerZone() {
         <li className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-medium">Delete archived plans</p>
-            <p className="text-xs text-charcoal/50">
+            <p className="text-xs text-charcoal/70">
               {archivedCount} archived plan{archivedCount === 1 ? '' : 's'}.
             </p>
           </div>
@@ -110,7 +110,7 @@ export default function DangerZone() {
         <li className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-medium">Delete all recipes</p>
-            <p className="text-xs text-charcoal/50">
+            <p className="text-xs text-charcoal/70">
               Removes {recipeCount} recipe{recipeCount === 1 ? '' : 's'} and clears the current
               plan.
             </p>
@@ -126,7 +126,7 @@ export default function DangerZone() {
         <li className="flex flex-wrap items-center justify-between gap-3 border-t border-charcoal/10 pt-3">
           <div>
             <p className="text-sm font-semibold text-clay">Reset everything</p>
-            <p className="text-xs text-charcoal/50">
+            <p className="text-xs text-charcoal/70">
               Wipe all recipes, plans (including archive), the shopping list, and pantry staples.
             </p>
           </div>

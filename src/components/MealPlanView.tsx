@@ -92,7 +92,7 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
       aria-label={`Drag to move ${label}`}
       {...attributes}
       {...listeners}
-      className="touch-none shrink-0 cursor-grab self-stretch rounded-lg text-charcoal/25 transition-colors hover:bg-charcoal/5 hover:text-charcoal/60 active:cursor-grabbing"
+      className="touch-none shrink-0 cursor-grab self-stretch rounded-lg text-charcoal/25 transition-colors hover:bg-charcoal/5 hover:text-charcoal/70 active:cursor-grabbing"
     >
       <GripIcon className="h-4 w-4" />
     </button>
@@ -108,7 +108,7 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
         style={dragStyle}
         className={`rounded-xl border border-dashed border-charcoal/20 p-3 ${isDragging ? 'opacity-30' : ''}`}
       >
-        <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/40">
+        <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/70">
           {gripHandle}
           <MealIcon className="h-4 w-4" />
           {label}
@@ -118,14 +118,14 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
             <button
               type="button"
               onClick={() => setPicking(true)}
-              className="text-sm font-medium text-moss hover:underline"
+              className="text-sm font-medium text-moss-strong hover:underline"
             >
               Pick manually
             </button>
             <button
               type="button"
               onClick={() => removeMealFromDay(dayIndex, mealIndex)}
-              className="text-sm font-medium text-charcoal/40 hover:text-charcoal hover:underline"
+              className="text-sm font-medium text-charcoal/70 hover:text-charcoal hover:underline"
             >
               Remove
             </button>
@@ -177,7 +177,7 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
             </span>
           )}
           <div className="min-w-0">
-            <p className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-charcoal/40">
+            <p className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-charcoal/70">
               {label}
               {slot.pinned && (
                 <PinIcon filled className="h-3.5 w-3.5" aria-label="Pinned — kept when shuffling" />
@@ -197,7 +197,7 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
             type="button"
             aria-label={`Shuffle ${label} to a different recipe`}
             onClick={() => shuffleSlot(dayIndex, mealIndex)}
-            className="rounded-lg p-1.5 text-charcoal/40 transition-colors hover:bg-moss/12 hover:text-charcoal"
+            className="rounded-lg p-1.5 text-charcoal/70 transition-colors hover:bg-moss/12 hover:text-charcoal"
           >
             <ShuffleIcon className="h-4 w-4" />
           </button>
@@ -270,24 +270,24 @@ function ServingsStepper({
           type="button"
           aria-label="Fewer servings"
           onClick={() => setSlotScale(dayIndex, mealIndex, scale - step)}
-          className="grid h-full w-6 place-items-center text-charcoal/50 transition-colors hover:bg-moss/12 hover:text-charcoal"
+          className="grid h-full w-6 place-items-center text-charcoal/70 transition-colors hover:bg-moss/12 hover:text-charcoal"
         >
           −
         </button>
-        <span className="min-w-14 border-x border-charcoal/10 px-1.5 text-center text-xs font-semibold tabular-nums text-charcoal/60">
+        <span className="min-w-14 border-x border-charcoal/10 px-1.5 text-center text-xs font-semibold tabular-nums text-charcoal/70">
           {label}
         </span>
         <button
           type="button"
           aria-label="More servings"
           onClick={() => setSlotScale(dayIndex, mealIndex, scale + step)}
-          className="grid h-full w-6 place-items-center text-charcoal/50 transition-colors hover:bg-moss/12 hover:text-charcoal"
+          className="grid h-full w-6 place-items-center text-charcoal/70 transition-colors hover:bg-moss/12 hover:text-charcoal"
         >
           +
         </button>
       </span>
       {scale !== 1 && (
-        <span className="ml-2 text-[11px] text-charcoal/40">
+        <span className="ml-2 text-[11px] text-charcoal/70">
           {baseServings ? `as written: ${baseServings}` : 'of the written recipe'}
         </span>
       )}
@@ -309,7 +309,7 @@ function AddMeal({ dayIndex }: { dayIndex: number }) {
       <button
         type="button"
         onClick={() => setChoosing(true)}
-        className="w-full rounded-lg p-2 text-left text-sm font-medium text-charcoal/40 transition-colors hover:bg-charcoal/[0.04] hover:text-charcoal/70"
+        className="w-full rounded-lg p-2 text-left text-sm font-medium text-charcoal/70 transition-colors hover:bg-charcoal/[0.04] hover:text-charcoal/70"
       >
         ＋ Add a meal
       </button>
@@ -335,7 +335,7 @@ function AddMeal({ dayIndex }: { dayIndex: number }) {
         type="button"
         onClick={() => setChoosing(false)}
         aria-label="Cancel adding a meal"
-        className="ml-auto rounded-full px-2 py-1 text-xs font-medium text-charcoal/40 hover:text-charcoal"
+        className="ml-auto rounded-full px-2 py-1 text-xs font-medium text-charcoal/70 hover:text-charcoal"
       >
         Cancel
       </button>
@@ -359,7 +359,7 @@ function DayMealList({ dayIndex, day }: { dayIndex: number; day: MealPlanDay }) 
           <MealTile key={itemIds[mealIndex]} dayIndex={dayIndex} mealIndex={mealIndex} />
         ))}
         {day.meals.length === 0 && (
-          <p className="rounded-xl border border-dashed border-charcoal/20 p-3 text-sm text-charcoal/50">
+          <p className="rounded-xl border border-dashed border-charcoal/20 p-3 text-sm text-charcoal/70">
             Nothing planned — eating out?
           </p>
         )}

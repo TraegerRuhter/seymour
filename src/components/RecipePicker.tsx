@@ -142,7 +142,7 @@ export default function RecipePicker({
                 )}
                 <span className="min-w-0 flex-1">
                   <span
-                    className={`block truncate text-sm font-medium ${fits ? '' : 'text-charcoal/60'}`}
+                    className={`block truncate text-sm font-medium ${fits ? '' : 'text-charcoal/70'}`}
                   >
                     {r.title}
                   </span>
@@ -157,7 +157,7 @@ export default function RecipePicker({
                         r.mealTypes?.map((t) => (
                           <span
                             key={t}
-                            className="rounded-full bg-charcoal/10 px-1.5 py-0 text-[10px] font-medium text-charcoal/50"
+                            className="rounded-full bg-charcoal/10 px-1.5 py-0 text-[10px] font-medium text-charcoal/70"
                           >
                             {MEAL_TYPE_LABELS[t]}
                           </span>
@@ -170,7 +170,7 @@ export default function RecipePicker({
           );
         })}
         {results.length === 0 && (
-          <p className="px-3 py-4 text-center text-sm text-charcoal/40">
+          <p className="px-3 py-4 text-center text-sm text-charcoal/70">
             No recipes match &ldquo;{query}&rdquo;
           </p>
         )}

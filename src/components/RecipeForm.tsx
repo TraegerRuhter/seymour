@@ -163,7 +163,7 @@ export default function RecipeForm({
 
       <div>
         <label htmlFor="rf-source" className="mb-1 block text-sm font-medium">
-          Source URL <span className="font-normal text-charcoal/40">(optional)</span>
+          Source URL <span className="font-normal text-charcoal/70">(optional)</span>
         </label>
         <input
           id="rf-source"
@@ -182,18 +182,18 @@ export default function RecipeForm({
         <button
           type="button"
           onClick={applyAutoTag}
-          className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-moss hover:underline"
+          className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-moss-strong hover:underline"
         >
           <SparkleIcon className="h-4 w-4" />
           Auto-tag from title &amp; ingredients
         </button>
       </div>
-      {autoTagNote && <p className="-mt-2 text-xs text-charcoal/50">{autoTagNote}</p>}
+      {autoTagNote && <p className="-mt-2 text-xs text-charcoal/70">{autoTagNote}</p>}
 
       <div>
         <h3 className="mb-2 text-sm font-medium">
           Meals{' '}
-          <span className="font-normal text-charcoal/40">
+          <span className="font-normal text-charcoal/70">
             (optional — leave blank to fit any meal)
           </span>
         </h3>
@@ -222,7 +222,7 @@ export default function RecipeForm({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <label htmlFor="rf-category" className="mb-1 block text-sm font-medium">
-            Category <span className="font-normal text-charcoal/40">(optional)</span>
+            Category <span className="font-normal text-charcoal/70">(optional)</span>
           </label>
           <input
             id="rf-category"
@@ -234,7 +234,7 @@ export default function RecipeForm({
         </div>
         <div>
           <label htmlFor="rf-main-ingredient" className="mb-1 block text-sm font-medium">
-            Main ingredient <span className="font-normal text-charcoal/40">(optional)</span>
+            Main ingredient <span className="font-normal text-charcoal/70">(optional)</span>
           </label>
           <input
             id="rf-main-ingredient"
@@ -246,7 +246,7 @@ export default function RecipeForm({
         </div>
         <div>
           <label htmlFor="rf-cook-time" className="mb-1 block text-sm font-medium">
-            Cook time <span className="font-normal text-charcoal/40">(minutes)</span>
+            Cook time <span className="font-normal text-charcoal/70">(minutes)</span>
           </label>
           <input
             id="rf-cook-time"
@@ -261,7 +261,7 @@ export default function RecipeForm({
         </div>
         <div>
           <label htmlFor="rf-servings" className="mb-1 block text-sm font-medium">
-            Serves <span className="font-normal text-charcoal/40">(optional)</span>
+            Serves <span className="font-normal text-charcoal/70">(optional)</span>
           </label>
           <input
             id="rf-servings"
@@ -278,7 +278,7 @@ export default function RecipeForm({
 
       <div>
         <label htmlFor="rf-ingredients" className="mb-1 block text-sm font-medium">
-          Ingredients <span className="font-normal text-charcoal/40">(one per line)</span>
+          Ingredients <span className="font-normal text-charcoal/70">(one per line)</span>
         </label>
         <textarea
           id="rf-ingredients"
@@ -292,7 +292,7 @@ export default function RecipeForm({
 
       <div>
         <label htmlFor="rf-instructions" className="mb-1 block text-sm font-medium">
-          Instructions <span className="font-normal text-charcoal/40">(one step per line)</span>
+          Instructions <span className="font-normal text-charcoal/70">(one step per line)</span>
         </label>
         <textarea
           id="rf-instructions"

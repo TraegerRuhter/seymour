@@ -73,7 +73,7 @@ export default function StarRating({
         <button
           type="button"
           onClick={() => onChange?.(undefined)}
-          className="ml-1.5 text-xs font-medium text-charcoal/40 hover:text-charcoal hover:underline"
+          className="ml-1.5 text-xs font-medium text-charcoal/70 hover:text-charcoal hover:underline"
         >
           Clear
         </button>

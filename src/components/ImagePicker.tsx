@@ -75,7 +75,7 @@ export default function ImagePicker({
   return (
     <div>
       <label htmlFor="rf-image" className="mb-1 block text-sm font-medium">
-        Image <span className="font-normal text-charcoal/40">(optional)</span>
+        Image <span className="font-normal text-charcoal/70">(optional)</span>
       </label>
       <div className="flex items-start gap-3">
         {value && (
@@ -117,12 +117,12 @@ export default function ImagePicker({
             className="input-base mb-1.5"
             placeholder="https://…"
           />
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-charcoal/50">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-charcoal/70">
             <span>or paste (⌘/Ctrl+V) / drop an image here</span>
             <button
               type="button"
               onClick={() => fileInput.current?.click()}
-              className="font-medium text-moss hover:underline"
+              className="font-medium text-moss-strong hover:underline"
             >
               Choose file
             </button>

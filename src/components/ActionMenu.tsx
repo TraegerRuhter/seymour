@@ -85,7 +85,7 @@ export default function ActionMenu({
         aria-label={ariaLabel}
         className={
           className ??
-          'rounded-lg p-1.5 text-charcoal/40 transition-colors hover:bg-charcoal/5 hover:text-charcoal'
+          'rounded-lg p-1.5 text-charcoal/70 transition-colors hover:bg-charcoal/5 hover:text-charcoal'
         }
       >
         <MoreIcon className="h-4 w-4" />

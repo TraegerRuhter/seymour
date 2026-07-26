@@ -63,7 +63,7 @@ export default function AppProviders({ children }: { children: React.ReactNode }
       >
         <div className="text-center">
           <Logo className="mx-auto h-16 w-16 animate-float" />
-          <p className="mt-3 text-sm text-charcoal/50">Waking Seymour up…</p>
+          <p className="mt-3 text-sm text-charcoal/70">Waking Seymour up…</p>
         </div>
       </div>
     );

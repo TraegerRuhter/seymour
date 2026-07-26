@@ -71,3 +71,48 @@ for (const theme of ['light', 'dark'] as const) {
 test('both themes define the same set of colour tokens', () => {
   assert.deepEqual(Object.keys(tokens(':root')).sort(), Object.keys(tokens('.dark')).sort());
 });
+
+/**
+ * Muted text is dimmed with an alpha rather than given its own token, so none
+ * of the pairs above could see it — and an audit found 116 contrast failures
+ * hiding in exactly that gap. This pins the rule that came out of it:
+ *
+ *     alpha ink below 70% is for lines, not letters.
+ *
+ * Light mode is the binding case. At 60% the ink lands on 4.23:1 against the
+ * page, which is close enough to look fine and still fail.
+ */
+const MUTED = 0.7;
+
+/** Flattens `rgb(ink / a)` over an opaque background. */
+function composite(
+  fg: [number, number, number],
+  bg: [number, number, number],
+  alpha: number,
+): [number, number, number] {
+  return [0, 1, 2].map((i) => alpha * fg[i] + (1 - alpha) * bg[i]) as [number, number, number];
+}
+
+for (const theme of ['light', 'dark'] as const) {
+  const t = tokens(theme === 'light' ? ':root' : '.dark');
+  for (const [surface, bg] of [
+    ['the page', t.bg],
+    ['a card', t.surface],
+  ] as const) {
+    test(`${theme}: muted text on ${surface} clears 4.5:1`, () => {
+      const ratio = contrast(composite(t.ink, bg, MUTED), bg);
+      assert.ok(
+        ratio >= 4.5,
+        `ink at ${MUTED * 100}% is ${ratio.toFixed(2)}:1 on ${surface} in ${theme} mode`,
+      );
+    });
+  }
+}
+
+test('the muted level is the lowest one that actually passes', () => {
+  // Guards against quietly loosening MUTED: the step below it must fail, or
+  // the constant has drifted away from being a considered minimum.
+  const t = tokens(':root');
+  const weaker = contrast(composite(t.ink, t.bg, MUTED - 0.1), t.bg);
+  assert.ok(weaker < 4.5, `ink at ${(MUTED - 0.1) * 100}% now passes — MUTED can come down`);
+});

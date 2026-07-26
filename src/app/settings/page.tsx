@@ -114,7 +114,7 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <header>
         <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="mt-1 text-charcoal/60">
+        <p className="mt-1 text-charcoal/70">
           Everything lives in this browser&apos;s storage — nothing is sent to a server.
         </p>
       </header>
@@ -125,15 +125,15 @@ export default function SettingsPage() {
       >
         <div>
           <p className="text-2xl font-bold">{recipeCount}</p>
-          <p className="text-sm text-charcoal/60">recipes</p>
+          <p className="text-sm text-charcoal/70">recipes</p>
         </div>
         <div>
           <p className="text-2xl font-bold">{planDays}</p>
-          <p className="text-sm text-charcoal/60">days planned</p>
+          <p className="text-sm text-charcoal/70">days planned</p>
         </div>
         <div>
           <p className="text-2xl font-bold">{itemCount}</p>
-          <p className="text-sm text-charcoal/60">list items</p>
+          <p className="text-sm text-charcoal/70">list items</p>
         </div>
       </section>
 
@@ -141,7 +141,7 @@ export default function SettingsPage() {
         <section aria-label="Account" className="glass-card space-y-3 p-5">
           <div>
             <h2 className="text-xl font-semibold">Account</h2>
-            <p className="mt-1 text-sm text-charcoal/60">
+            <p className="mt-1 text-sm text-charcoal/70">
               {user
                 ? 'Your recipes, plan, and shopping list sync across your signed-in devices.'
                 : 'Sign in to sync your recipes, plan, and shopping list across devices — fully optional, Seymour works the same without it.'}
@@ -169,7 +169,7 @@ export default function SettingsPage() {
       <section aria-label="Appearance" className="glass-card space-y-3 p-5">
         <div>
           <h2 className="text-xl font-semibold">Appearance</h2>
-          <p className="mt-1 text-sm text-charcoal/60">
+          <p className="mt-1 text-sm text-charcoal/70">
             Pick a theme, or follow your device&apos;s setting.
           </p>
         </div>
@@ -196,7 +196,7 @@ export default function SettingsPage() {
       <section aria-label="Units" className="glass-card space-y-3 p-5">
         <div>
           <h2 className="text-xl font-semibold">Units</h2>
-          <p className="mt-1 text-sm text-charcoal/60">
+          <p className="mt-1 text-sm text-charcoal/70">
             Your shopping list is shown in one system, rounded up to tidy amounts.
           </p>
         </div>
@@ -215,7 +215,7 @@ export default function SettingsPage() {
             >
               {opt.label}
               <span
-                className={`text-xs ${unitSystem === opt.value ? 'text-white/70' : 'text-charcoal/40'}`}
+                className={`text-xs ${unitSystem === opt.value ? 'text-white' : 'text-charcoal/70'}`}
               >
                 {opt.hint}
               </span>
@@ -227,7 +227,7 @@ export default function SettingsPage() {
       <section id="pantry" aria-label="Pantry" className="glass-card space-y-3 p-5">
         <div>
           <h2 className="text-xl font-semibold">Spice rack</h2>
-          <p className="mt-1 text-sm text-charcoal/60">
+          <p className="mt-1 text-sm text-charcoal/70">
             List what you already keep on hand — staples here are left off your shopping list.
           </p>
         </div>
@@ -255,7 +255,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={() => removePantryStaple(name)}
                   aria-label={`Remove ${name} from the spice rack`}
-                  className="text-charcoal/40 hover:text-charcoal"
+                  className="text-charcoal/70 hover:text-charcoal"
                 >
                   ×
                 </button>
@@ -263,7 +263,7 @@ export default function SettingsPage() {
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-charcoal/40">
+          <p className="text-sm text-charcoal/70">
             Nothing on the rack yet — add staples like salt, flour, or olive oil.
           </p>
         )}
@@ -272,7 +272,7 @@ export default function SettingsPage() {
       <section aria-label="Backup" className="glass-card space-y-4 p-5">
         <div>
           <h2 className="text-xl font-semibold">Backup & restore</h2>
-          <p className="mt-1 text-sm text-charcoal/60">
+          <p className="mt-1 text-sm text-charcoal/70">
             Your data is only in this browser. If you clear site data, it&apos;s gone — export a
             backup now and then.
           </p>
@@ -311,7 +311,7 @@ export default function SettingsPage() {
 
       <DangerZone />
 
-      <section aria-label="About" className="glass-card space-y-3 p-5 text-sm text-charcoal/60">
+      <section aria-label="About" className="glass-card space-y-3 p-5 text-sm text-charcoal/70">
         <h2 className="text-base font-semibold text-charcoal">About Seymour</h2>
         <p>
           A personal recipe collection, randomized meal planner, and smart shopping list. Feed it
@@ -323,7 +323,7 @@ export default function SettingsPage() {
             <InstallIcon className="h-5 w-5" /> Install Seymour
           </button>
         ) : (
-          <p className="text-xs text-charcoal/40">
+          <p className="text-xs text-charcoal/70">
             If you don&apos;t see an install button, use your browser menu&apos;s &ldquo;Add to Home
             Screen&rdquo; / &ldquo;Install app&rdquo; option (or the app is already installed).
           </p>

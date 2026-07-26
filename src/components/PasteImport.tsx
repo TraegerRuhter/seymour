@@ -72,7 +72,7 @@ export default function PasteImport({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-moss hover:underline"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-moss-strong hover:underline"
       >
         <ClipboardIcon className="h-4 w-4" />
         Paste page text instead
@@ -86,7 +86,7 @@ export default function PasteImport({
         <label htmlFor="paste-text" className="mb-1 block text-sm font-medium">
           Paste the recipe page&apos;s text
         </label>
-        <p className="mb-2 text-xs text-charcoal/50">
+        <p className="mb-2 text-xs text-charcoal/70">
           Open the recipe on its site, select all (⌘/Ctrl+A) and copy, then paste the whole thing
           here — this works even when Seymour can&apos;t fetch or parse the page itself, since your
           browser did the hard part. We&apos;ll pull out the title, ingredients, and steps below for

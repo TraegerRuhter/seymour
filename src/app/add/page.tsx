@@ -116,7 +116,7 @@ function AddRecipe() {
     <div className="mx-auto max-w-2xl space-y-6">
       <header>
         <h1 className="text-3xl font-bold">Add a recipe</h1>
-        <p className="mt-1 text-charcoal/60">
+        <p className="mt-1 text-charcoal/70">
           Paste recipe URLs, let Seymour find some for you, or type one in by hand.
         </p>
       </header>
@@ -133,7 +133,7 @@ function AddRecipe() {
             aria-selected={mode === m}
             onClick={() => setMode(m)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              mode === m ? 'bg-moss text-white' : 'text-charcoal/60 hover:text-charcoal'
+              mode === m ? 'bg-moss text-white' : 'text-charcoal/70 hover:text-charcoal'
             }`}
           >
             {m === 'url' ? 'From a URL' : m === 'discover' ? 'Discover' : 'Enter manually'}
@@ -146,7 +146,7 @@ function AddRecipe() {
           <div>
             <label htmlFor="add-urls" className="mb-1 block text-sm font-medium">
               Recipe URLs{' '}
-              <span className="font-normal text-charcoal/40">(one per line, up to 10)</span>
+              <span className="font-normal text-charcoal/70">(one per line, up to 10)</span>
             </label>
             <textarea
               id="add-urls"
@@ -162,7 +162,7 @@ function AddRecipe() {
           </div>
 
           {progress && (
-            <p className="text-sm text-charcoal/60" aria-live="polite">
+            <p className="text-sm text-charcoal/70" aria-live="polite">
               {progress}
             </p>
           )}
@@ -197,7 +197,7 @@ function AddRecipe() {
             <button
               type="button"
               onClick={() => setMode('manual')}
-              className="text-sm font-medium text-moss hover:underline"
+              className="text-sm font-medium text-moss-strong hover:underline"
             >
               or enter it manually
             </button>
@@ -266,7 +266,7 @@ function AddRecipe() {
               </>
             )}
           </button>
-          <p className="text-xs text-charcoal/40">
+          <p className="text-xs text-charcoal/70">
             Seymour finds real recipe pages from well-known cooking sites and adds only the ones it
             can actually read — nothing gets added on faith.
           </p>
