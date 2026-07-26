@@ -34,13 +34,33 @@ function pluralizeName(name: string): string {
   return name + 's';
 }
 
-function itemLabel(item: ShoppingListItem): string {
+/**
+ * An item, split into the two things a ledger column wants: what it is, and
+ * how much of it. Kept apart rather than joined into one string so the amounts
+ * can line up in their own right-aligned column — "2 cups" under "2 lb" is
+ * scannable in a way "2 cups flour" over "2 lb chicken thigh" never is.
+ *
+ * A manual override is whatever the user typed, so it goes in whole and the
+ * amount column stays empty. Second-guessing their wording by trying to parse
+ * a quantity back out of it would be worse than an empty cell.
+ */
+function itemName(item: ShoppingListItem): string {
   if (item.manualOverride) return item.manualOverride;
+  return !item.unit && item.totalQuantity > 1
+    ? pluralizeName(item.ingredientName)
+    : item.ingredientName;
+}
+
+function itemQuantity(item: ShoppingListItem): string {
+  if (item.manualOverride) return '';
   const qty = formatAmount(item.totalQuantity, item.unit);
   const unit = displayUnit(item.unit, item.totalQuantity);
-  const name =
-    !item.unit && item.totalQuantity > 1 ? pluralizeName(item.ingredientName) : item.ingredientName;
-  return [qty, unit, name].filter(Boolean).join(' ');
+  return [qty, unit].filter(Boolean).join(' ');
+}
+
+/** The whole line, for aria labels and anywhere a single string is needed. */
+function itemLabel(item: ShoppingListItem): string {
+  return [itemQuantity(item), itemName(item)].filter(Boolean).join(' ');
 }
 
 const CATEGORY_ICON: Record<Category, IconComponent> = {
@@ -213,7 +233,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
       animate="animate"
       exit={listRowExit}
       transition={{ ...enter, layout: layoutSpring }}
-      className="glass-card flex items-start gap-3 px-4 py-3"
+      className="ledger-row flex items-start gap-3 py-2.5"
     >
       <span className="relative inline-flex h-6 w-6 shrink-0">
         <input
@@ -267,6 +287,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
         ) : (
           <label
             htmlFor={inputId}
+            aria-label={label}
             onClick={(e) => {
               // A tap meant to read a truncated name shouldn't also check the
               // item off — reveal the full text first, and only let a second
@@ -282,12 +303,17 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
               item.checked ? 'opacity-50' : ''
             }`}
           >
-            <span ref={labelTextRef} className={`block ${expanded ? '' : 'truncate'}`}>
-              {label}
-              {item.manualOverride && (
-                <span className="ml-2 rounded-full bg-moss/10 px-2 py-0.5 text-xs text-moss">
-                  edited
-                </span>
+            <span className="flex items-baseline gap-3">
+              <span ref={labelTextRef} className={`flex-1 ${expanded ? '' : 'truncate'}`}>
+                {itemName(item)}
+                {item.manualOverride && (
+                  <span className="ml-2 rounded-full bg-moss/10 px-2 py-0.5 text-xs text-moss">
+                    edited
+                  </span>
+                )}
+              </span>
+              {itemQuantity(item) && (
+                <span className="ledger-qty shrink-0">{itemQuantity(item)}</span>
               )}
             </span>
             <motion.span
@@ -514,13 +540,13 @@ export default function ShoppingList({
         const CategoryIcon = CATEGORY_ICON[cat];
         const catItems = groups.get(cat)!;
         return (
-          <section key={cat} aria-label={cat} className="mb-5">
-            <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-charcoal/50">
+          <section key={cat} aria-label={cat} className="mb-6">
+            <h2 className="ledger-aisle flex items-center gap-2">
               <CategoryIcon className="h-5 w-5" />
               {cat}
-              <span className="font-normal normal-case tracking-normal">· {catItems.length}</span>
+              <span className="ledger-count ml-auto">{catItems.length}</span>
             </h2>
-            <ul className="space-y-2">
+            <ul>
               <AnimatePresence initial={false}>
                 {catItems.map((item) => (
                   <Row key={item.id} item={item} editable={editable} />
