@@ -10,10 +10,20 @@
  *  - Recipe images (cross-origin): cache-first once viewed, capped LRU-ish.
  */
 
-const VERSION = 'v2';
+const VERSION = 'v3';
 const SHELL_CACHE = `seymour-shell-${VERSION}`;
+const PAGE_CACHE = `seymour-pages-${VERSION}`;
 const IMAGE_CACHE = `seymour-images-${VERSION}`;
 const IMAGE_LIMIT = 200;
+/*
+ * Visited documents live apart from the precached shell so they can be capped
+ * without evicting the six routes the app needs to start offline. Sixty is
+ * comfortably more than anyone browses in a session and a small fraction of
+ * what the cache used to hold: measured against a production build, thirty
+ * recipe visits took the single shell cache from 45 entries to 103, climbing
+ * with no ceiling.
+ */
+const PAGE_LIMIT = 60;
 
 const PRECACHE = ['/', '/recipes', '/plan', '/shopping-list', '/add', '/settings', '/manifest.json', '/icon.svg'];
 
@@ -33,7 +43,7 @@ self.addEventListener('activate', (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((k) => k !== SHELL_CACHE && k !== IMAGE_CACHE)
+            .filter((k) => k !== SHELL_CACHE && k !== PAGE_CACHE && k !== IMAGE_CACHE)
             .map((k) => caches.delete(k)),
         ),
       )
@@ -61,8 +71,28 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
 
-  // API: network only.
-  if (url.origin === location.origin && url.pathname.startsWith('/api/')) return;
+  // API: network only. Same for the auth callback, which carries a one-shot
+  // sign-in code and must never be replayed from a cache.
+  if (
+    url.origin === location.origin &&
+    (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/'))
+  ) {
+    return;
+  }
+
+  /*
+   * Router prefetches, left to the network.
+   *
+   * Next appends a rotating `_rsc` token to these, so a stored response is
+   * keyed under a token that won't be asked for again — every one of them was
+   * written and could never be read. Measured on a production build: thirty
+   * navigations produced seven distinct tokens, each with its own duplicate
+   * copy of the same five pages.
+   *
+   * Nothing is lost offline. A failed prefetch makes Next fall back to a full
+   * page load, which the navigation handler below serves from the page cache.
+   */
+  if (url.searchParams.has('_rsc')) return;
 
   // Cross-origin images (recipe photos): cache-first.
   if (url.origin !== location.origin) {
@@ -93,7 +123,17 @@ self.addEventListener('fetch', (event) => {
       fetch(req)
         .then((res) => {
           const copy = res.clone();
-          caches.open(SHELL_CACHE).then((cache) => cache.put(req, copy));
+          // Into the capped page cache, not the shell — a library of a few
+          // hundred recipes would otherwise leave a document here per recipe,
+          // forever. The .catch keeps a rejected put (a redirect, say) from
+          // surfacing as an unhandled rejection inside the worker.
+          caches
+            .open(PAGE_CACHE)
+            .then(async (cache) => {
+              await cache.put(req, copy);
+              await trimCache(PAGE_CACHE, PAGE_LIMIT);
+            })
+            .catch(() => {});
           return res;
         })
         .catch(async () => (await caches.match(req)) || (await caches.match('/')) || Response.error()),
