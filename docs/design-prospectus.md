@@ -206,7 +206,7 @@ Rough sizing. `S` = an afternoon, `M` = a day or two, `L` = a real project.
 | 7 | **Break the five-identical-screens pattern.** Let the plan look like a week, the list look like a list, the recipe look like a card. | L | High | shipped (#82 card, #83 week, #84 list) |
 | 8 | **Time-of-day awareness.** The app knows it's 5pm; it could lead with dinner. Almost nothing does this well and it's nearly free. | S | Med | shipped (#74) |
 | 9 | **"Seymour says"** — one contextual, opinionated line on the dashboard, driven by rules over your own data. Enormous personality-per-byte. | M | High | shipped (#70) |
-| 10 | **Reactive motion at thresholds** — a chomp when the last item is checked off, a lean when a plan lands. Replace generic fade-rise. | M | Med | partly shipped (#76 — the chomp) |
+| 10 | **Reactive motion at thresholds** — a chomp when the last item is checked off, a lean when a plan lands. Replace generic fade-rise. | M | Med | shipped (#76 chomp, #94 lean) |
 | 11 | **Cook mode** — the guided, hands-messy cooking view (big type, screen stays awake, one step at a time). Genuinely useful *and* a threshold moment. | L | High | shipped (#75) |
 | 12 | **Wear/patina on recipe cards** driven by cook count. | M | Med | shipped (#69) |
 

@@ -13,12 +13,14 @@ import {
 import MealPlanView from '@/components/MealPlanView';
 import PlanGenerator from '@/components/PlanGenerator';
 import ArchivedPlans from '@/components/ArchivedPlans';
+import LeaningSeymour from '@/components/LeaningSeymour';
 import { collapse, enter } from '@/lib/motion';
 import { PlanIcon, ShuffleIcon, ArchiveIcon, SparkleIcon, TrashIcon } from '@/components/icons';
 
 export default function PlanPage() {
   const recipeCount = useRecipeStore((s) => Object.keys(s.recipes).length);
   const plan = usePlanStore((s) => s.plan);
+  const config = usePlanStore((s) => s.config);
   const hasEmptySlots = plan?.some((day) => day.meals.some((m) => !m.recipeId)) ?? false;
   const hasPinnedSlots = plan?.some((day) => day.meals.some((m) => m.pinned)) ?? false;
 
@@ -32,10 +34,11 @@ export default function PlanPage() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">Meal plan</h1>
-          <p className="mt-1 text-charcoal/70">
+          <p className="mt-1 flex items-center gap-2 text-charcoal/70">
             {plan
               ? `${plan.length} day${plan.length === 1 ? '' : 's'} planned`
               : `Random picks from your ${recipeCount} recipe${recipeCount === 1 ? '' : 's'} — no repeats within a day.`}
+            <LeaningSeymour seed={config?.seed} />
           </p>
         </div>
         {plan && (
