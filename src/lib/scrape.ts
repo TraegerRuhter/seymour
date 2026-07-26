@@ -1,4 +1,5 @@
 import type { ParsedRecipeData } from './types';
+import { assertPublicHostname, UnsafeUrlError } from './url-safety';
 
 /**
  * Server-side recipe extraction.
@@ -13,7 +14,7 @@ import type { ParsedRecipeData } from './types';
 const FETCH_TIMEOUT_MS = 12_000;
 
 /** Why a fetch failed, so the API can give an honest, actionable message. */
-export type FetchFailure = 'timeout' | 'blocked' | 'notfound' | 'network';
+export type FetchFailure = 'timeout' | 'blocked' | 'notfound' | 'network' | 'unsafe';
 
 export class FetchError extends Error {
   constructor(
@@ -68,15 +69,72 @@ const BROWSER_HEADERS: Record<string, string> = {
   'Upgrade-Insecure-Requests': '1',
 };
 
+/**
+ * How many hops to follow before giving up. Real recipe URLs redirect once or
+ * twice — http→https, a canonical slug, a CDN. Five is generous.
+ */
+const MAX_REDIRECTS = 5;
+
+/**
+ * Follows redirects by hand, checking every hop.
+ *
+ * The SSRF guard in url-safety.ts validates the hostname the user submitted,
+ * and that is all it can do from where it sits — with `redirect: 'follow'`,
+ * the very next thing that happened was the platform quietly following a 302
+ * to wherever it pointed. A public host answering with
+ * `Location: http://169.254.169.254/latest/meta-data/` walked straight past
+ * the check, which is a considerably easier trick than the DNS rebinding that
+ * module already documents as out of scope.
+ *
+ * So: `manual`, and re-validate each hop's hostname before requesting it. The
+ * timeout spans the whole chain rather than each hop, so a redirect loop
+ * can't buy more time than a single slow page.
+ */
+async function fetchFollowingSafeRedirects(
+  url: string,
+  signal: AbortSignal,
+  headers: Record<string, string>,
+): Promise<Response> {
+  let current = url;
+
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    let target: URL;
+    try {
+      target = new URL(current);
+    } catch {
+      throw new FetchError('unsafe');
+    }
+    if (target.protocol !== 'http:' && target.protocol !== 'https:') {
+      throw new FetchError('unsafe');
+    }
+    try {
+      await assertPublicHostname(target.hostname);
+    } catch (e) {
+      if (e instanceof UnsafeUrlError) throw new FetchError('unsafe');
+      throw e;
+    }
+
+    const res = await fetch(target.href, { signal, headers, redirect: 'manual' });
+
+    const location = res.headers.get('location');
+    if (res.status >= 300 && res.status < 400 && location) {
+      // Relative Locations are legal and common, so resolve against the hop
+      // we're on rather than assuming an absolute URL.
+      current = new URL(location, target.href).href;
+      continue;
+    }
+    return res;
+  }
+
+  // More hops than any honest recipe link needs.
+  throw new FetchError('network');
+}
+
 export async function fetchHtml(url: string): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: BROWSER_HEADERS,
-      redirect: 'follow',
-    });
+    const res = await fetchFollowingSafeRedirects(url, controller.signal, BROWSER_HEADERS);
     if (!res.ok) throw new FetchError(classifyStatus(res.status), res.status);
     return await res.text();
   } catch (e) {
@@ -106,16 +164,16 @@ export async function fetchViaReader(url: string, template: string): Promise<str
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), READER_TIMEOUT_MS);
   try {
-    const res = await fetch(proxied, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': BROWSER_HEADERS['User-Agent'],
-        Accept: 'text/html,application/xhtml+xml,*/*;q=0.8',
-        // Jina Reader honors this to return raw HTML (so the JSON-LD scraper
-        // works); harmless to proxies that ignore it.
-        'X-Return-Format': 'html',
-      },
-      redirect: 'follow',
+    // Through the same checked follower as a direct fetch. The proxy host is
+    // operator config and so is trusted, but where it redirects to isn't:
+    // `Location: http://127.0.0.1:…` needs no knowledge of our network to be
+    // worth trying.
+    const res = await fetchFollowingSafeRedirects(proxied, controller.signal, {
+      'User-Agent': BROWSER_HEADERS['User-Agent'],
+      Accept: 'text/html,application/xhtml+xml,*/*;q=0.8',
+      // Jina Reader honors this to return raw HTML (so the JSON-LD scraper
+      // works); harmless to proxies that ignore it.
+      'X-Return-Format': 'html',
     });
     if (!res.ok) throw new FetchError(classifyStatus(res.status), res.status);
     return await res.text();

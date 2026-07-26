@@ -9,10 +9,19 @@ import net from 'node:net';
  * a recipe site, turning the parser into a proxy for internal network
  * requests. This blocks the common case — a hostname/IP that's private,
  * loopback, link-local, or otherwise non-public — by checking every address
- * DNS resolves it to. It does not defend against DNS rebinding (re-resolving
- * to a different address between this check and the actual fetch); doing so
- * would mean pinning the validated IP for the connection itself, which is a
- * larger change than this app's threat model currently calls for.
+ * DNS resolves it to.
+ *
+ * Checking the submitted hostname is only half the job, and for a while it was
+ * the only half being done: the fetch followed redirects automatically, so a
+ * public host answering `Location: http://169.254.169.254/…` walked straight
+ * past this. `fetchFollowingSafeRedirects` in scrape.ts now follows hops by
+ * hand and calls back in here for each one, which is the only reason this
+ * function is worth anything.
+ *
+ * Still not defended against: DNS rebinding — re-resolving to a different
+ * address between this check and the connection. Closing that means pinning
+ * the validated IP for the socket itself, which is a larger change than this
+ * app's threat model currently calls for.
  */
 
 function isPrivateOrReservedIpv4(ip: string): boolean {

@@ -42,6 +42,8 @@ function fetchErrorMessage(e: unknown): string {
         return 'That page wasn’t found (404). Double-check the URL.';
       case 'timeout':
         return 'The page took too long to respond. Try again, or add it with “Enter manually”.';
+      case 'unsafe':
+        return 'That link leads somewhere Seymour won’t follow. Check the URL, or add the recipe with “Enter manually”.';
     }
   }
   return 'The page couldn’t be fetched. Try again, or add it with “Enter manually”.';
