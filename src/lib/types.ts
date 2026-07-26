@@ -90,6 +90,14 @@ export interface MealPlanConfig {
   days: number;
   mealTypes: MealType[];
   seed: number;
+  /**
+   * Local YYYY-MM-DD the plan's first day falls on, so you can plan next week
+   * while this one is still running.
+   *
+   * Optional, and absent means today — plans saved before this existed all
+   * started on the day they were generated, which is what that default says.
+   */
+  startDate?: string;
   /** Set on every regenerate; compared to the server's row to resolve sync conflicts. */
   updatedAt?: string;
 }

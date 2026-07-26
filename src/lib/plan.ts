@@ -45,6 +45,38 @@ export function toLocalDateString(d: Date): string {
 }
 
 /**
+ * The inverse. Built field by field rather than with `new Date(str)`, which
+ * reads a bare YYYY-MM-DD as UTC midnight — west of Greenwich that lands on
+ * the previous day, so a plan starting "next Monday" would render as starting
+ * Sunday.
+ */
+export function fromLocalDateString(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** A new Date `n` days after `d`. Handles month ends and DST via the Date API. */
+export function addDays(d: Date, n: number): Date {
+  const next = new Date(d);
+  next.setDate(next.getDate() + n);
+  return next;
+}
+
+/**
+ * The next Monday strictly after `from` — "next week" in the sense someone
+ * means it on a Wednesday.
+ *
+ * Strictly after, so asking on a Monday gets you the Monday seven days out
+ * rather than today. Anyone who wants to start a plan today already has a
+ * button that says Today.
+ */
+export function nextMonday(from: Date): Date {
+  const MONDAY = 1;
+  const ahead = (MONDAY - from.getDay() + 7) % 7;
+  return addDays(from, ahead === 0 ? 7 : ahead);
+}
+
+/**
  * Generates a meal plan from the recipe collection.
  *
  * Recipes are drawn from a seeded shuffle, day by day. Within a single day no

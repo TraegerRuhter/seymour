@@ -33,7 +33,7 @@ import {
   shuffleSlot,
   togglePinSlot,
 } from '@/lib/actions';
-import { MEAL_TYPE_LABELS, toLocalDateString } from '@/lib/plan';
+import { MEAL_TYPE_LABELS, fromLocalDateString, toLocalDateString } from '@/lib/plan';
 import { MEAL_TYPES, type MealPlanDay, type MealType } from '@/lib/types';
 import { enter, fadeRise } from '@/lib/motion';
 import ActionMenu from './ActionMenu';
@@ -46,8 +46,7 @@ import { GripIcon, MEAL_TYPE_ICON, PencilIcon, PinIcon, ShuffleIcon, TrashIcon }
  * underneath keeps it checkable.
  */
 function dayHeading(dateStr: string): { name: string; date: string } {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
+  const date = fromLocalDateString(dateStr);
   const weekday = date.toLocaleDateString(undefined, { weekday: 'long' });
   const monthDay = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   const isToday = dateStr === toLocalDateString(new Date());

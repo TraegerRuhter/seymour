@@ -3,7 +3,13 @@
 import { useState } from 'react';
 import { usePlanStore, useRecipeStore } from '@/lib/stores';
 import { generatePlan } from '@/lib/actions';
-import { MEAL_TYPE_LABELS } from '@/lib/plan';
+import {
+  MEAL_TYPE_LABELS,
+  addDays,
+  fromLocalDateString,
+  nextMonday,
+  toLocalDateString,
+} from '@/lib/plan';
 import { MEAL_TYPES, type MealType } from '@/lib/types';
 
 const DAY_CHOICES = [1, 2, 3, 5, 7, 10, 14];
@@ -26,8 +32,27 @@ export default function PlanGenerator({
   const [mealTypes, setMealTypes] = useState<MealType[]>(
     config?.mealTypes ?? ['breakfast', 'lunch', 'dinner'],
   );
+  // Today, not the current plan's start date. Replacing this week's plan is
+  // the common case and wants today; planning next week is one tap away.
+  const [startDate, setStartDate] = useState(() => toLocalDateString(new Date()));
 
   const canGenerate = recipeCount > 0 && mealTypes.length > 0;
+
+  const today = toLocalDateString(new Date());
+  const shortcuts: Array<{ label: string; date: string }> = [
+    { label: 'Today', date: today },
+    { label: 'Tomorrow', date: toLocalDateString(addDays(new Date(), 1)) },
+    { label: 'Next Monday', date: toLocalDateString(nextMonday(new Date())) },
+  ];
+
+  /** "Mon 4 Aug – Sun 10 Aug", so you can check the week before committing to it. */
+  const span = (() => {
+    const first = fromLocalDateString(startDate);
+    const last = addDays(first, days - 1);
+    const fmt = (d: Date) =>
+      d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    return days === 1 ? fmt(first) : `${fmt(first)} – ${fmt(last)}`;
+  })();
 
   function toggleMealType(t: MealType) {
     setMealTypes((current) =>
@@ -38,7 +63,12 @@ export default function PlanGenerator({
   }
 
   function handleGenerate() {
-    generatePlan(days, mealTypes);
+    // Today is passed as undefined rather than as a date, so a plan for today
+    // stores nothing and stays identical to every plan made before start dates
+    // existed.
+    generatePlan(days, mealTypes, {
+      startDate: startDate === today ? undefined : startDate,
+    });
     onGenerated?.();
   }
 
@@ -62,6 +92,38 @@ export default function PlanGenerator({
               {d}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="mb-2 text-sm font-medium">Starting when?</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          {shortcuts.map((s) => (
+            <button
+              key={s.label}
+              type="button"
+              aria-pressed={startDate === s.date}
+              onClick={() => setStartDate(s.date)}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                startDate === s.date
+                  ? 'bg-moss text-white'
+                  : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+          {/* The shortcuts write into this rather than sitting alongside it as
+              a fourth mode: one piece of state, and any date the shortcuts
+              don't cover is still reachable. */}
+          <input
+            type="date"
+            value={startDate}
+            min={today}
+            onChange={(e) => e.target.value && setStartDate(e.target.value)}
+            aria-label="Start date"
+            className="input-base w-auto py-1.5 text-sm"
+          />
         </div>
       </div>
 
@@ -97,14 +159,20 @@ export default function PlanGenerator({
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={handleGenerate}
-        disabled={!canGenerate}
-        className="btn-primary"
-      >
-        {hasExistingPlan ? 'Generate & replace plan' : 'Generate plan'}
-      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={!canGenerate}
+          className="btn-primary"
+        >
+          {hasExistingPlan ? 'Generate & replace plan' : 'Generate plan'}
+        </button>
+        {/* The dates the button is about to produce. Days and a start date are
+            two numbers that only mean something together, and "replace" is not
+            an outcome to leave someone guessing at. */}
+        <p className="text-sm text-charcoal/70">{span}</p>
+      </div>
     </section>
   );
 }

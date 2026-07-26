@@ -16,7 +16,14 @@ import { appendCook, removeLastCook } from './cook-log';
 import { suggestTags } from './auto-tag';
 import { buildShoppingList, mergeShoppingList } from './aggregate';
 import { normalizeIngredientName } from './normalize';
-import { generateMealPlan, newSeed, planLabel, recipeFitsMealType, refillPlan } from './plan';
+import {
+  fromLocalDateString,
+  generateMealPlan,
+  newSeed,
+  planLabel,
+  recipeFitsMealType,
+  refillPlan,
+} from './plan';
 import {
   clearMealPlanRemote,
   deleteRemote,
@@ -280,11 +287,21 @@ export function deleteRecipe(id: string): void {
   if (config && plan) void pushMealPlan(config, plan);
 }
 
-export function generatePlan(days: number, mealTypes: MealType[], seed?: number): void {
+export function generatePlan(
+  days: number,
+  mealTypes: MealType[],
+  /**
+   * An object rather than two more positional arguments: `startDate` and
+   * `seed` are both optional and neither is obviously first, which is exactly
+   * the shape that ends up with a date passed as a seed one day.
+   */
+  options: { startDate?: string; seed?: number } = {},
+): void {
   const config: MealPlanConfig = {
     days,
     mealTypes,
-    seed: seed ?? newSeed(),
+    seed: options.seed ?? newSeed(),
+    startDate: options.startDate,
   };
   // Read ids straight from the source of truth. (An earlier cache optimization
   // broke this: the cache isn't persisted, so after a fresh page load it was
@@ -294,7 +311,9 @@ export function generatePlan(days: number, mealTypes: MealType[], seed?: number)
   const plan = generateMealPlan(
     recipeIds,
     config,
-    undefined,
+    // generateMealPlan has always accepted a start date and defaulted it to
+    // today; nothing ever passed one.
+    config.startDate ? fromLocalDateString(config.startDate) : undefined,
     (id, type) => {
       const recipe = recipes[id];
       return !recipe || recipeFitsMealType(recipe, type);
