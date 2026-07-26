@@ -132,7 +132,7 @@ export default function Logo({
       <path d={stem.path} stroke="#3F7A66" strokeWidth={26} fill="none" strokeLinecap="round" />
 
       {LEAVES[stage].map((d, i) => (
-        <path key={i} d={d} fill="#5C9A80" />
+        <path key={i} className="sey-leaf" d={d} fill="#5C9A80" />
       ))}
 
       {stage === 4 && (

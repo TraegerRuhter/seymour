@@ -35,6 +35,22 @@ test.describe('The chomp', () => {
     await expect(seymour).toHaveClass(/sey-chomping/);
   });
 
+  test('a seedling still reacts, even though it has no jaws yet', async ({ page }) => {
+    const boxes = await listWithTwoItems(page);
+    // Nothing has been cooked, so Seymour is at growth stage 0: a seedling in
+    // a pot with no trap at all. The jaw animation has nothing to animate, and
+    // this is exactly when someone is most likely to finish a first list.
+    await expect(page.locator('.sey-jaw')).toHaveCount(0);
+
+    await boxes.first().check();
+    await boxes.nth(1).check();
+
+    const animating = await page
+      .locator('.sey-chomping')
+      .evaluate((el) => getComputedStyle(el).animationName);
+    expect(animating).not.toBe('none');
+  });
+
   test('and then stops, rather than chewing forever', async ({ page }) => {
     const boxes = await listWithTwoItems(page);
     await boxes.first().check();
