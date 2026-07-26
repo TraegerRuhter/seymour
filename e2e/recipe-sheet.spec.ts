@@ -66,6 +66,18 @@ test.describe('The recipe sheet', () => {
     await expect(page.getByText('1 head broccoli, cut into spears')).toBeVisible();
   });
 
+  test('an unfiled recipe shows no eyebrow, not the word "Recipe"', async ({ page }) => {
+    await addRecipeManually(page, {
+      title: 'Charred Broccoli',
+      ingredients: ['1 head broccoli'],
+      // No category, no meal type.
+    });
+    const sheet = page.locator('.recipe-sheet');
+    await expect(sheet).toBeVisible();
+    await expect(sheet.locator('.rs-cat')).toHaveCount(0);
+    await expect(sheet).not.toContainText('RECIPE');
+  });
+
   test('the controls stay off the paper, where they can still be read', async ({ page }) => {
     await addAndCook(page, 0);
     const sheet = page.locator('.recipe-sheet');

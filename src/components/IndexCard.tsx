@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { Recipe } from '@/lib/types';
+import { filedAs } from '@/lib/filing';
 import { cardExit, enter, fadeRise, layoutSpring } from '@/lib/motion';
 import {
   cookCount,
@@ -13,7 +14,6 @@ import {
   wearLevel,
 } from '@/lib/cook-log';
 import { displayUnit, formatQuantity } from '@/lib/units';
-import { MEAL_TYPE_LABELS } from '@/lib/plan';
 
 /**
  * A recipe as an index card from a recipe box — the first surface built in
@@ -38,8 +38,6 @@ export default function IndexCard({ recipe }: { recipe: Recipe }) {
   // The eyebrow is the card's filing label. A literal "Recipe" on every card
   // is noise, so fall back to a meal type and then to nothing — the row keeps
   // its height either way so the red rule stays put.
-  const filedAs =
-    recipe.category || (recipe.mealTypes?.[0] && MEAL_TYPE_LABELS[recipe.mealTypes[0]]) || '';
   const added = new Date(recipe.dateAdded).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
@@ -78,7 +76,7 @@ export default function IndexCard({ recipe }: { recipe: Recipe }) {
         )}
 
         <div className={`ic-head${recipe.imageUrl ? '' : ' no-photo'}`}>
-          <span className="ic-cat">{filedAs}</span>
+          <span className="ic-cat">{filedAs(recipe)}</span>
           <h3 className="ic-title">{recipe.title}</h3>
         </div>
 

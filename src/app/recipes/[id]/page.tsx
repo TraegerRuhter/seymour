@@ -18,7 +18,7 @@ import {
   markVariant,
   wearLevel,
 } from '@/lib/cook-log';
-import { MEAL_TYPE_LABELS } from '@/lib/plan';
+import { filedAs } from '@/lib/filing';
 import { isHttpUrl } from '@/lib/link-safety';
 import StarRating from '@/components/StarRating';
 
@@ -76,8 +76,6 @@ export default function RecipeDetailPage() {
   const cooks = cookCount(recipe);
   const wear = wearLevel(cooks);
   const lastCooked = describeLastCooked(lastCookedAt(recipe));
-  const filedAs =
-    recipe.category || (recipe.mealTypes?.[0] && MEAL_TYPE_LABELS[recipe.mealTypes[0]]) || 'Recipe';
 
   return (
     <article className="mx-auto max-w-3xl print-serif">
@@ -184,7 +182,7 @@ export default function RecipeDetailPage() {
         )}
 
         <header className={`rs-head ${recipe.imageUrl ? '' : 'no-photo'}`}>
-          <span className="rs-cat">{filedAs}</span>
+          {filedAs(recipe) && <span className="rs-cat">{filedAs(recipe)}</span>}
           <h1 className="mt-1 text-[clamp(1.75rem,4vw,2.5rem)] font-bold leading-tight">
             {recipe.title}
           </h1>
