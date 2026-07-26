@@ -99,6 +99,25 @@ test.describe('The recipe sheet', () => {
     expect(printed.ruling).not.toBe('none');
   });
 
+  test('printing from dark mode prints the light card, not a blank page', async ({ page }) => {
+    const url = await addAndCook(page, 0);
+    await page.goto('/settings');
+    await page.getByRole('button', { name: 'Dark', exact: true }).click();
+    await page.goto(url);
+    await page.emulateMedia({ media: 'print' });
+
+    const printed = await page.locator('.recipe-sheet').evaluate((el) => ({
+      background: getComputedStyle(el).backgroundColor,
+      title: getComputedStyle(el.querySelector('h1')!).color,
+    }));
+
+    // The sheet is forced white for print. The theme swaps the card's *own*
+    // ink token, so if the dark palette survived into print this would be
+    // near-white text on white paper — nothing on the page at all.
+    expect(printed.background).toBe('rgb(255, 255, 255)');
+    expect(printed.title).toBe('rgb(31, 36, 43)');
+  });
+
   test('the controls stay off the paper, where they can still be read', async ({ page }) => {
     await addAndCook(page, 0);
     const sheet = page.locator('.recipe-sheet');
