@@ -294,16 +294,50 @@ interface CheckState {
  * the `shopping_list_items` table in supabase/schema.sql).
  */
 export async function pushShoppingItemState(item: ShoppingListItem): Promise<void> {
+  return pushShoppingItemStates([item]);
+}
+
+/**
+ * The same, for a bulk change — "Uncheck all" touches every row at once, and
+ * a shopping list is long enough that one request beats forty.
+ */
+export async function pushShoppingItemStates(items: ShoppingListItem[]): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId || items.length === 0) return;
+  try {
+    await supabase.from('shopping_list_items').upsert(
+      items.map((item) => ({
+        user_id: userId,
+        id: item.id,
+        checked: item.checked,
+        manual_override: item.manualOverride ?? null,
+      })),
+    );
+  } catch {
+    // Offline or unreachable — nothing to do until the next sync attempt.
+  }
+}
+
+/**
+ * Drops every stored check/override for this user.
+ *
+ * Needed because a shopping item's id is derived from its content
+ * (`name|unit`, see aggregate.ts), so it is stable across regeneration. Wiping
+ * the list locally therefore doesn't orphan the server's rows — the same ids
+ * come straight back, and the next pull restores the checks and the manual
+ * edits the user just asked to drop.
+ *
+ * Deleting rather than upserting a cleared state, because "reset" means there
+ * is nothing to remember. A missing row lets the local value stand, and the
+ * pull pushes it back up on its own.
+ */
+export async function clearShoppingItemStatesRemote(): Promise<void> {
   const supabase = getSupabaseClient();
   const userId = currentUserId();
   if (!supabase || !userId) return;
   try {
-    await supabase.from('shopping_list_items').upsert({
-      user_id: userId,
-      id: item.id,
-      checked: item.checked,
-      manual_override: item.manualOverride ?? null,
-    });
+    await supabase.from('shopping_list_items').delete().eq('user_id', userId);
   } catch {
     // Offline or unreachable — nothing to do until the next sync attempt.
   }

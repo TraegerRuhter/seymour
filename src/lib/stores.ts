@@ -281,7 +281,8 @@ interface ShoppingState {
   setItems: (items: ShoppingListItem[]) => void;
   toggleChecked: (id: string) => void;
   setOverride: (id: string, text: string) => void;
-  clearChecked: () => void;
+  /** Unchecks every item. Named for what it does — it clears the checks, not the checked items. */
+  uncheckAll: () => void;
   replaceAll: (items: ShoppingListItem[]) => void;
 }
 
@@ -309,10 +310,15 @@ export const useShoppingStore = create<ShoppingState>()(
               : i,
           ),
         })),
-      clearChecked: () =>
-        set((s) => ({
-          items: s.items.map((i) => ({ ...i, checked: false })),
-        })),
+      uncheckAll: () =>
+        set((s) => {
+          // Stamped like every other check-state change. Without it the push
+          // is the only thing carrying the news, so an offline "Uncheck all"
+          // leaves the local rows looking older than the server's still-checked
+          // ones, and the next pull's last-write-wins reverts the lot.
+          const now = new Date().toISOString();
+          return { items: s.items.map((i) => ({ ...i, checked: false, updatedAt: now })) };
+        }),
       replaceAll: (items) => set({ items }),
     }),
     {
