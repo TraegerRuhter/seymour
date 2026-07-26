@@ -116,10 +116,59 @@ h1 {
   .sey-chomping .sey-jaw--lower {
     animation: sey-chomp-lower 700ms cubic-bezier(0.2, 0.9, 0.2, 1);
   }
+  /* The whole plant lunges with the bite, and the leaves with it.
+     Not decoration: at growth stage 0 Seymour is a seedling with *no jaws at
+     all*, so the two rules above animate nothing for anyone who hasn't cooked
+     yet — precisely the person most likely to be finishing a first shopping
+     list. Animating the leaves alone wasn't enough either: at the 28px this
+     renders at, a few degrees on an 8px leaf is invisible. Squashing the whole
+     mascot reads at any size and at every stage, and it gives the bite a body
+     behind it rather than just a hinge. */
+  .sey-chomping {
+    animation: sey-lunge 700ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  }
+  .sey-chomping .sey-leaf {
+    animation: sey-leaf-lunge 700ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  }
 }
 
 /* Shut fast, hold for a beat, then open with a little overshoot — the hold is
    what makes it read as a bite rather than a flicker. */
+.sey-leaf {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+/* The pot stays planted, so the squash reads as the plant lunging out of it. */
+.sey-chomping {
+  transform-origin: bottom center;
+}
+@keyframes sey-lunge {
+  0%,
+  100% {
+    transform: none;
+  }
+  22%,
+  44% {
+    transform: scale(1.07, 0.93);
+  }
+  72% {
+    transform: scale(0.97, 1.04);
+  }
+}
+@keyframes sey-leaf-lunge {
+  0%,
+  100% {
+    transform: none;
+  }
+  22%,
+  44% {
+    transform: rotate(-5deg) scale(1.07);
+  }
+  72% {
+    transform: rotate(2deg) scale(0.98);
+  }
+}
+
 @keyframes sey-chomp-upper {
   0% {
     transform: scaleY(1);
