@@ -5,6 +5,7 @@ import { usePlanStore, useShoppingStore } from '@/lib/stores';
 import { uncheckAllShoppingItems } from '@/lib/actions';
 import ShoppingList from '@/components/ShoppingList';
 import ChompingSeymour from '@/components/ChompingSeymour';
+import ShoppingHorizon from '@/components/ShoppingHorizon';
 
 export default function ShoppingListPage() {
   const items = useShoppingStore((s) => s.items);
@@ -41,6 +42,8 @@ export default function ShoppingListPage() {
           </button>
         )}
       </header>
+
+      <ShoppingHorizon />
 
       <p className="text-sm text-charcoal/70">
         Already stocked on something?{' '}

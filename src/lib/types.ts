@@ -98,6 +98,17 @@ export interface MealPlanConfig {
    * started on the day they were generated, which is what that default says.
    */
   startDate?: string;
+  /**
+   * Local YYYY-MM-DD of the last day the shopping list covers.
+   *
+   * A plan can run further ahead than you want to shop for: generating next
+   * week appends it and leaves this where it was, so the list keeps
+   * describing this week's shop until you move it forward.
+   *
+   * Absent means the whole plan, which is what every plan made before this
+   * existed was doing.
+   */
+  shoppingThrough?: string;
   /** Set on every regenerate; compared to the server's row to resolve sync conflicts. */
   updatedAt?: string;
 }

@@ -377,6 +377,7 @@ function DayMealList({ dayIndex, day }: { dayIndex: number; day: MealPlanDay }) 
  */
 export default function MealPlanView() {
   const plan = usePlanStore((s) => s.plan);
+  const config = usePlanStore((s) => s.config);
   const recipes = useRecipeStore((s) => s.recipes);
   const [activeLocation, setActiveLocation] = useState<{
     dayIndex: number;
@@ -405,6 +406,7 @@ export default function MealPlanView() {
   if (!plan || plan.length === 0) return null;
 
   const todayStr = toLocalDateString(new Date());
+  const shoppingThrough = config?.shoppingThrough;
   const activeSlot = activeLocation
     ? plan[activeLocation.dayIndex]?.meals[activeLocation.mealIndex]
     : undefined;
@@ -455,6 +457,10 @@ export default function MealPlanView() {
               key={day.date}
               aria-label={`${heading.name} · ${heading.date}`}
               data-today={day.date === todayStr}
+              // Planned, but deliberately not on the shopping list yet. Marked
+              // rather than hidden — it's a real part of the plan, it just
+              // isn't something you're buying for today.
+              data-unshopped={shoppingThrough ? day.date > shoppingThrough : false}
               variants={fadeRise}
               initial="initial"
               animate="animate"

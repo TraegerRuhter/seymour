@@ -77,6 +77,31 @@ export function nextMonday(from: Date): Date {
 }
 
 /**
+ * The plan days the shopping list is built from — everything up to and
+ * including `through`.
+ *
+ * A plan can run further ahead than you want to shop for. Generating next
+ * week appends it to the plan and leaves the horizon where it was, so the
+ * list keeps describing this week's shop until you say otherwise.
+ *
+ * No horizon means the whole plan, which is what every plan made before this
+ * existed was doing.
+ *
+ * Comparing YYYY-MM-DD strings is a real date comparison: the format is
+ * fixed-width and big-endian, so lexical order is chronological order.
+ */
+export function daysWithinHorizon(plan: MealPlanDay[], through: string | undefined): MealPlanDay[] {
+  if (!through) return plan;
+  return plan.filter((day) => day.date <= through);
+}
+
+/** The days a plan holds that aren't on the shopping list yet. */
+export function daysBeyondHorizon(plan: MealPlanDay[], through: string | undefined): MealPlanDay[] {
+  if (!through) return [];
+  return plan.filter((day) => day.date > through);
+}
+
+/**
  * Generates a meal plan from the recipe collection.
  *
  * Recipes are drawn from a seeded shuffle, day by day. Within a single day no

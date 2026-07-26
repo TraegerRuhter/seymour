@@ -6,6 +6,7 @@ import {
   type ArchivedPlan,
   type ExportBundle,
   type MealPlanConfig,
+  type MealPlanDay,
   type MealSlot,
   type MealType,
   type ParsedRecipeData,
@@ -17,6 +18,7 @@ import { suggestTags } from './auto-tag';
 import { buildShoppingList, mergeShoppingList } from './aggregate';
 import { normalizeIngredientName } from './normalize';
 import {
+  daysWithinHorizon,
   fromLocalDateString,
   generateMealPlan,
   newSeed,
@@ -63,12 +65,15 @@ export function regenerateShoppingList(): void {
 
   // Debounce for 50ms to batch rapid updates (form typing, quick actions)
   debounceTimeout = setTimeout(() => {
-    const { plan } = usePlanStore.getState();
+    const { plan, config } = usePlanStore.getState();
     const { recipes } = useRecipeStore.getState();
     const { unitSystem } = useSettingsStore.getState();
     const { staples } = usePantryStore.getState();
     const shopping = useShoppingStore.getState();
-    const next = buildShoppingList(plan, recipes, unitSystem, new Set(staples));
+    // Only as far ahead as you've said you're shopping. The plan may run
+    // further; the list waits to be told.
+    const shopped = plan ? daysWithinHorizon(plan, config?.shoppingThrough) : null;
+    const next = buildShoppingList(shopped, recipes, unitSystem, new Set(staples));
     shopping.setItems(mergeShoppingList(next, shopping.items));
     debounceTimeout = null;
   }, 50);
@@ -297,33 +302,101 @@ export function generatePlan(
    */
   options: { startDate?: string; seed?: number } = {},
 ): void {
-  const config: MealPlanConfig = {
+  const { plan: existing, config: existingConfig } = usePlanStore.getState();
+  const drawn: MealPlanConfig = {
     days,
     mealTypes,
     seed: options.seed ?? newSeed(),
     startDate: options.startDate,
   };
+
   // Read ids straight from the source of truth. (An earlier cache optimization
   // broke this: the cache isn't persisted, so after a fresh page load it was
   // empty and every generated slot came out unfilled.)
   const recipes = useRecipeStore.getState().recipes;
   const recipeIds = Object.keys(recipes);
-  const plan = generateMealPlan(
+  const block = generateMealPlan(
     recipeIds,
-    config,
+    drawn,
     // generateMealPlan has always accepted a start date and defaulted it to
     // today; nothing ever passed one.
-    config.startDate ? fromLocalDateString(config.startDate) : undefined,
+    drawn.startDate ? fromLocalDateString(drawn.startDate) : undefined,
     (id, type) => {
       const recipe = recipes[id];
       return !recipe || recipeFitsMealType(recipe, type);
     },
     (id) => recipes[id]?.mainIngredient?.trim().toLowerCase() || undefined,
   );
+
+  const { plan, config } = appendOrReplace(existing, existingConfig, block, drawn);
   usePlanStore.getState().setPlan(config, plan);
   regenerateShoppingList();
   const { config: stampedConfig, plan: stampedPlan } = usePlanStore.getState();
   if (stampedConfig && stampedPlan) void pushMealPlan(stampedConfig, stampedPlan);
+}
+
+/**
+ * Decides whether a freshly drawn block extends the current plan or replaces
+ * it, and works out what the config should say either way.
+ *
+ * A block that begins after the last day already planned is next week, so it
+ * is added; anything else overlaps days that already exist, and two meals
+ * claiming one date is a different feature. Kept separate from generatePlan —
+ * and pure — because it's all boundary conditions and no drawing.
+ *
+ * The rules that matter:
+ *  - `days` follows the block just drawn, because the only thing reading it
+ *    is the generator form's default. `plan.length` is what anything wanting
+ *    the plan's real length uses.
+ *  - `startDate` stays with the plan's first day, so it keeps describing the
+ *    plan rather than the most recent addition to it.
+ *  - `shoppingThrough` does not move on an append. That is the point of this:
+ *    next week goes on the plan without going on the shopping list. On a
+ *    replace it covers the whole new plan, which is what generating has
+ *    always done.
+ */
+export function appendOrReplace(
+  existing: MealPlanDay[] | null,
+  existingConfig: MealPlanConfig | null,
+  block: MealPlanDay[],
+  drawn: MealPlanConfig,
+): { plan: MealPlanDay[]; config: MealPlanConfig } {
+  const lastPlanned = existing?.length ? existing[existing.length - 1].date : undefined;
+  const appends = !!lastPlanned && !!block.length && block[0].date > lastPlanned;
+
+  if (!appends) {
+    return {
+      plan: block,
+      config: { ...drawn, shoppingThrough: block[block.length - 1]?.date },
+    };
+  }
+
+  return {
+    plan: [...existing!, ...block],
+    config: {
+      ...drawn,
+      startDate: existingConfig?.startDate,
+      // A plan made before horizons existed has none, and "no horizon" means
+      // "shop the lot" — which would quietly pull the new week onto the list.
+      // Pin it to where the plan ended before this block arrived.
+      shoppingThrough: existingConfig?.shoppingThrough ?? lastPlanned,
+    },
+  };
+}
+
+/**
+ * Moves the shopping horizon, putting more of the plan on the list.
+ *
+ * Separate from generating, because deciding to shop for a week is a separate
+ * decision from deciding to eat it.
+ */
+export function setShoppingHorizon(through: string): void {
+  const { config, plan } = usePlanStore.getState();
+  if (!config || !plan) return;
+  usePlanStore.getState().setPlan({ ...config, shoppingThrough: through }, plan);
+  regenerateShoppingList();
+  const { config: stamped, plan: stampedPlan } = usePlanStore.getState();
+  if (stamped && stampedPlan) void pushMealPlan(stamped, stampedPlan);
 }
 
 /**
