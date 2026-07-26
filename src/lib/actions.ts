@@ -26,6 +26,7 @@ import {
   pushPantryStaples,
   pushRecipe,
   pushSettings,
+  clearShoppingItemStatesRemote,
   pushShoppingItemState,
   pushShoppingItemStates,
 } from './sync';
@@ -508,6 +509,10 @@ export function deleteAllRecipes(): void {
 export function resetShoppingList(): void {
   useShoppingStore.getState().replaceAll([]);
   regenerateShoppingList();
+  // Item ids are derived from content, so clearing the list locally doesn't
+  // orphan anything on the server — the same ids reappear and the next pull
+  // hands back the checks and edits this was meant to throw away.
+  void clearShoppingItemStatesRemote();
 }
 
 /** Wipes all data: recipes, current + archived plans, shopping list, and pantry staples. */
@@ -521,6 +526,7 @@ export function resetEverything(): void {
   for (const id of recipeIds) void deleteRemote('recipe', id);
   for (const id of archivedIds) void deleteRemote('archived_plan', id);
   void clearMealPlanRemote();
+  void clearShoppingItemStatesRemote();
   void pushPantryStaples([]);
 }
 

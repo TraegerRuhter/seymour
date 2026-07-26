@@ -320,6 +320,30 @@ export async function pushShoppingItemStates(items: ShoppingListItem[]): Promise
 }
 
 /**
+ * Drops every stored check/override for this user.
+ *
+ * Needed because a shopping item's id is derived from its content
+ * (`name|unit`, see aggregate.ts), so it is stable across regeneration. Wiping
+ * the list locally therefore doesn't orphan the server's rows — the same ids
+ * come straight back, and the next pull restores the checks and the manual
+ * edits the user just asked to drop.
+ *
+ * Deleting rather than upserting a cleared state, because "reset" means there
+ * is nothing to remember. A missing row lets the local value stand, and the
+ * pull pushes it back up on its own.
+ */
+export async function clearShoppingItemStatesRemote(): Promise<void> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return;
+  try {
+    await supabase.from('shopping_list_items').delete().eq('user_id', userId);
+  } catch {
+    // Offline or unreachable — nothing to do until the next sync attempt.
+  }
+}
+
+/**
  * Merges remote checked/manualOverride state into the current local
  * shopping list, per item id. Never pulls item existence or quantities —
  * those come from each device's own buildShoppingList() re-derivation, so
