@@ -167,7 +167,7 @@ h1 {
     @apply inline-flex items-center justify-center gap-2 rounded-full border border-charcoal/15 bg-surface/80 px-5 py-2.5 font-medium text-charcoal shadow-sm transition-colors hover:bg-surface active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
   }
   .input-base {
-    @apply w-full rounded-xl border border-charcoal/15 bg-surface/80 px-4 py-2.5 text-charcoal placeholder:text-charcoal/40 focus:border-moss;
+    @apply w-full rounded-xl border border-charcoal/15 bg-surface/80 px-4 py-2.5 text-charcoal placeholder:text-charcoal/70 focus:border-moss;
   }
 }
 
@@ -852,7 +852,7 @@ h1 {
   font-size: 0.68rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgb(var(--color-ink) / 0.45);
+  color: rgb(var(--color-ink) / 0.7);
 }
 /* A meal is a line on the timetable, not a tile. The hover tint is the only
    surface it ever gets. */
@@ -884,14 +884,14 @@ h1 {
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgb(var(--color-ink) / 0.55);
+  color: rgb(var(--color-ink) / 0.7);
 }
 .ledger-count {
   font-family: theme('fontFamily.typewriter');
   font-size: 0.72rem;
   font-weight: 400;
   letter-spacing: 0.04em;
-  color: rgb(var(--color-ink) / 0.4);
+  color: rgb(var(--color-ink) / 0.7);
 }
 .ledger-row + .ledger-row {
   border-top: 1px solid rgb(var(--color-ink) / 0.08);
@@ -903,7 +903,7 @@ h1 {
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  color: rgb(var(--color-ink) / 0.6);
+  color: rgb(var(--color-ink) / 0.7);
 }
 
 @media print {

@@ -128,6 +128,8 @@ The type is Fraunces (display), Karla (text) and Courier Prime (the index cards'
 The palette is deep botanical green on bone with one acidic accent, defined once in
 `src/app/globals.css`; `tests/palette.test.ts` parses those tokens and holds every rendered
 pairing to WCAG AA in both themes, so a colour tweak that breaks contrast fails the build.
+`e2e/a11y.spec.ts` runs axe over every surface in both themes on top of that — the token test
+can only check tokens, and the failures worth catching hide in the values that aren't ones.
 
 ## Getting started
 

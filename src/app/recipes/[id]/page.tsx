@@ -60,7 +60,7 @@ export default function RecipeDetailPage() {
   if (!recipe) {
     return (
       <div className="py-16 text-center">
-        <p className="text-charcoal/60">That recipe isn&apos;t here. Deleted, or possibly eaten.</p>
+        <p className="text-charcoal/70">That recipe isn&apos;t here. Deleted, or possibly eaten.</p>
         <Link href="/recipes" className="btn-secondary mt-4">
           Back to library
         </Link>
@@ -82,7 +82,7 @@ export default function RecipeDetailPage() {
   return (
     <article className="mx-auto max-w-3xl print-serif">
       <div className="no-print mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Link href="/recipes" className="text-sm font-medium text-moss hover:underline">
+        <Link href="/recipes" className="text-sm font-medium text-moss-strong hover:underline">
           ← Back to library
         </Link>
         <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -105,7 +105,7 @@ export default function RecipeDetailPage() {
             Cooked it
           </button>
           {justCooked && (
-            <span role="status" className="inline-flex items-center gap-2 text-sm text-charcoal/60">
+            <span role="status" className="inline-flex items-center gap-2 text-sm text-charcoal/70">
               Logged.
               <button
                 type="button"
@@ -113,7 +113,7 @@ export default function RecipeDetailPage() {
                   undoLastCook(recipe.id);
                   setJustCooked(false);
                 }}
-                className="font-medium text-moss hover:underline"
+                className="font-medium text-moss-strong hover:underline"
               >
                 Undo
               </button>
@@ -152,7 +152,7 @@ export default function RecipeDetailPage() {
               <button
                 type="button"
                 onClick={() => setConfirming(false)}
-                className="text-charcoal/60 hover:underline"
+                className="text-charcoal/70 hover:underline"
               >
                 Cancel
               </button>

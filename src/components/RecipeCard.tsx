@@ -38,7 +38,7 @@ export default function RecipeCard({
           <Thumb recipe={recipe} className="h-14 w-14 shrink-0 rounded-xl" />
           <div className="min-w-0">
             <h3 className="truncate font-semibold">{recipe.title}</h3>
-            <p className="text-sm text-charcoal/50">Added {added}</p>
+            <p className="text-sm text-charcoal/70">Added {added}</p>
           </div>
         </Link>
       </motion.div>
@@ -81,7 +81,7 @@ export default function RecipeCard({
               {recipe.mealTypes?.map((t) => (
                 <span
                   key={t}
-                  className="rounded-full bg-charcoal/10 px-2 py-0.5 text-xs font-medium text-charcoal/50"
+                  className="rounded-full bg-charcoal/10 px-2 py-0.5 text-xs font-medium text-charcoal/70"
                 >
                   {MEAL_TYPE_LABELS[t]}
                 </span>
@@ -92,7 +92,7 @@ export default function RecipeCard({
           {recipe.rating != null && (
             <StarRating value={recipe.rating} size="sm" label={`${recipe.rating} out of 5 stars`} />
           )}
-          <p className="mt-1 text-sm text-charcoal/50">
+          <p className="mt-1 text-sm text-charcoal/70">
             {recipe.ingredients.length} ingredient{recipe.ingredients.length === 1 ? '' : 's'} ·
             Added {added}
           </p>

@@ -8,7 +8,7 @@ export default function NotFound() {
           pages ought to be the one standing here. This was a dinner plate. */}
       <Logo className="animate-float mx-auto h-24 w-24" />
       <h1 className="mt-4 text-3xl font-bold">Nothing on this plate</h1>
-      <p className="mx-auto mt-2 max-w-sm text-charcoal/60">
+      <p className="mx-auto mt-2 max-w-sm text-charcoal/70">
         There&apos;s no page here. I may have eaten it. I genuinely can&apos;t remember.
       </p>
       <Link href="/" className="btn-primary mt-6">

@@ -18,7 +18,7 @@ export default function ShoppingListPage() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">Shopping list</h1>
-          <p className="mt-1 flex items-center gap-1.5 text-charcoal/60" aria-live="polite">
+          <p className="mt-1 flex items-center gap-1.5 text-charcoal/70" aria-live="polite">
             {items.length === 0
               ? 'Nothing to shop for.'
               : remaining === 0
@@ -42,18 +42,18 @@ export default function ShoppingListPage() {
         )}
       </header>
 
-      <p className="text-sm text-charcoal/50">
+      <p className="text-sm text-charcoal/70">
         Already stocked on something?{' '}
-        <Link href="/settings#pantry" className="font-medium text-moss hover:underline">
+        <Link href="/settings#pantry" className="font-medium text-moss-strong hover:underline">
           Add it to your spice rack
         </Link>{' '}
         to keep it off this list.
       </p>
 
       {items.length === 0 && !plan && (
-        <p className="text-sm text-charcoal/60">
+        <p className="text-sm text-charcoal/70">
           The list fills itself from your meal plan —{' '}
-          <Link href="/plan" className="font-medium text-moss hover:underline">
+          <Link href="/plan" className="font-medium text-moss-strong hover:underline">
             generate one
           </Link>{' '}
           to get started.

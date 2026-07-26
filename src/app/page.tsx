@@ -45,7 +45,7 @@ export default function DashboardPage() {
         {line ? (
           <SeymourSays text={line.text} />
         ) : (
-          <p className="mt-1 text-charcoal/60">
+          <p className="mt-1 text-charcoal/70">
             {`${recipeList.length} recipe${recipeList.length === 1 ? '' : 's'} in your collection.`}
           </p>
         )}
@@ -84,7 +84,7 @@ export default function DashboardPage() {
                     </span>
                   )}
                   <div className="min-w-0">
-                    <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/40">
+                    <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/70">
                       {MEAL_TYPE_LABELS[meal.type]}
                       {timing && (
                         <span className="rounded-full bg-zest px-1.5 py-px text-[10px] font-bold tracking-wider text-zest-ink">
@@ -106,12 +106,15 @@ export default function DashboardPage() {
           <InboxIcon className="h-9 w-9 shrink-0" />
           <div className="min-w-0">
             <h2 className="text-xl font-semibold">Add recipes</h2>
-            <p className="text-sm text-charcoal/60">
-              <Link href="/add" className="font-medium text-moss hover:underline">
+            <p className="text-sm text-charcoal/70">
+              <Link href="/add" className="font-medium text-moss-strong hover:underline">
                 Paste a URL
               </Link>{' '}
               or{' '}
-              <Link href="/add?mode=manual" className="font-medium text-moss hover:underline">
+              <Link
+                href="/add?mode=manual"
+                className="font-medium text-moss-strong hover:underline"
+              >
                 enter one by hand
               </Link>
             </p>
@@ -126,7 +129,7 @@ export default function DashboardPage() {
             <h2 className="text-xl font-semibold">
               {plan ? 'View meal plan' : 'Generate meal plan'}
             </h2>
-            <p className="text-sm text-charcoal/60">
+            <p className="text-sm text-charcoal/70">
               {plan
                 ? `${plan.length} day${plan.length === 1 ? '' : 's'} planned`
                 : 'Random picks from your collection'}
@@ -139,7 +142,7 @@ export default function DashboardPage() {
         <section className="rounded-2xl border border-dashed border-charcoal/20 p-10 text-center">
           <ChefPlantIcon className="animate-float mx-auto h-16 w-16" />
           <h2 className="mt-3 text-xl font-semibold">Nothing in the box</h2>
-          <p className="mx-auto mt-1 max-w-sm text-charcoal/60">
+          <p className="mx-auto mt-1 max-w-sm text-charcoal/70">
             Paste a recipe URL and I&apos;ll pull out the title, ingredients and steps. Then we can
             talk about dinner.
           </p>
@@ -157,7 +160,10 @@ export default function DashboardPage() {
           <section aria-label="Recent recipes">
             <div className="mb-3 flex items-baseline justify-between">
               <h2 className="text-xl font-semibold">Recent recipes</h2>
-              <Link href="/recipes" className="text-sm font-medium text-moss hover:underline">
+              <Link
+                href="/recipes"
+                className="text-sm font-medium text-moss-strong hover:underline"
+              >
                 View all
               </Link>
             </div>
@@ -171,12 +177,15 @@ export default function DashboardPage() {
           <section aria-label="Shopping list preview">
             <div className="mb-3 flex items-baseline justify-between">
               <h2 className="text-xl font-semibold">Shopping list</h2>
-              <Link href="/shopping-list" className="text-sm font-medium text-moss hover:underline">
+              <Link
+                href="/shopping-list"
+                className="text-sm font-medium text-moss-strong hover:underline"
+              >
                 View full list
               </Link>
             </div>
             {remaining > 0 && (
-              <p className="mb-2 text-sm text-charcoal/60">
+              <p className="mb-2 text-sm text-charcoal/70">
                 {remaining} item{remaining === 1 ? '' : 's'} to pick up
               </p>
             )}

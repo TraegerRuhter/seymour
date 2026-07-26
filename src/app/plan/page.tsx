@@ -32,7 +32,7 @@ export default function PlanPage() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">Meal plan</h1>
-          <p className="mt-1 text-charcoal/60">
+          <p className="mt-1 text-charcoal/70">
             {plan
               ? `${plan.length} day${plan.length === 1 ? '' : 's'} planned`
               : `Random picks from your ${recipeCount} recipe${recipeCount === 1 ? '' : 's'} — no repeats within a day.`}
@@ -53,9 +53,9 @@ export default function PlanPage() {
       {recipeCount === 0 ? (
         <div className="rounded-2xl border border-dashed border-charcoal/20 p-10 text-center">
           <PlanIcon className="animate-float mx-auto h-16 w-16" />
-          <p className="mt-3 text-charcoal/60">
+          <p className="mt-3 text-charcoal/70">
             I can&apos;t make a plan out of nothing —{' '}
-            <Link href="/add" className="font-medium text-moss hover:underline">
+            <Link href="/add" className="font-medium text-moss-strong hover:underline">
               add a few
             </Link>{' '}
             and come back.
@@ -110,7 +110,7 @@ export default function PlanPage() {
                 <button
                   type="button"
                   onClick={() => setConfirmClear(false)}
-                  className="text-charcoal/60 hover:underline"
+                  className="text-charcoal/70 hover:underline"
                 >
                   Cancel
                 </button>

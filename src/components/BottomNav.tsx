@@ -41,7 +41,7 @@ export default function BottomNav() {
                 href={tab.href}
                 aria-current={active ? 'page' : undefined}
                 className={`flex min-w-16 flex-col items-center gap-0.5 px-3 py-2.5 text-xs font-medium transition-colors lg:flex-row lg:gap-1.5 lg:rounded-full lg:px-4 lg:text-sm ${
-                  active ? 'text-moss lg:bg-moss/10' : 'text-charcoal/60 hover:text-charcoal'
+                  active ? 'text-moss-strong lg:bg-moss/10' : 'text-charcoal/70 hover:text-charcoal'
                 }`}
               >
                 <span className="relative">

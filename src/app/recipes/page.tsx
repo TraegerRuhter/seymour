@@ -30,7 +30,7 @@ function FilterChip({
       className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
         on
           ? 'bg-zest text-zest-ink'
-          : 'border border-charcoal/15 bg-surface/70 text-charcoal/60 hover:bg-surface hover:text-charcoal'
+          : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface hover:text-charcoal'
       }`}
     >
       {children}
@@ -200,7 +200,7 @@ export default function RecipeLibraryPage() {
                   setMealFilter(null);
                   setCategoryFilter(null);
                 }}
-                className="ml-1 text-sm font-medium text-moss hover:underline"
+                className="ml-1 text-sm font-medium text-moss-strong hover:underline"
               >
                 Clear
               </button>
@@ -209,7 +209,7 @@ export default function RecipeLibraryPage() {
               <button
                 type="button"
                 onClick={handleAutoTag}
-                className="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-moss hover:underline"
+                className="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-moss-strong hover:underline"
               >
                 <SparkleIcon className="h-4 w-4" />
                 Auto-tag {untaggedCount} recipe{untaggedCount === 1 ? '' : 's'}
@@ -217,13 +217,13 @@ export default function RecipeLibraryPage() {
             )}
           </div>
         )}
-        {tagMessage && <p className="text-xs text-charcoal/50">{tagMessage}</p>}
+        {tagMessage && <p className="text-xs text-charcoal/70">{tagMessage}</p>}
       </div>
 
       {filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-charcoal/20 p-10 text-center">
           <PlateIcon className="animate-float mx-auto h-16 w-16" />
-          <p className="mt-3 text-charcoal/60">
+          <p className="mt-3 text-charcoal/70">
             {hasActiveFilter
               ? 'Nothing matches. Try fewer filters.'
               : 'The box is empty. Add your first recipe.'}

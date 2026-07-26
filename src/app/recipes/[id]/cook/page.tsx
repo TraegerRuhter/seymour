@@ -67,7 +67,7 @@ export default function CookModePage() {
   if (!recipe) {
     return (
       <div className="py-16 text-center">
-        <p className="text-charcoal/60">That recipe isn&apos;t here. Deleted, or possibly eaten.</p>
+        <p className="text-charcoal/70">That recipe isn&apos;t here. Deleted, or possibly eaten.</p>
         <Link href="/recipes" className="btn-secondary mt-4">
           Back to library
         </Link>
@@ -78,7 +78,7 @@ export default function CookModePage() {
   if (steps.length === 0) {
     return (
       <div className="py-16 text-center">
-        <p className="mx-auto max-w-sm text-charcoal/60">
+        <p className="mx-auto max-w-sm text-charcoal/70">
           There are no steps written down for this one, so there&apos;s nothing for me to walk you
           through.
         </p>
@@ -102,13 +102,13 @@ export default function CookModePage() {
       <header className="flex items-center justify-between gap-3 border-b border-charcoal/10 px-4 pb-3 pt-[calc(1rem_+_var(--safe-top))]">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{recipe.title}</p>
-          <p className="text-xs text-charcoal/50" aria-live="polite">
+          <p className="text-xs text-charcoal/70" aria-live="polite">
             {finished ? 'Done' : `Step ${step + 1} of ${steps.length}`}
           </p>
         </div>
         <Link
           href={`/recipes/${recipe.id}`}
-          className="shrink-0 rounded-full px-3 py-1.5 text-sm font-medium text-charcoal/60 transition-colors hover:bg-charcoal/5"
+          className="shrink-0 rounded-full px-3 py-1.5 text-sm font-medium text-charcoal/70 transition-colors hover:bg-charcoal/5"
         >
           Close
         </Link>
@@ -141,7 +141,7 @@ export default function CookModePage() {
             aria-live="polite"
           >
             <div className="mx-auto w-full max-w-3xl">
-              <p aria-hidden className="font-typewriter text-sm tracking-widest text-charcoal/40">
+              <p aria-hidden className="font-typewriter text-sm tracking-widest text-charcoal/70">
                 STEP {step + 1}
               </p>
               {/* Large enough to read at arm's length, and capped so a long
@@ -197,7 +197,7 @@ export default function CookModePage() {
               <button
                 type="button"
                 onClick={() => setShowIngredients(false)}
-                className="rounded-full px-3 py-1.5 text-sm font-medium text-charcoal/60 transition-colors hover:bg-charcoal/5"
+                className="rounded-full px-3 py-1.5 text-sm font-medium text-charcoal/70 transition-colors hover:bg-charcoal/5"
               >
                 Close
               </button>

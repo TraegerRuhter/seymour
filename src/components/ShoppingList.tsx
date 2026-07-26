@@ -152,7 +152,7 @@ function RowMenu({
         aria-haspopup="true"
         aria-expanded={open}
         aria-label={`More actions for ${item.ingredientName}`}
-        className="shrink-0 rounded-full p-1.5 text-charcoal/40 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
+        className="shrink-0 rounded-full p-1.5 text-charcoal/70 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
       >
         <MoreIcon className="h-5 w-5" />
       </button>
@@ -307,7 +307,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
               <span ref={labelTextRef} className={`flex-1 ${expanded ? '' : 'truncate'}`}>
                 {itemName(item)}
                 {item.manualOverride && (
-                  <span className="ml-2 rounded-full bg-moss/10 px-2 py-0.5 text-xs text-moss">
+                  <span className="ml-2 rounded-full bg-moss/10 px-2 py-0.5 text-xs text-moss-strong">
                     edited
                   </span>
                 )}
@@ -332,7 +332,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
               type="button"
               onClick={() => setShowBreakdown((v) => !v)}
               aria-expanded={showBreakdown}
-              className="flex items-center gap-1 text-xs text-charcoal/50 hover:text-charcoal/70"
+              className="flex items-center gap-1 text-xs text-charcoal/70 hover:text-charcoal/70"
             >
               <span
                 aria-hidden
@@ -347,14 +347,14 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
                 {item.sources.map((s) => (
                   <li
                     key={`${s.originalString}|${s.scale ?? 1}`}
-                    className="truncate text-xs text-charcoal/60"
+                    className="truncate text-xs text-charcoal/70"
                   >
                     {s.originalString}
                     {s.scale != null && s.scale !== 1 && (
                       <span className="font-medium text-zest-strong"> ×{s.scale}</span>
                     )}
                     {s.recipeId && recipes[s.recipeId] && (
-                      <span className="text-charcoal/40"> · {recipes[s.recipeId].title}</span>
+                      <span className="text-charcoal/70"> · {recipes[s.recipeId].title}</span>
                     )}
                   </li>
                 ))}
@@ -492,7 +492,7 @@ export default function ShoppingList({
 
   if (items.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-charcoal/20 p-6 text-center text-charcoal/50">
+      <p className="rounded-2xl border border-dashed border-charcoal/20 p-6 text-center text-charcoal/70">
         Nothing to buy yet. Plan some meals and this fills itself in.
       </p>
     );
@@ -508,12 +508,12 @@ export default function ShoppingList({
           ))}
         </AnimatePresence>
         {unchecked.length > limit && (
-          <li className="px-4 py-1 text-sm text-charcoal/50">
+          <li className="px-4 py-1 text-sm text-charcoal/70">
             +{unchecked.length - limit} more item{unchecked.length - limit === 1 ? '' : 's'}
           </li>
         )}
         {unchecked.length === 0 && (
-          <li className="flex items-center gap-1.5 px-4 py-1 text-sm text-charcoal/50">
+          <li className="flex items-center gap-1.5 px-4 py-1 text-sm text-charcoal/70">
             All checked off <SparkleIcon className="h-4 w-4" />
           </li>
         )}
@@ -563,7 +563,7 @@ export default function ShoppingList({
             type="button"
             onClick={() => setShowChecked((v) => !v)}
             aria-expanded={showChecked}
-            className="mb-2 flex items-center gap-2 text-sm font-medium text-charcoal/60"
+            className="mb-2 flex items-center gap-2 text-sm font-medium text-charcoal/70"
           >
             <span
               aria-hidden
