@@ -22,6 +22,14 @@ export default function DashboardPage() {
   );
   const remaining = useMemo(() => items.filter((i) => !i.checked).length, [items]);
   const line = useMemo(() => seymourSays({ recipes: recipeList }), [recipeList]);
+  // Read once per mount. Same reasoning as the meal ordering below: there is
+  // no server pass to disagree with, because AppProviders holds children back
+  // until after hydration.
+  const now = useMemo(() => new Date(), []);
+  const heading = useMemo(
+    () => now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }),
+    [now],
+  );
   const today = useMemo(() => plan?.find((d) => d.date === toLocalDateString(new Date())), [plan]);
   // Ordered by the clock rather than by the plan: at 5pm the useful answer is
   // dinner, and it used to be third in a row of four. Computed at render,
@@ -37,8 +45,17 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <header>
+        {/* The date, rather than a catchphrase.
+            This slot used to read "Feed me, Seymour" — the same string every
+            visit, directly under a wordmark saying "Seymour" and a speech
+            bubble saying "feed me", with Seymour's actual, earned line demoted
+            to grey italic underneath it. Three copies of the joke and a
+            headline doing no work.
+            A day and a date is the one thing a meal planner's home page can
+            put here that you might not already know, and it's what the rest of
+            the page is about: today's meals, ordered by the clock. */}
         <h1 className="text-3xl font-bold">
-          {recipeList.length === 0 ? 'Welcome to Seymour' : 'Feed me, Seymour'}
+          <time dateTime={toLocalDateString(now)}>{heading}</time>
         </h1>
         {/* Seymour speaks when he has something earned to say; otherwise the
             header stays plain rather than manufacturing a line. */}
