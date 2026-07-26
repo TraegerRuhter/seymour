@@ -864,6 +864,48 @@ h1 {
   background: rgb(var(--color-ink) / 0.04);
 }
 
+/* ==========================================================================
+   The ledger — the shopping list
+   --------------------------------------------------------------------------
+   The third shape (§6.7): a recipe is a card, a plan is a timetable, a list is
+   a list. Rounded panels round every item made it read as a feed of things
+   rather than one column you run your eye down.
+
+   docs/voice.md calls this the app's main work surface — you are holding a
+   phone in a supermarket — so the character here is entirely structural. No
+   jokes, no decoration, nothing that costs legibility: hairlines between
+   items, aisles as ruled breaks, and amounts lined up in their own column
+   where they can actually be compared.
+   ========================================================================== */
+.ledger-aisle {
+  padding-bottom: 0.375rem;
+  border-bottom: 1px solid rgb(var(--color-ink) / 0.14);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(var(--color-ink) / 0.55);
+}
+.ledger-count {
+  font-family: theme('fontFamily.typewriter');
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: rgb(var(--color-ink) / 0.4);
+}
+.ledger-row + .ledger-row {
+  border-top: 1px solid rgb(var(--color-ink) / 0.08);
+}
+/* Tabular figures so the column lines up digit for digit — the entire reason
+   the amount was pulled out of the item's name. */
+.ledger-qty {
+  font-family: theme('fontFamily.typewriter');
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: rgb(var(--color-ink) / 0.6);
+}
+
 @media print {
   .index-card,
   .recipe-sheet {
