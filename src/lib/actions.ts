@@ -27,6 +27,7 @@ import {
   pushRecipe,
   pushSettings,
   pushShoppingItemState,
+  pushShoppingItemStates,
 } from './sync';
 import {
   usePantryStore,
@@ -79,6 +80,20 @@ export function setShoppingItemOverride(id: string, text: string): void {
   useShoppingStore.getState().setOverride(id, text);
   const item = useShoppingStore.getState().items.find((i) => i.id === id);
   if (item) void pushShoppingItemState(item);
+}
+
+/**
+ * Unchecks every item — the "start the shop again" button.
+ *
+ * Here rather than called straight off the store, which is what the page used
+ * to do. Checked state is the one part of a shopping item that syncs, so a
+ * bulk change to it that skips the push leaves the server still holding every
+ * item as checked; the next pull merges that back and silently re-ticks the
+ * whole list.
+ */
+export function uncheckAllShoppingItems(): void {
+  useShoppingStore.getState().uncheckAll();
+  void pushShoppingItemStates(useShoppingStore.getState().items);
 }
 
 // --- Settings ---

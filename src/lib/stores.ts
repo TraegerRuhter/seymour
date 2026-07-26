@@ -281,7 +281,8 @@ interface ShoppingState {
   setItems: (items: ShoppingListItem[]) => void;
   toggleChecked: (id: string) => void;
   setOverride: (id: string, text: string) => void;
-  clearChecked: () => void;
+  /** Unchecks every item. Named for what it does — it clears the checks, not the checked items. */
+  uncheckAll: () => void;
   replaceAll: (items: ShoppingListItem[]) => void;
 }
 
@@ -309,7 +310,7 @@ export const useShoppingStore = create<ShoppingState>()(
               : i,
           ),
         })),
-      clearChecked: () =>
+      uncheckAll: () =>
         set((s) => ({
           items: s.items.map((i) => ({ ...i, checked: false })),
         })),

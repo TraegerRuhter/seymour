@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePlanStore, useShoppingStore } from '@/lib/stores';
+import { uncheckAllShoppingItems } from '@/lib/actions';
 import ShoppingList from '@/components/ShoppingList';
 import ChompingSeymour from '@/components/ChompingSeymour';
 
 export default function ShoppingListPage() {
   const items = useShoppingStore((s) => s.items);
-  const clearChecked = useShoppingStore((s) => s.clearChecked);
   const plan = usePlanStore((s) => s.plan);
 
   const remaining = items.filter((i) => !i.checked).length;
@@ -34,7 +34,7 @@ export default function ShoppingListPage() {
         {checkedCount > 0 && (
           <button
             type="button"
-            onClick={clearChecked}
+            onClick={uncheckAllShoppingItems}
             className="btn-secondary px-4 py-1.5 text-sm"
           >
             Uncheck all
