@@ -78,6 +78,11 @@ everything else runs client-side and works offline as an installable PWA.
 - **Cook mode** — `/recipes/[id]/cook` walks you through one step at a time at a size you
   can read from across a worktop, holds the screen awake (Wake Lock, where supported), and
   keeps the ingredients one tap away. Reaching the end logs the cook for you.
+- **Seymour grows** — the mascot in the header is a seedling in an empty pot until you cook
+  something, and gains a trap, foliage and eventually a second head as the cook count climbs.
+  Driven by cooks rather than by how many recipes you've saved: a collection measures
+  hoarding, a cook log measures feeding, and feeding is what he asks for. Deliberately has no
+  progress bar anywhere — he grows, you notice.
 - **Seymour says** — one contextual line on the dashboard, chosen by ordered rules over your
   own history. No model, no network, no randomness: every line is earned by something that
   actually happened, and saying nothing is a common and valid outcome.

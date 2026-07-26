@@ -1,6 +1,7 @@
 import type { Recipe } from './types';
 import { toLocalDateString } from './plan';
 import { cookCount, lastCookedAt } from './cook-log';
+import { growthName, justGrewInto } from './growth';
 
 /**
  * What Seymour has to say about your cooking.
@@ -118,6 +119,23 @@ export function seymourSays({ recipes, now = new Date() }: SeymourInput): Seymou
     return {
       rule: 'long-silence',
       text: `Nothing cooked in ${silentDays} days. I'm withering over here.`,
+    };
+  }
+
+  // Growing outranks the milestone below it, and the two can collide (50 is
+  // both). A stage change is rarer and you can see it in the header, so it's
+  // the one worth explaining — otherwise the plant just quietly changes shape
+  // and you're left wondering whether you imagined it.
+  //
+  // Except the first one. Sprouting a head on cook #1 is the one transition
+  // nobody needs explained — you pressed "Cooked it" and the plant grew, which
+  // is the entire premise — and announcing it costs the warmer, more specific
+  // line ("Lentil & Kale Soup today. Good.") on the best moment the app has.
+  const grewInto = justGrewInto(totalCooks);
+  if (grewInto && grewInto >= 2 && daysBetween(lastAnyIso, now) === 0) {
+    return {
+      rule: 'just-grown',
+      text: `Something's changed. I'd call this ${growthName(grewInto).toLowerCase()}.`,
     };
   }
 
