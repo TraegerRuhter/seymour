@@ -311,9 +311,14 @@ export const useShoppingStore = create<ShoppingState>()(
           ),
         })),
       uncheckAll: () =>
-        set((s) => ({
-          items: s.items.map((i) => ({ ...i, checked: false })),
-        })),
+        set((s) => {
+          // Stamped like every other check-state change. Without it the push
+          // is the only thing carrying the news, so an offline "Uncheck all"
+          // leaves the local rows looking older than the server's still-checked
+          // ones, and the next pull's last-write-wins reverts the lot.
+          const now = new Date().toISOString();
+          return { items: s.items.map((i) => ({ ...i, checked: false, updatedAt: now })) };
+        }),
       replaceAll: (items) => set({ items }),
     }),
     {
