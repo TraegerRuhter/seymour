@@ -786,6 +786,84 @@ h1 {
   }
 }
 
+/* ==========================================================================
+   The week — the meal planner
+   --------------------------------------------------------------------------
+   Deliberately *not* the index-card material. The prospectus's complaint
+   (§6.7) is that every screen is made of the same rounded panels, and the fix
+   for that isn't to make every screen out of paper instead — it's to let each
+   one take the shape of the thing it is. A recipe is a card. A plan is a
+   timetable: named days in order, hairline-ruled, one continuous page.
+
+   So there are no cards here at all. Days are rows, which is also what makes
+   a 14-day plan legible where a wrapping 3-column grid of day-cards never
+   read as a week.
+   ========================================================================== */
+.week {
+  border-top: 1px solid rgb(var(--color-ink) / 0.12);
+}
+.wk-day {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+  border-bottom: 1px solid rgb(var(--color-ink) / 0.12);
+  padding: 0.875rem 0;
+}
+@media (min-width: 48rem) {
+  .wk-day {
+    grid-template-columns: 9.5rem 1fr;
+    gap: 1rem;
+    padding: 1rem 0;
+  }
+}
+/* Today gets a rule down its edge rather than a ring around a card — a mark
+   in the margin, the way you'd flag a row on a printed timetable. */
+.wk-day[data-today='true'] {
+  position: relative;
+  padding-left: 0.875rem;
+}
+.wk-day[data-today='true']::before {
+  content: '';
+  position: absolute;
+  inset: 0.5rem auto 0.5rem 0;
+  width: 3px;
+  border-radius: 2px;
+  background: rgb(var(--color-moss));
+}
+.wk-when {
+  padding-top: 0.375rem;
+}
+/* Capped rather than full-bleed: on a wide screen the title sat at the far
+   left and its controls at the far right, with a canyon between them and no
+   way to tell which row you were reading across. */
+.wk-meals {
+  max-width: 46rem;
+}
+.wk-dayname {
+  display: block;
+  font-family: theme('fontFamily.display');
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.15;
+}
+.wk-date {
+  display: block;
+  font-family: theme('fontFamily.typewriter');
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(var(--color-ink) / 0.45);
+}
+/* A meal is a line on the timetable, not a tile. The hover tint is the only
+   surface it ever gets. */
+.wk-meal {
+  border-radius: 0.5rem;
+  transition: background-color 0.15s;
+}
+.wk-meal:hover {
+  background: rgb(var(--color-ink) / 0.04);
+}
+
 @media print {
   .index-card,
   .recipe-sheet {

@@ -40,14 +40,21 @@ import ActionMenu from './ActionMenu';
 import RecipePicker from './RecipePicker';
 import { GripIcon, MEAL_TYPE_ICON, PencilIcon, PinIcon, ShuffleIcon, TrashIcon } from './icons';
 
-function dayHeading(dateStr: string): string {
+/**
+ * A day, split into the two things a timetable row needs: what to call it, and
+ * when it actually is. "Today" is the useful name for one row a week; the date
+ * underneath keeps it checkable.
+ */
+function dayHeading(dateStr: string): { name: string; date: string } {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
-  const weekday = date.toLocaleDateString(undefined, { weekday: 'short' });
+  const weekday = date.toLocaleDateString(undefined, { weekday: 'long' });
   const monthDay = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  return dateStr === toLocalDateString(new Date())
-    ? `Today · ${monthDay}`
-    : `${weekday} · ${monthDay}`;
+  const isToday = dateStr === toLocalDateString(new Date());
+  return {
+    name: isToday ? 'Today' : weekday,
+    date: isToday ? `${weekday.slice(0, 3)} ${monthDay}` : monthDay,
+  };
 }
 
 /**
@@ -144,11 +151,18 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
         setNodeRef(node);
       }}
       style={dragStyle}
-      className={`group relative rounded-xl bg-surface/60 p-3 transition-colors hover:bg-surface ${isDragging ? 'opacity-30' : ''}`}
+      className={`wk-meal group relative p-2.5 ${isDragging ? 'opacity-30' : ''}`}
     >
-      <div className="flex items-center gap-3">
+      {/* One line per meal on anything but a phone. At 400px the title, the
+          servings stepper, shuffle and the menu were all fighting for the same
+          row and the titles truncated, so below `sm` the controls wrap under
+          the title — vertical space is the cheaper of the two there. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         {gripHandle}
-        <Link href={`/recipes/${recipe.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+        <Link
+          href={`/recipes/${recipe.id}`}
+          className="flex min-w-0 flex-1 basis-[calc(100%-2.5rem)] items-center gap-3 sm:basis-0"
+        >
           {recipe.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -172,7 +186,13 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
             <p className="truncate text-sm font-semibold">{recipe.title}</p>
           </div>
         </Link>
-        <div className="flex shrink-0 gap-0.5">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          <ServingsStepper
+            dayIndex={dayIndex}
+            mealIndex={mealIndex}
+            scale={slot.scale ?? 1}
+            baseServings={recipe.servings}
+          />
           <button
             type="button"
             aria-label={`Shuffle ${label} to a different recipe`}
@@ -204,12 +224,6 @@ function MealTile({ dayIndex, mealIndex }: { dayIndex: number; mealIndex: number
           />
         </div>
       </div>
-      <ServingsStepper
-        dayIndex={dayIndex}
-        mealIndex={mealIndex}
-        scale={slot.scale ?? 1}
-        baseServings={recipe.servings}
-      />
       {picking && (
         <RecipePicker
           anchorRef={tileRef}
@@ -295,7 +309,7 @@ function AddMeal({ dayIndex }: { dayIndex: number }) {
       <button
         type="button"
         onClick={() => setChoosing(true)}
-        className="w-full rounded-xl p-2 text-sm font-medium text-charcoal/40 transition-colors hover:bg-surface/60 hover:text-charcoal/70"
+        className="w-full rounded-lg p-2 text-left text-sm font-medium text-charcoal/40 transition-colors hover:bg-charcoal/[0.04] hover:text-charcoal/70"
       >
         ＋ Add a meal
       </button>
@@ -340,7 +354,7 @@ function DayMealList({ dayIndex, day }: { dayIndex: number; day: MealPlanDay }) 
 
   return (
     <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-      <div ref={setNodeRef} className="space-y-2">
+      <div ref={setNodeRef} className="wk-meals space-y-0.5">
         {day.meals.map((_, mealIndex) => (
           <MealTile key={itemIds[mealIndex]} dayIndex={dayIndex} mealIndex={mealIndex} />
         ))}
@@ -434,23 +448,28 @@ export default function MealPlanView() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 lg:mx-0 lg:grid lg:snap-none lg:grid-cols-3 lg:overflow-visible lg:px-0 xl:grid-cols-4">
-        {plan.map((day, dayIndex) => (
-          <motion.section
-            key={day.date}
-            aria-label={dayHeading(day.date)}
-            variants={fadeRise}
-            initial="initial"
-            animate="animate"
-            transition={{ ...enter, delay: Math.min(dayIndex * 0.04, 0.3) }}
-            className={`glass-card w-72 shrink-0 snap-start p-4 lg:w-auto ${
-              day.date === todayStr ? 'ring-2 ring-moss/60' : ''
-            }`}
-          >
-            <h3 className="mb-3 font-semibold">{dayHeading(day.date)}</h3>
-            <DayMealList dayIndex={dayIndex} day={day} />
-          </motion.section>
-        ))}
+      <div className="week">
+        {plan.map((day, dayIndex) => {
+          const heading = dayHeading(day.date);
+          return (
+            <motion.section
+              key={day.date}
+              aria-label={`${heading.name} · ${heading.date}`}
+              data-today={day.date === todayStr}
+              variants={fadeRise}
+              initial="initial"
+              animate="animate"
+              transition={{ ...enter, delay: Math.min(dayIndex * 0.03, 0.24) }}
+              className="wk-day"
+            >
+              <div className="wk-when">
+                <h3 className="wk-dayname">{heading.name}</h3>
+                <span className="wk-date">{heading.date}</span>
+              </div>
+              <DayMealList dayIndex={dayIndex} day={day} />
+            </motion.section>
+          );
+        })}
       </div>
       <DragOverlay>
         {activeSlot && (
