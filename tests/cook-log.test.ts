@@ -100,6 +100,17 @@ test('describeLastCooked scales its phrasing with distance', () => {
   assert.match(describeLastCooked(daysAgo(500), now), /\d{4}/);
 });
 
+test('a month name from a previous year carries the year', () => {
+  // The case that was wrong: read in July 2026, a cook from October 2025 is
+  // 296 days back — under a year, so it used to render as a bare "October",
+  // which reads as a month three months in the future.
+  const now = new Date(2026, 6, 20, 12, 0);
+  const lastOctober = new Date(2025, 9, 3, 12, 0).toISOString();
+  assert.match(describeLastCooked(lastOctober, now), /2025/);
+  // Same month name, this year, stays bare — the year would be noise.
+  assert.equal(describeLastCooked(new Date(2026, 2, 3, 12, 0).toISOString(), now), 'March');
+});
+
 test('describeLastCooked tolerates a malformed timestamp', () => {
   assert.equal(describeLastCooked('not-a-date'), 'Never made');
 });

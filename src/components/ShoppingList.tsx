@@ -151,7 +151,10 @@ function RowMenu({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="true"
         aria-expanded={open}
-        aria-label={`More actions for ${item.ingredientName}`}
+        // itemName, not ingredientName: once you've renamed a row to "oat milk,
+        // 2 cartons", announcing "more actions for milk" names something that
+        // is no longer on screen.
+        aria-label={`More actions for ${itemName(item)}`}
         className="shrink-0 rounded-full p-1.5 text-charcoal/70 transition-colors hover:bg-charcoal/5 hover:text-charcoal"
       >
         <MoreIcon className="h-5 w-5" />
@@ -277,7 +280,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
               autoFocus
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              aria-label={`Edit ${item.ingredientName}`}
+              aria-label={`Edit ${itemName(item)}`}
               className="input-base py-1.5 text-sm"
             />
             <button type="submit" className="btn-primary px-3 py-1.5 text-sm">
