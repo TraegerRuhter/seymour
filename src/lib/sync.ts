@@ -413,6 +413,8 @@ interface MealPlanConfigRow {
   days: number;
   meal_types: MealType[];
   seed: number;
+  /** Null for rows written before plans could start on a day other than today. */
+  start_date: string | null;
   updated_at: string;
 }
 
@@ -424,11 +426,23 @@ interface MealPlanDayRow {
 }
 
 function rowToConfig(row: MealPlanConfigRow): MealPlanConfig {
-  return { days: row.days, mealTypes: row.meal_types, seed: row.seed, updatedAt: row.updated_at };
+  return {
+    days: row.days,
+    mealTypes: row.meal_types,
+    seed: row.seed,
+    startDate: row.start_date ?? undefined,
+    updatedAt: row.updated_at,
+  };
 }
 
 function configToRow(userId: string, config: MealPlanConfig) {
-  return { user_id: userId, days: config.days, meal_types: config.mealTypes, seed: config.seed };
+  return {
+    user_id: userId,
+    days: config.days,
+    meal_types: config.mealTypes,
+    seed: config.seed,
+    start_date: config.startDate ?? null,
+  };
 }
 
 function rowToDay(row: MealPlanDayRow): MealPlanDay {

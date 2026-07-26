@@ -84,8 +84,17 @@ create table if not exists public.meal_plan_config (
   days integer not null,
   meal_types jsonb not null,
   seed bigint not null,
+  -- Local YYYY-MM-DD the plan's first day falls on. Text, not date, because
+  -- it's a calendar day in the user's own timezone rather than an instant —
+  -- the client already stores and compares plan days in exactly this form.
+  start_date text,
   updated_at timestamptz not null default now()
 );
+
+-- Additive, for projects created before plans could start on a day other than
+-- today. `create table if not exists` above won't add a column to a table that
+-- already exists, so this does.
+alter table public.meal_plan_config add column if not exists start_date text;
 
 alter table public.meal_plan_config enable row level security;
 

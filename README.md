@@ -178,7 +178,10 @@ shopping list, archived plans, and pantry staples follow you to another device.
 1. Create a free project at [supabase.com](https://supabase.com).
 2. Open the project's SQL Editor and run [`supabase/schema.sql`](supabase/schema.sql) — it
    creates every table, enables row-level security scoped to `auth.uid()`, and sets up the
-   `updated_at` triggers sync relies on.
+   `updated_at` triggers sync relies on. It's safe to re-run against a project you set up
+   earlier: everything is `if not exists`, and columns added since are applied with
+   `alter table ... add column if not exists`. Re-run it after pulling if a release adds a
+   field — plan start dates did.
 3. Copy the Project URL and anon/public key from Project Settings → API into
    `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`.env.local` for local dev,
    your host's env vars for deployment).
