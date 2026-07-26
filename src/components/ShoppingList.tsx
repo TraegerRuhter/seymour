@@ -492,6 +492,12 @@ export default function ShoppingList({
 
   const unchecked = items.filter((i) => !i.checked || lingering.has(i.id));
   const checked = items.filter((i) => i.checked && !lingering.has(i.id));
+  // Counted off the real state, not the linger set. The linger exists so a
+  // row can finish its animation before it relocates — it is not a claim that
+  // the item is still unchecked, and the bar is the feedback for having
+  // checked it. Holding it back for 650ms also put it out of step with the
+  // dashboard's "N items to pick up", which counts immediately.
+  const doneCount = items.filter((i) => i.checked).length;
 
   if (items.length === 0) {
     return (
@@ -536,7 +542,7 @@ export default function ShoppingList({
   return (
     <div>
       <div className="mb-5">
-        <ProgressBar done={checked.length} total={items.length} />
+        <ProgressBar done={doneCount} total={items.length} />
       </div>
 
       {CATEGORY_ORDER.filter((cat) => groups.has(cat)).map((cat) => {
