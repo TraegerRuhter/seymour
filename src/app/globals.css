@@ -958,18 +958,20 @@ h1 {
 @media print {
   .index-card,
   .recipe-sheet {
+    /* White, not stock. The paper tint is the single most expensive thing
+       here — a full page of it — where the hairlines below cost almost
+       nothing and are half of what makes a printed recipe look like a recipe
+       card rather than a web page someone printed. */
+    background-color: #fff;
     background-image: none;
     box-shadow: none;
     border: 1px solid #ddd;
   }
+  /* Coffee rings and thumb smudges are charming on screen and a waste of
+     toner on paper. The ruling and the margin rule stay. */
   .ic-mark,
   .ic-corner {
     display: none !important;
-  }
-  /* Coffee rings are charming on screen and a waste of toner on paper. */
-  .recipe-sheet::after,
-  .rs-body::before {
-    display: none;
   }
 }
 

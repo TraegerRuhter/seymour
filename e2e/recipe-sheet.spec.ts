@@ -78,6 +78,27 @@ test.describe('The recipe sheet', () => {
     await expect(sheet).not.toContainText('RECIPE');
   });
 
+  test('printing drops the stains and the tint, keeps the card', async ({ page }) => {
+    await addAndCook(page, 5);
+    await page.emulateMedia({ media: 'print' });
+
+    const printed = await page.locator('.recipe-sheet').evaluate((el) => ({
+      background: getComputedStyle(el).backgroundColor,
+      shadow: getComputedStyle(el).boxShadow,
+      marks: [...el.querySelectorAll('.ic-mark, .ic-corner')].filter(
+        (m) => getComputedStyle(m).display !== 'none',
+      ).length,
+      ruling: getComputedStyle(el.querySelector('.rs-ing')!, '::before').display,
+    }));
+
+    // The tint is a full page of ink; the stains are decoration. Both go.
+    expect(printed.background).toBe('rgb(255, 255, 255)');
+    expect(printed.marks).toBe(0);
+    expect(printed.shadow).toBe('none');
+    // The hairlines cost nothing and are half of what makes it read as a card.
+    expect(printed.ruling).not.toBe('none');
+  });
+
   test('the controls stay off the paper, where they can still be read', async ({ page }) => {
     await addAndCook(page, 0);
     const sheet = page.locator('.recipe-sheet');
