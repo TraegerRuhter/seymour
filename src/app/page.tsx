@@ -7,7 +7,13 @@ import { MEAL_TYPE_LABELS, toLocalDateString } from '@/lib/plan';
 import RecipeCard from '@/components/RecipeCard';
 import SeymourSays from '@/components/SeymourSays';
 import ShoppingList from '@/components/ShoppingList';
-import { InboxIcon, DiceIcon, ChefPlantIcon, MEAL_TYPE_ICON } from '@/components/icons';
+import {
+  InboxIcon,
+  DiceIcon,
+  ChefPlantIcon,
+  CompassIcon,
+  MEAL_TYPE_ICON,
+} from '@/components/icons';
 import { seymourSays } from '@/lib/seymour-says';
 import { leadTiming, orderFromNow } from '@/lib/time-of-day';
 
@@ -123,31 +129,39 @@ export default function DashboardPage() {
         </section>
       )}
 
-      <section aria-label="Quick actions" className="grid gap-4 sm:grid-cols-2">
-        <div className="glass-card flex items-center gap-4 p-5">
+      {/* Three doors, all the same size.
+          Discover used to be a tab you could only reach by first deciding to
+          add a recipe, which is backwards — finding something to cook and
+          typing in something you already have are different errands. Each card
+          is a whole link now; the old "Add recipes" card was a div with two
+          links inside it, so the large obvious target did nothing. */}
+      <section aria-label="Quick actions" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Link
+          href="/add"
+          className="glass-card flex items-center gap-4 p-5 transition-shadow hover:shadow-card-hover"
+        >
           <InboxIcon className="h-9 w-9 shrink-0" />
           <div className="min-w-0">
-            <h2 className="text-xl font-semibold">Add recipes</h2>
-            <p className="text-sm text-charcoal/70">
-              <Link href="/add" className="font-medium text-moss-strong hover:underline">
-                Paste a URL
-              </Link>{' '}
-              or{' '}
-              <Link
-                href="/add?mode=manual"
-                className="font-medium text-moss-strong hover:underline"
-              >
-                enter one by hand
-              </Link>
-            </p>
+            <h2 className="text-xl font-semibold">Add a recipe</h2>
+            <p className="text-sm text-charcoal/70">Paste a URL, or type one in</p>
           </div>
-        </div>
+        </Link>
+        <Link
+          href="/add?mode=discover"
+          className="glass-card flex items-center gap-4 p-5 transition-shadow hover:shadow-card-hover"
+        >
+          <CompassIcon className="h-9 w-9 shrink-0" />
+          <div className="min-w-0">
+            <h2 className="text-xl font-semibold">Discover</h2>
+            <p className="text-sm text-charcoal/70">Find something new to cook</p>
+          </div>
+        </Link>
         <Link
           href="/plan"
           className="glass-card flex items-center gap-4 p-5 transition-shadow hover:shadow-card-hover"
         >
           <DiceIcon className="h-9 w-9 shrink-0" />
-          <div>
+          <div className="min-w-0">
             <h2 className="text-xl font-semibold">
               {plan ? 'View meal plan' : 'Generate meal plan'}
             </h2>

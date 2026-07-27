@@ -81,15 +81,47 @@ export function ShoppingIcon(p: IconProps) {
   );
 }
 
+/**
+ * Three faders, not a cog.
+ *
+ * The cog had twelve teeth around a 24px circle, which is under 3px of arc
+ * each — at the size the nav actually renders it, they stopped resolving as
+ * teeth and it read as a spiky ball. Faders have no fine detail to lose: three
+ * bars and three knobs stay three bars and three knobs at any size, and the
+ * knobs sitting at different points along the tracks is the whole idea of the
+ * screen they lead to.
+ */
 export function SettingsIcon(p: IconProps) {
   return (
     <Svg {...p}>
-      <path
-        d="M12 2.6l1.5 1.6 2.1-.6.7 2.1 2.1.7-.6 2.1L20.9 12l-1.6 1.5.6 2.1-2.1.7-.7 2.1-2.1-.6L12 21.4l-1.5-1.6-2.1.6-.7-2.1-2.1-.7.6-2.1L3.1 12l1.6-1.5-.6-2.1 2.1-.7.7-2.1 2.1.6z"
-        fill={O}
-      />
-      <circle cx="12" cy="12" r="3.6" fill={K} />
-      <circle cx="12" cy="12" r="1.7" fill={T} />
+      <rect x="3.4" y="5.7" width="17.2" height="2" rx="1" fill={O} />
+      <rect x="3.4" y="11" width="17.2" height="2" rx="1" fill={O} />
+      <rect x="3.4" y="16.3" width="17.2" height="2" rx="1" fill={O} />
+      {/* The bone ring keeps each knob legible where it overlaps its track. */}
+      <circle cx="15.2" cy="6.7" r="2.9" fill={T} stroke={K} strokeWidth="1.1" />
+      <circle cx="8.4" cy="12" r="2.9" fill={T} stroke={K} strokeWidth="1.1" />
+      <circle cx="16.4" cy="17.3" r="2.9" fill={T} stroke={K} strokeWidth="1.1" />
+    </Svg>
+  );
+}
+
+/**
+ * Discover — a compass, for going out and finding something.
+ *
+ * Its own icon rather than borrowing the sparkle the planner uses for "fill
+ * empty": the dashboard now puts Add, Discover and the plan side by side, and
+ * three cards that share two icons between them is worse than drawing a
+ * fourth.
+ */
+export function CompassIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <circle cx="12" cy="12" r="9.2" fill={O} />
+      <circle cx="12" cy="12" r="6.6" fill={K} />
+      {/* Needle: north half clay, south half ink, meeting at the centre. */}
+      <path d="M15.6 8.4l-2 4.6-4.6 2 2-4.6z" fill={T} />
+      <path d="M8.4 15.6l4.6-2-2 4.6z" fill={C} opacity=".55" />
+      <circle cx="12" cy="12" r="1" fill={C} />
     </Svg>
   );
 }
