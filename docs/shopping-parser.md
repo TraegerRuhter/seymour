@@ -72,11 +72,11 @@ rather than as *no amount given*. That's a display decision, and it's item 3.
 | 2 | **Parse quantity-less lines too** — "Pinch of salt", "a handful of parsley" | S | High | **shipped** |
 | 3 | **Say "to taste" instead of leaving the cell blank** | S | High | **shipped** |
 | 4 | **A golden corpus** — real scraped lines, expected output, one file | M | High | **shipped** |
-| 5 | **Metric echoes** — "1 cup (240 ml) milk" should not become two rows | S | Med | not started |
+| 5 | **Metric echoes** — "1 cup (240 ml) milk" should not become two rows | S | Med | **shipped** |
 | 6 | **Alternatives** — "butter or margarine", "2 cups milk or cream" | M | Med | not started |
 | 7 | **Instruction lines** — detect and quarantine, don't silently shop for them | M | Med | not started |
 | 8 | **Descriptor vs identity** — when is "heavy cream" just "cream"? | M | Med | not started |
-| 9 | **Regional and non-metric units** — kilo, sachet, pack, bunch, tali | S | Med | not started |
+| 9 | **Regional and non-metric units** — kilo, sachet, pack, bunch, tali | S | Med | **shipped** |
 | 10 | **Output invariants** — assertions the aggregated list must always satisfy | S | High | not started |
 
 ---
@@ -180,18 +180,38 @@ list now.
 
 ---
 
-### 5. Metric echoes
+### 5. Metric echoes — shipped
 
 `1 cup (240 ml) milk` and `2 lb (900 g) beef` are one ingredient stated twice.
-The parenthetical branch already handles `1 (15 oz) can` — a *size* — but a
-parenthetical that's a straight conversion of the quantity just before it is a
-different thing and should be dropped, not read.
 
-Rule: if the parenthetical parses as quantity + unit, and that unit is a
-different measurement system to the one already found, discard it.
+The parenthesised half turned out never to have been broken: the paren branch
+discards its contents outright, so the conversion was already being dropped
+rather than doubled. Probing before changing anything is what showed this —
+both forms were already settled cases in the corpus.
 
-**Risk:** low. The failure mode today is a silently doubled amount when the
-paren value gets picked up.
+What *was* broken is the same restatement written without parentheses, which
+the paren branch never sees:
+
+```
+"2 lb / 900 g beef"   →  name: "/ 900 g beef"
+"2 lb or 900 g beef"  →  name: "or 900 g beef"
+```
+
+Neither is a shopping row for anything.
+
+Shipped as `eatEcho` in `ingredient-parser.ts`, using the rule this section
+always specified: after a separator (`/`, `|`, ` or `), if what follows parses
+as quantity + unit **and that unit is in a different measurement system to the
+one already found**, discard it.
+
+The different-system guard is what keeps this off item 6's territory. `2 cups
+milk or cream` has no amount on the far side; `1 lb chicken thighs or 2 lb
+beef` has one, but in the same system — so it's a choice, not a conversion, and
+both are left exactly as they were.
+
+`unitSystem()` in `units.ts` is the new predicate: metric, imperial, or `null`
+for counts like cans and bunches, which belong to neither and so can never look
+like a conversion.
 
 ---
 
@@ -252,17 +272,33 @@ into one row and you buy the wrong item.
 
 ---
 
-### 9. Regional and non-metric units
+### 9. Regional and non-metric units — shipped
 
 The list in the screenshot was a Filipino recipe — `calamansi`, `catsup`,
 `gravy`. Units follow the same pattern: `kilo`, `1/2 kilo`, `sachet`, `pack`,
 `bundle`, `tali`, `dozen`.
 
-`units.ts` has a good alias table; this is mostly data entry. `kilo`/`kilos`
-→ `kg` is a one-line addition that would already help.
+Mostly data entry into `UNIT_ALIASES`. What went in:
 
-Also worth adding: `pack`/`packet` (only `package`/`pkg` are there today),
-`tin`, `jar` sizes, `bottle`, `sprig` plurals.
+| written | canonical | why |
+|---|---|---|
+| `kilo`, `kilos` | `kg` | the common spelling outside a lab |
+| `tin`, `tins` | `can` | the same object; two rows for it was the bug |
+| `pack`, `packs`, `packet`, `packets` | `package` | only `package`/`pkg` were there |
+| `bundle`, `bundles`, `tali` | `bunch` | a tied bundle of greens is a bunch |
+| `sachet`, `sachets` | `sachet` | *not* a package — a single-use portion |
+| `bottle`, `bag`, `box`, `carton`, `dozen` | themselves | how a shop sells it |
+
+Merging the spellings is the point: `1 tin chopped tomatoes` and `2 cans of
+tomatoes` now make three cans on one line instead of two lines.
+
+Deliberately left out: `leaf`/`leaves`, `cube`, `strip`, `fillet`, `bar`. Every
+alias is a word the parser will now eat, and each of these turns a real name
+into a worse one — `2 bay leaves` would become two of "bay".
+
+`sprig` plurals were already there. The units the shopping list can *convert*
+are unchanged; everything added here is a count, which sums with its own kind
+and nothing else.
 
 ---
 

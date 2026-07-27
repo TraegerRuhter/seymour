@@ -1,5 +1,5 @@
 import type { Ingredient } from './types';
-import { canonicalUnit } from './units';
+import { canonicalUnit, unitSystem } from './units';
 import { normalizeIngredientName, QUALIFIERS } from './normalize';
 
 const UNICODE_FRACTIONS: Record<string, number> = {
@@ -73,6 +73,13 @@ function matchQualifier(text: string): string | undefined {
  */
 const VAGUE_REGEX = /^(?:some|a few|few|a little|little|several)\s+/i;
 
+/**
+ * How a recipe joins an amount to its restatement in the other system:
+ * "2 lb / 900 g beef", "250 g | 9 oz flour", "1 cup or 240 ml milk".
+ * `or` needs the word boundary so it can't bite into "orange".
+ */
+const ECHO_SEPARATOR_REGEX = /^(?:[/|]|or\b)\s*/i;
+
 function parseNumberToken(token: string): number {
   token = token.trim();
   if (token in UNICODE_FRACTIONS) return UNICODE_FRACTIONS[token];
@@ -122,6 +129,41 @@ function matchLeadingQuantity(text: string): QuantityMatch | null {
     }
   }
   return { value: first, length: consumed };
+}
+
+/**
+ * Drops a restatement of the amount just read — item 5 of
+ * docs/shopping-parser.md. "2 lb / 900 g beef" is one ingredient stated twice,
+ * and without this the name comes out as "/ 900 g beef".
+ *
+ * The parenthetical form ("2 lb (900 g) beef") never had this problem: the
+ * paren branch discards its contents outright. It's the slash and the "or"
+ * that leak.
+ *
+ * The guard is the one the doc specifies — only discard when the second unit
+ * is in a *different* measurement system to the first. That's what makes it a
+ * conversion rather than a choice, so "2 cups milk or cream" and "1 lb chicken
+ * or 2 lb beef" are both left alone for item 6 to deal with.
+ */
+function eatEcho(rest: string, unit: string): string {
+  if (!unit || unitSystem(unit) === null) return rest;
+  const separator = rest.match(ECHO_SEPARATOR_REGEX);
+  if (!separator) return rest;
+
+  const afterSeparator = rest.slice(separator[0].length).trim();
+  const qty = matchLeadingQuantity(afterSeparator);
+  if (!qty) return rest;
+
+  const afterQuantity = afterSeparator.slice(qty.length).trim();
+  const word = afterQuantity.match(ONE_WORD_UNIT_REGEX);
+  const echoUnit = word && canonicalUnit(word[1]);
+  if (!word || !echoUnit) return rest;
+  if (unitSystem(echoUnit) === unitSystem(unit)) return rest;
+
+  // Never eat the whole line: "2 lb / 900 g" with no name after it is better
+  // left alone than reduced to nothing.
+  const remainder = eatFiller(afterQuantity.slice(word[0].length).trim());
+  return remainder || rest;
 }
 
 /**
@@ -204,6 +246,7 @@ export function parseIngredient(originalString: string): Ingredient {
         rest = eatFiller(rest.slice(innerUnit[0].length).trim());
       }
     }
+    rest = eatEcho(rest, unit);
   }
 
   // Split trailing notes after the first comma: "onion, finely diced"
