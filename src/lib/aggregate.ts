@@ -12,6 +12,8 @@ interface Bucket {
   recipeIds: Set<string>;
   /** Every original line that fed into this bucket, for the "why this many" breakdown. */
   sources: { originalString: string; recipeId?: string; scale?: number }[];
+  /** What the recipe said instead of an amount ("to taste"), if anything did. */
+  qualifier?: string;
   /**
    * For produce with a known "cup of prepped X ≈ N whole pieces" yield
    * (see produce-yields.ts): prepped-volume contributions ("1 cup chopped
@@ -97,6 +99,10 @@ export function aggregateIngredients(
       buckets.set(key, bucket);
     }
     if (amount > 0) bucket.total += amount;
+    // First one wins. Two lines for the same thing rarely disagree, and if
+    // they do ("to taste" and "for garnish") either is a fair answer to a
+    // question whose real answer is "some".
+    bucket.qualifier ??= ing.qualifier;
     if (volumeMl > 0) bucket.produceMl += volumeMl;
     if (ing.recipeId) bucket.recipeIds.add(ing.recipeId);
     bucket.sources.push({
@@ -133,18 +139,28 @@ export function aggregateIngredients(
       totalQuantity: quantity,
       unit,
       checked: false,
+      // Only meaningful with nothing to show in its place.
+      ...(quantity === 0 && bucket.qualifier ? { qualifier: bucket.qualifier } : {}),
       ...(bucket.recipeIds.size > 0 ? { recipeIds: [...bucket.recipeIds].sort() } : {}),
       ...(distinctSources.length > 1 ? { sources: distinctSources } : {}),
     });
   }
 
+  // An unmeasured row is redundant when the same ingredient is already on the
+  // list with an amount. "salt, to taste" next to "3 pinches salt" is two
+  // lines that both mean buy salt, and the pair reads as a bug even though
+  // each is correct on its own — they bucket apart because the key includes
+  // the unit, and "to taste" hasn't got one.
+  const measured = new Set(items.filter((i) => i.totalQuantity > 0).map((i) => i.ingredientName));
+  const deduped = items.filter((i) => i.totalQuantity > 0 || !measured.has(i.ingredientName));
+
   // Stable, friendly ordering: alphabetical by name, then by unit.
-  items.sort((a, b) =>
+  deduped.sort((a, b) =>
     a.ingredientName === b.ingredientName
       ? a.unit.localeCompare(b.unit)
       : a.ingredientName.localeCompare(b.ingredientName),
   );
-  return items;
+  return deduped;
 }
 
 /**

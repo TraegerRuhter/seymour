@@ -1031,8 +1031,8 @@ h1 {
    where they can actually be compared.
    ========================================================================== */
 .ledger-aisle {
-  padding-bottom: 0.375rem;
-  border-bottom: 1px solid rgb(var(--color-ink) / 0.14);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgb(var(--color-ink) / 0.2);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -1050,14 +1050,23 @@ h1 {
   border-top: 1px solid rgb(var(--color-ink) / 0.08);
 }
 /* Tabular figures so the column lines up digit for digit — the entire reason
-   the amount was pulled out of the item's name. */
+   the amount was pulled out of the item's name.
+   Right-aligned in a fixed minimum width: ragged amounts are only marginally
+   better than no column at all, and the widths in a real list range from "2"
+   to "18 pieces". The item name gets whatever is left. */
 .ledger-qty {
   font-family: theme('fontFamily.typewriter');
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  min-width: 5.5rem;
+  text-align: right;
   color: rgb(var(--color-ink) / 0.7);
 }
+/* Tempting to dim the em dash further so it reads as "nothing" — don't. 0.7
+   is the lowest alpha that clears 4.5:1 on this page (tests/palette.test.ts
+   pins it), and 116 contrast failures in #85 all came from exactly that
+   instinct. A single glyph is quiet enough on its own. */
 
 @media print {
   .index-card,
