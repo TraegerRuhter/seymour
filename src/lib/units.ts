@@ -75,6 +75,8 @@ const UNIT_ALIASES: Record<string, string> = {
   gr: 'g',
   kilogram: 'kg',
   kilograms: 'kg',
+  kilo: 'kg',
+  kilos: 'kg',
   kg: 'kg',
   kgs: 'kg',
   ounce: 'oz',
@@ -93,11 +95,33 @@ const UNIT_ALIASES: Record<string, string> = {
   dashes: 'dash',
   can: 'can',
   cans: 'can',
+  // British for the same object — worth merging so "1 tin tomatoes" and
+  // "1 can tomatoes" make two cans rather than two rows.
+  tin: 'can',
+  tins: 'can',
   jar: 'jar',
   jars: 'jar',
+  bottle: 'bottle',
+  bottles: 'bottle',
   package: 'package',
   packages: 'package',
   pkg: 'package',
+  pack: 'package',
+  packs: 'package',
+  packet: 'package',
+  packets: 'package',
+  // Distinct from a package: a sachet is a single-use portion, and Filipino
+  // and South-East Asian recipes buy several of them.
+  sachet: 'sachet',
+  sachets: 'sachet',
+  bag: 'bag',
+  bags: 'bag',
+  box: 'box',
+  boxes: 'box',
+  carton: 'carton',
+  cartons: 'carton',
+  dozen: 'dozen',
+  dozens: 'dozen',
   slice: 'slice',
   slices: 'slice',
   stick: 'stick',
@@ -112,6 +136,10 @@ const UNIT_ALIASES: Record<string, string> = {
   heads: 'head',
   bunch: 'bunch',
   bunches: 'bunch',
+  bundle: 'bunch',
+  bundles: 'bunch',
+  // Filipino markets sell leafy greens by the tied bundle.
+  tali: 'bunch',
   piece: 'piece',
   pieces: 'piece',
   handful: 'handful',
@@ -183,6 +211,32 @@ function round2(v: number): number {
 
 /** The user's preferred measurement system for computed (shopping) amounts. */
 export type UnitSystem = 'imperial' | 'metric';
+
+const METRIC_UNITS = new Set(['ml', 'l', 'g', 'kg']);
+const IMPERIAL_UNITS = new Set([
+  'cup',
+  'tbsp',
+  'tsp',
+  'fl oz',
+  'pint',
+  'quart',
+  'gallon',
+  'oz',
+  'lb',
+]);
+
+/**
+ * Which system a unit belongs to, or null for counts (cans, cloves, bunches)
+ * that belong to neither.
+ *
+ * Used to spot a restatement: "2 lb / 900 g beef" is one amount written twice,
+ * and the giveaway is that the second unit is in the other system.
+ */
+export function unitSystem(canonical: string): UnitSystem | null {
+  if (METRIC_UNITS.has(canonical)) return 'metric';
+  if (IMPERIAL_UNITS.has(canonical)) return 'imperial';
+  return null;
+}
 
 /** Rounds a value UP to the nearest multiple of `step` (24 for 23.3 at step 1). */
 export function roundUpTo(value: number, step: number): number {
@@ -264,7 +318,12 @@ export function displayUnit(unit: string, quantity: number): string {
     dash: 'dashes',
     can: 'cans',
     jar: 'jars',
+    bottle: 'bottles',
     package: 'packages',
+    sachet: 'sachets',
+    bag: 'bags',
+    box: 'boxes',
+    carton: 'cartons',
     slice: 'slices',
     stick: 'sticks',
     stalk: 'stalks',

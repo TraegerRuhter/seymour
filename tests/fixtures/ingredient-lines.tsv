@@ -42,6 +42,16 @@ approx. 500 g beef	500	g	beef
 2 (14 oz) cans of tomatoes	2	can	tomato
 1 cup (240 ml) milk	1	cup	milk
 2 lb (900 g) beef	2	lb	beef
+250g (9oz) plain flour	250	g	flour
+
+# --- the same amount restated, without the parentheses (item 5) -----------
+2 lb / 900 g beef	2	lb	beef
+250 g / 9 oz plain flour	250	g	flour
+1 cup | 240 ml milk	1	cup	milk
+2 lb or 900 g beef	2	lb	beef
+# Same system on both sides, so it's a choice and not a conversion — left for
+# item 6 rather than silently discarded.
+1 lb chicken thighs or 2 lb beef	1	lb	chicken thighs or 2 lb beef
 
 # --- the garlic family, which people write four ways ----------------------
 1 clove garlic, minced	1	clove	garlic
@@ -75,6 +85,21 @@ freshly ground black pepper	0		black pepper
 1 cup heavy cream	1	cup	heavy cream
 1 lb boneless skinless chicken thighs	1	lb	boneless skinless chicken thigh
 
+# --- regional and shop-shelf units (item 9) -------------------------------
+1 kilo pork belly	1	kg	pork belly
+1/2 kilo ground beef	0.5	kg	ground beef
+2 kilos chicken	2	kg	chicken
+1 sachet tomato sauce	1	sachet	tomato sauce
+2 packs instant noodles	2	package	instant noodle
+1 packet yeast	1	package	yeast
+1 tin sardines	1	can	sardine
+1 bottle soy sauce	1	bottle	soy sauce
+1 bundle bok choy	1	bunch	bok choy
+2 tali kangkong	2	bunch	kangkong
+1 dozen eggs	1	dozen	egg
+1 bag frozen peas	1	bag	frozen pea
+1 box pasta	1	box	pasta
+
 # --- countable units after the name ---------------------------------------
 2 stalks celery	2	stalk	celery
 3 slices bacon	3	slice	bacon
@@ -87,11 +112,6 @@ juice of 1 lemon	0		lemon juice
 # ==========================================================================
 # KNOWN GAPS — the expectation is right, the parser isn't there yet.
 # ==========================================================================
-
-# Item 9 — regional units. "kilo" isn't in the alias table.
-~1 kilo pork belly	1	kg	pork belly
-~1/2 kilo ground beef	0.5	kg	ground beef
-~1 sachet tomato sauce	1	sachet	tomato sauce
 
 # Item 6 — alternatives. First one wins, the rest is a note.
 ~2 cups milk or cream	2	cup	milk
