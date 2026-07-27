@@ -7,6 +7,7 @@ import {
   exportBundle,
   importBundle,
   removePantryStaple,
+  reparseAllRecipes,
   setUnitSystem,
   validateBundle,
 } from '@/lib/actions';
@@ -74,6 +75,7 @@ export default function SettingsPage() {
     if (outcome === 'accepted') setInstallEvent(null);
   }
   const recipeCount = useRecipeStore((s) => Object.keys(s.recipes).length);
+  const [reparsed, setReparsed] = useState('');
   const planDays = usePlanStore((s) => s.plan?.length ?? 0);
   const itemCount = useShoppingStore((s) => s.items.length);
 
@@ -273,6 +275,39 @@ export default function SettingsPage() {
             Nothing on the rack yet — add staples like salt, flour, or olive oil.
           </p>
         )}
+      </section>
+
+      <section aria-label="Ingredients" className="glass-card space-y-3 p-5">
+        <div>
+          <h2 className="text-xl font-semibold">Ingredient lines</h2>
+          <p className="mt-1 text-sm text-charcoal/70">
+            Ingredients are read when a recipe is saved, so improvements to the reader don&apos;t
+            reach recipes you already have. This re-reads them. Your original lines are kept exactly
+            as written and are never changed.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              const changed = reparseAllRecipes();
+              setReparsed(
+                changed === 0
+                  ? 'Nothing changed — every recipe already reads the same way.'
+                  : `Re-read ${changed} recipe${changed === 1 ? '' : 's'}. The shopping list has been rebuilt.`,
+              );
+            }}
+            disabled={recipeCount === 0}
+            className="btn-secondary px-4 py-1.5 text-sm"
+          >
+            Re-read ingredients
+          </button>
+          {reparsed && (
+            <p role="status" className="text-sm text-charcoal/70">
+              {reparsed}
+            </p>
+          )}
+        </div>
       </section>
 
       <section aria-label="Backup" className="glass-card space-y-4 p-5">

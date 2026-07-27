@@ -71,7 +71,7 @@ rather than as *no amount given*. That's a display decision, and it's item 3.
 | 1 | **Re-strip filler after the parenthetical** — the confirmed `of tomato` bug | S | High | **shipped** |
 | 2 | **Parse quantity-less lines too** — "Pinch of salt", "a handful of parsley" | S | High | **shipped** |
 | 3 | **Say "to taste" instead of leaving the cell blank** | S | High | **shipped** |
-| 4 | **A golden corpus** — real scraped lines, expected output, one file | M | High | not started |
+| 4 | **A golden corpus** — real scraped lines, expected output, one file | M | High | **shipped** |
 | 5 | **Metric echoes** — "1 cup (240 ml) milk" should not become two rows | S | Med | not started |
 | 6 | **Alternatives** — "butter or margarine", "2 cups milk or cream" | M | Med | not started |
 | 7 | **Instruction lines** — detect and quarantine, don't silently shop for them | M | Med | not started |
@@ -152,7 +152,7 @@ truncated.
 
 ---
 
-### 4. A golden corpus
+### 4. A golden corpus — shipped
 
 Every other item on this list is a heuristic change, and heuristics regress
 each other. There is currently no corpus — the unit tests cover cases someone
@@ -167,8 +167,16 @@ This is the item that makes the other nine safe to attempt, which is why it's
 high impact despite fixing nothing on its own. It's worth doing before 6, 7 and
 8 rather than after.
 
-**Bonus:** it doubles as a benchmark. "87% of lines parse to a clean name" is a
-number that can go up.
+Shipped as `tests/fixtures/ingredient-lines.tsv` plus
+`tests/ingredient-corpus.test.ts`. Lines marked `~` are known gaps, and the
+test asserts they are *still* gaps — so fixing one fails the run and tells you
+to promote it, rather than the corpus quietly recording an improvement nobody
+noticed. Items 6, 7, 8 and 9 all have their cases waiting in there already.
+
+It earned its keep immediately: it caught that `oil for frying` kept "for
+frying" in the name *and* showed it in the amount column, because the parser's
+qualifier list and normalize.ts's suffix list had drifted apart. They're one
+list now.
 
 ---
 
@@ -275,7 +283,24 @@ six assertions about one example.
 
 ---
 
-## 4. Not in this document
+## 4. Does any of this reach recipes I already have?
+
+Not on its own. Parsing happens once, when a recipe is imported or saved, and
+the parsed fields are stored on the recipe — the shopping list is built from
+those, not from the original text. So a parser improvement does nothing for a
+collection that already exists.
+
+It can be made to, because `originalString` is kept verbatim on every
+ingredient: the raw line is always still there to re-read. **Settings →
+Ingredient lines → Re-read ingredients** does exactly that, reports how many
+recipes actually changed, and is idempotent. Original lines are never
+rewritten.
+
+Worth pressing after any of the remaining items ships.
+
+---
+
+## 5. Not in this document
 
 The **layout** half of the shopping list — row spacing, the amount column,
 where the aisle rules sit — is a separate piece of work and isn't covered

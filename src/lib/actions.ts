@@ -168,6 +168,47 @@ export function recipeFromParsed(data: ParsedRecipeData): Recipe {
 }
 
 /**
+ * Re-reads every saved recipe's ingredient lines with the current parser.
+ *
+ * Parsing happens once, when a recipe is imported or saved, and the result is
+ * what the shopping list is built from — so improving the parser does nothing
+ * for recipes already in the collection. This is the catch-up.
+ *
+ * It's lossless because `originalString` is kept verbatim on every ingredient:
+ * the raw line the recipe actually had is always still there to re-read. That
+ * also makes it idempotent — running it twice changes nothing the second time.
+ *
+ * Returns how many recipes actually changed, so the UI can say something true
+ * rather than "done".
+ */
+export function reparseAllRecipes(): number {
+  const all = Object.values(useRecipeStore.getState().recipes);
+  const updated: Recipe[] = [];
+
+  for (const recipe of all) {
+    // Nothing to re-read from. Recipes are only ever built by the parser, so
+    // this shouldn't happen — but rewriting a recipe's ingredients from a
+    // guess would be a bad way to find out.
+    if (!recipe.ingredients.every((i) => i.originalString?.trim())) continue;
+
+    const reparsed = parseIngredientLines(recipe.ingredients.map((i) => i.originalString));
+    if (JSON.stringify(reparsed) === JSON.stringify(recipe.ingredients)) continue;
+
+    updated.push({ ...recipe, ingredients: reparsed, updatedAt: new Date().toISOString() });
+  }
+
+  if (updated.length === 0) return 0;
+  for (const recipe of updated) {
+    useRecipeStore.getState().updateRecipe(recipe);
+    void pushRecipe(recipe);
+  }
+  // The list is derived from these, so it has to be rebuilt — this is the
+  // whole visible point of the exercise.
+  regenerateShoppingList();
+  return updated.length;
+}
+
+/**
  * Retroactively suggests tags for every recipe missing mealTypes, category,
  * or mainIngredient — recipes added before auto-tagging existed, or ones
  * that never got manually tagged. Only ever fills a field that's currently

@@ -1,0 +1,107 @@
+# Golden corpus for the ingredient parser — item 4 of docs/shopping-parser.md.
+#
+# Tab-separated:  line <TAB> quantity <TAB> unit <TAB> name <TAB> qualifier
+# An empty unit or qualifier is an empty field. Blank lines and # are ignored.
+#
+# A line starting with ~ is a KNOWN GAP: the expectation is what the parser
+# *should* produce, and it currently doesn't. The test asserts these still
+# fail, so fixing one tells you to promote it rather than passing silently.
+#
+# Adding a case is one line. That is the whole point — every other item on
+# the list is a heuristic, and heuristics regress each other.
+
+# --- plain quantities and units -------------------------------------------
+2 cups all-purpose flour	2	cup	flour
+1 1/2 cups whole milk	1.5	cup	milk
+1/2 teaspoon kosher salt	0.5	tsp	salt
+1 tablespoon olive oil	1	tbsp	olive oil
+4 oz cream cheese, softened	4	oz	cream cheese
+250 g plain flour	250	g	flour
+500 ml chicken stock	500	ml	chicken broth
+1 tsp vanilla extract	1	tsp	vanilla extract
+
+# --- unitless counts ------------------------------------------------------
+3 large eggs	3		egg
+1 medium onion, diced	1		onion
+2 medium carrots, peeled and chopped	2		carrot
+1 bay leaf	1		bay leaf
+
+# --- fractions, unicode and ascii, and ranges -----------------------------
+½ cup sugar	0.5	cup	sugar
+1½ cups water	1.5	cup	water
+1/4 cup catsup	0.25	cup	catsup
+1-2 jalapenos, seeded	1.5		jalapeno
+1 to 2 tablespoons honey	1.5	tbsp	honey
+
+# --- approximators (item 1) -----------------------------------------------
+about 2 cups flour	2	cup	flour
+approx. 500 g beef	500	g	beef
+
+# --- parentheticals (item 1) ----------------------------------------------
+1 (15 oz) can black beans, drained and rinsed	1	can	black bean
+2 (14 oz) cans of tomatoes	2	can	tomato
+1 cup (240 ml) milk	1	cup	milk
+2 lb (900 g) beef	2	lb	beef
+
+# --- the garlic family, which people write four ways ----------------------
+1 clove garlic, minced	1	clove	garlic
+3 cloves of garlic	3	clove	garlic
+2 garlic cloves	2	clove	garlic
+
+# --- no number at all (item 2) --------------------------------------------
+Pinch of salt	1	pinch	salt
+a pinch of salt	1	pinch	salt
+1 handful of parsley	1	handful	parsley
+1 head of lettuce	1	head	lettuce
+some salt	0		salt
+a few sprigs of thyme	0		thyme
+
+# --- amounts that aren't numbers (item 3) ---------------------------------
+salt to taste	0		salt	to taste
+Pepper, to taste	0		pepper	to taste
+parsley for garnish	0		parsley	for garnish
+oil for frying	0		oil	for frying
+sugar as needed	0		sugar	as needed
+
+# --- descriptors that should not survive into the name --------------------
+2 tbsp unsalted butter, melted	2	tbsp	butter
+1/4 cup freshly grated parmesan	0.25	cup	parmesan
+freshly ground black pepper	0		black pepper
+2 cups chopped onion	2	cup	onion
+2 sprigs fresh thyme	2	sprig	thyme
+1 bunch fresh cilantro	1	bunch	cilantro
+
+# --- descriptors that are part of the identity and must survive -----------
+1 cup heavy cream	1	cup	heavy cream
+1 lb boneless skinless chicken thighs	1	lb	boneless skinless chicken thigh
+
+# --- countable units after the name ---------------------------------------
+2 stalks celery	2	stalk	celery
+3 slices bacon	3	slice	bacon
+1 package cream cheese	1	package	cream cheese
+18 pieces calamansi	18	piece	calamansi
+
+# --- derived ingredients --------------------------------------------------
+juice of 1 lemon	0		lemon juice
+
+# ==========================================================================
+# KNOWN GAPS — the expectation is right, the parser isn't there yet.
+# ==========================================================================
+
+# Item 9 — regional units. "kilo" isn't in the alias table.
+~1 kilo pork belly	1	kg	pork belly
+~1/2 kilo ground beef	0.5	kg	ground beef
+~1 sachet tomato sauce	1	sachet	tomato sauce
+
+# Item 6 — alternatives. First one wins, the rest is a note.
+~2 cups milk or cream	2	cup	milk
+~butter or margarine	0		butter
+
+# Item 7 — an instruction wearing an ingredient's clothes.
+~1 tablespoon of all purpose flour dissolve in 1/4 cup water	1	tbsp	all purpose flour
+
+# Two ingredients on one line. Splitting them is its own change.
+~Salt and pepper to taste	0		salt	to taste
+
+# "juice of 1 lemon" works; its sibling doesn't.
+~zest of 1 orange	0		orange zest

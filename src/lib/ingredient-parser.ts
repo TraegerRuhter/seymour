@@ -1,6 +1,6 @@
 import type { Ingredient } from './types';
 import { canonicalUnit } from './units';
-import { normalizeIngredientName } from './normalize';
+import { normalizeIngredientName, QUALIFIERS } from './normalize';
 
 const UNICODE_FRACTIONS: Record<string, number> = {
   '¼': 0.25,
@@ -56,32 +56,14 @@ const eatFiller = (s: string) => s.replace(FILLER_REGEX, '').trim();
 const ARTICLE_REGEX = /^(?:a|an)\s+/i;
 
 /**
- * Phrases that stand in for an amount instead of stating one.
- *
- * `normalize.ts` strips these off the name, which is right — the row should
- * read "salt", not "salt to taste". But it strips them into nothing, so the
- * fact that the recipe *did* say how much was being lost, and the shopping
- * list showed an empty amount column that read as a parse failure. Caught
- * here first, and shown where the number would have been.
- *
- * Ordered longest-first so "for serving" wins over a bare "for".
+ * Reads the stand-in a recipe used instead of an amount. The list itself lives
+ * in normalize.ts, which also strips these off the name — one list, so the
+ * name can't keep a phrase the amount column is already showing.
  */
-const QUALIFIERS = [
-  'to taste',
-  'as needed',
-  'for serving',
-  'for garnish',
-  'for frying',
-  'for dusting',
-  'for greasing',
-  'or to taste',
-] as const;
-
 function matchQualifier(text: string): string | undefined {
   const lower = text.toLowerCase();
-  const found = [...QUALIFIERS].sort((a, b) => b.length - a.length).find((q) => lower.includes(q));
-  // "or to taste" is "to taste" with a shrug in front of it.
-  return found === 'or to taste' ? 'to taste' : found;
+  // Longest first, so "for serving" wins over a bare "for".
+  return [...QUALIFIERS].sort((a, b) => b.length - a.length).find((q) => lower.includes(q));
 }
 
 /**
