@@ -132,6 +132,22 @@ const DROPPABLE_PREFIXES = [
   'beaten',
 ];
 
+/**
+ * Phrases a recipe uses in place of an amount.
+ *
+ * Here rather than in the parser because the parser already imports this
+ * module, and both need the same list — one to record it, one to strip it.
+ */
+export const QUALIFIERS = [
+  'to taste',
+  'as needed',
+  'for serving',
+  'for garnish',
+  'for frying',
+  'for dusting',
+  'for greasing',
+] as const;
+
 /** Trailing preparation words that describe technique, not the item. */
 const DROPPABLE_SUFFIXES = [
   'chopped',
@@ -147,10 +163,11 @@ const DROPPABLE_SUFFIXES = [
   'beaten',
   'divided',
   'optional',
-  'to taste',
-  'for serving',
-  'for garnish',
   'plus more',
+  // Kept in step with QUALIFIERS below: the parser records these as the
+  // amount, and the name has to lose them or "oil for frying" ends up named
+  // "oil for frying" with "for frying" also in its amount column.
+  ...QUALIFIERS,
 ];
 
 /**

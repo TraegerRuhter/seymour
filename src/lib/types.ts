@@ -11,6 +11,12 @@ export interface Ingredient {
   originalString: string;
   /** Optional notes (e.g., 'diced') extracted from original string */
   notes?: string;
+  /**
+   * What the recipe said instead of an amount — "to taste", "for garnish".
+   * Only set when there is no quantity, and shown in the shopping list where
+   * the number would have been.
+   */
+  qualifier?: string;
 }
 
 export interface Recipe {
@@ -134,6 +140,12 @@ export interface ShoppingListItem {
   checked: boolean;
   /** If manually edited, the override string shown instead of quantity+name */
   manualOverride?: string;
+  /**
+   * Stands in for the amount when there isn't one — "to taste". Carried up
+   * from the ingredients that merged into this row; only meaningful when
+   * `totalQuantity` is 0.
+   */
+  qualifier?: string;
   /** Ids of the recipes that contributed to this line item (for "show source recipe" links). */
   recipeIds?: string[];
   /** Distinct original ingredient lines merged into this total (only set when a merge actually combined 2+ different phrasings), for a "why this many" breakdown. */

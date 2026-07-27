@@ -51,16 +51,33 @@ function itemName(item: ShoppingListItem): string {
     : item.ingredientName;
 }
 
+/**
+ * The amount column.
+ *
+ * Falls back to what the recipe said instead of a number — "to taste", "for
+ * garnish" — and then to an em dash. An empty cell here read as a parse
+ * failure rather than as an ingredient nobody measures, which is most of what
+ * made the list look broken.
+ */
 function itemQuantity(item: ShoppingListItem): string {
   if (item.manualOverride) return '';
   const qty = formatAmount(item.totalQuantity, item.unit);
   const unit = displayUnit(item.unit, item.totalQuantity);
-  return [qty, unit].filter(Boolean).join(' ');
+  const measured = [qty, unit].filter(Boolean).join(' ');
+  if (measured) return measured;
+  return item.qualifier ?? '—';
 }
 
-/** The whole line, for aria labels and anywhere a single string is needed. */
+/**
+ * The whole line, for aria labels and anywhere a single string is needed.
+ *
+ * The em dash stays out of it: it's a mark meaning "no amount", and read
+ * aloud in front of every unmeasured item it would be noise. A real qualifier
+ * ("salt, to taste") is worth hearing and stays in.
+ */
 function itemLabel(item: ShoppingListItem): string {
-  return [itemQuantity(item), itemName(item)].filter(Boolean).join(' ');
+  const qty = itemQuantity(item);
+  return [qty === '—' ? '' : qty, itemName(item)].filter(Boolean).join(' ');
 }
 
 const CATEGORY_ICON: Record<Category, IconComponent> = {
@@ -236,7 +253,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
       animate="animate"
       exit={listRowExit}
       transition={{ ...enter, layout: layoutSpring }}
-      className="ledger-row flex items-start gap-3 py-2.5"
+      className="ledger-row flex items-center gap-3 py-3"
     >
       <span className="relative inline-flex h-6 w-6 shrink-0">
         <input
@@ -315,9 +332,9 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
                   </span>
                 )}
               </span>
-              {itemQuantity(item) && (
-                <span className="ledger-qty shrink-0">{itemQuantity(item)}</span>
-              )}
+              {/* Always rendered, so the column exists on every row and the
+                  eye can run down it. */}
+              <span className="ledger-qty shrink-0">{itemQuantity(item)}</span>
             </span>
             <motion.span
               aria-hidden
