@@ -15,7 +15,13 @@ const DISCOVER_COUNT_OPTIONS = [1, 2, 3, 4, 5] as const;
 function AddRecipe() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<Mode>(searchParams.get('mode') === 'manual' ? 'manual' : 'url');
+  // Any of the three tabs can be linked to. This used to test only for
+  // 'manual', so `?mode=discover` quietly landed you on the URL tab — which
+  // nothing exercised, because nothing linked to it until the dashboard did.
+  const [mode, setMode] = useState<Mode>(() => {
+    const requested = searchParams.get('mode');
+    return requested === 'manual' || requested === 'discover' ? requested : 'url';
+  });
   const [urlsText, setUrlsText] = useState('');
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState('');

@@ -111,7 +111,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="space-y-6">
       <header>
         <h1 className="text-3xl font-bold">Settings</h1>
         <p className="mt-1 text-charcoal/70">
@@ -166,63 +166,69 @@ export default function SettingsPage() {
         </section>
       )}
 
-      <section aria-label="Appearance" className="glass-card space-y-3 p-5">
-        <div>
-          <h2 className="text-xl font-semibold">Appearance</h2>
-          <p className="mt-1 text-sm text-charcoal/70">
-            Pick a theme, or follow your device&apos;s setting.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Theme">
-          {THEME_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              aria-pressed={theme === opt.value}
-              onClick={() => setThemePref(opt.value)}
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                theme === opt.value
-                  ? 'bg-moss text-white'
-                  : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
-              }`}
-            >
-              <opt.Icon className="h-5 w-5" />
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section aria-label="Units" className="glass-card space-y-3 p-5">
-        <div>
-          <h2 className="text-xl font-semibold">Units</h2>
-          <p className="mt-1 text-sm text-charcoal/70">
-            Your shopping list is shown in one system, rounded up to tidy amounts.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Measurement system">
-          {UNIT_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              aria-pressed={unitSystem === opt.value}
-              onClick={() => setUnitSystem(opt.value)}
-              className={`inline-flex items-baseline gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                unitSystem === opt.value
-                  ? 'bg-moss text-white'
-                  : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
-              }`}
-            >
-              {opt.label}
-              <span
-                className={`text-xs ${unitSystem === opt.value ? 'text-white' : 'text-charcoal/70'}`}
+      {/* Appearance and Units are a heading and a row of pills each. Left
+          full-width they were 300px of content in an 1100px card; side by side
+          they fill the column the rest of the app uses. Everything below has
+          enough in it to earn the full width on its own. */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section aria-label="Appearance" className="glass-card space-y-3 p-5">
+          <div>
+            <h2 className="text-xl font-semibold">Appearance</h2>
+            <p className="mt-1 text-sm text-charcoal/70">
+              Pick a theme, or follow your device&apos;s setting.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Theme">
+            {THEME_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                aria-pressed={theme === opt.value}
+                onClick={() => setThemePref(opt.value)}
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  theme === opt.value
+                    ? 'bg-moss text-white'
+                    : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
+                }`}
               >
-                {opt.hint}
-              </span>
-            </button>
-          ))}
-        </div>
-      </section>
+                <opt.Icon className="h-5 w-5" />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section aria-label="Units" className="glass-card space-y-3 p-5">
+          <div>
+            <h2 className="text-xl font-semibold">Units</h2>
+            <p className="mt-1 text-sm text-charcoal/70">
+              Your shopping list is shown in one system, rounded up to tidy amounts.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Measurement system">
+            {UNIT_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                aria-pressed={unitSystem === opt.value}
+                onClick={() => setUnitSystem(opt.value)}
+                className={`inline-flex items-baseline gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  unitSystem === opt.value
+                    ? 'bg-moss text-white'
+                    : 'border border-charcoal/15 bg-surface/70 text-charcoal/70 hover:bg-surface'
+                }`}
+              >
+                {opt.label}
+                <span
+                  className={`text-xs ${unitSystem === opt.value ? 'text-white' : 'text-charcoal/70'}`}
+                >
+                  {opt.hint}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
 
       <section id="pantry" aria-label="Pantry" className="glass-card space-y-3 p-5">
         <div>
