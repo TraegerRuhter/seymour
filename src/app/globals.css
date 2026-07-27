@@ -962,6 +962,27 @@ h1 {
   border-radius: 2px;
   background: rgb(var(--color-moss));
 }
+/* Planned, but not on the shopping list yet.
+   A dashed rule where today has a solid one — the same gesture in the same
+   place, saying "provisional" rather than "here". Deliberately not opacity:
+   these rows are read as often as any other, and dimming real text to mean
+   "later" is how contrast failures get in. */
+.wk-day[data-unshopped='true'] {
+  position: relative;
+  padding-left: 0.875rem;
+}
+.wk-day[data-unshopped='true']::before {
+  content: '';
+  position: absolute;
+  inset: 0.5rem auto 0.5rem 0;
+  width: 3px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgb(var(--color-ink) / 0.25) 0 5px,
+    transparent 5px 10px
+  );
+}
 .wk-when {
   padding-top: 0.375rem;
 }

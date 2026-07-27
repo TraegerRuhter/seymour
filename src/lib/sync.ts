@@ -415,6 +415,8 @@ interface MealPlanConfigRow {
   seed: number;
   /** Null for rows written before plans could start on a day other than today. */
   start_date: string | null;
+  /** Null for rows written before the shopping list could lag behind the plan. */
+  shopping_through: string | null;
   updated_at: string;
 }
 
@@ -431,6 +433,7 @@ function rowToConfig(row: MealPlanConfigRow): MealPlanConfig {
     mealTypes: row.meal_types,
     seed: row.seed,
     startDate: row.start_date ?? undefined,
+    shoppingThrough: row.shopping_through ?? undefined,
     updatedAt: row.updated_at,
   };
 }
@@ -442,6 +445,7 @@ function configToRow(userId: string, config: MealPlanConfig) {
     meal_types: config.mealTypes,
     seed: config.seed,
     start_date: config.startDate ?? null,
+    shopping_through: config.shoppingThrough ?? null,
   };
 }
 

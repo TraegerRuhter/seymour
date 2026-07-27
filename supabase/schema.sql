@@ -88,13 +88,17 @@ create table if not exists public.meal_plan_config (
   -- it's a calendar day in the user's own timezone rather than an instant —
   -- the client already stores and compares plan days in exactly this form.
   start_date text,
+  -- Last day the shopping list covers. A plan can run further ahead than you
+  -- want to shop for; null means the whole plan.
+  shopping_through text,
   updated_at timestamptz not null default now()
 );
 
--- Additive, for projects created before plans could start on a day other than
--- today. `create table if not exists` above won't add a column to a table that
--- already exists, so this does.
+-- Additive, for projects created before these columns existed. `create table
+-- if not exists` above won't add a column to a table that already exists, so
+-- these do. Safe to re-run.
 alter table public.meal_plan_config add column if not exists start_date text;
+alter table public.meal_plan_config add column if not exists shopping_through text;
 
 alter table public.meal_plan_config enable row level security;
 

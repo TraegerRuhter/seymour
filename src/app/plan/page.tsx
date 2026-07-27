@@ -14,6 +14,7 @@ import MealPlanView from '@/components/MealPlanView';
 import PlanGenerator from '@/components/PlanGenerator';
 import ArchivedPlans from '@/components/ArchivedPlans';
 import LeaningSeymour from '@/components/LeaningSeymour';
+import ShoppingHorizon from '@/components/ShoppingHorizon';
 import { collapse, enter } from '@/lib/motion';
 import { PlanIcon, ShuffleIcon, ArchiveIcon, SparkleIcon, TrashIcon } from '@/components/icons';
 
@@ -144,6 +145,8 @@ export default function PlanPage() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          <ShoppingHorizon />
 
           <MealPlanView />
         </>

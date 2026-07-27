@@ -27,6 +27,7 @@ export default function PlanGenerator({
 }) {
   const recipeCount = useRecipeStore((s) => Object.keys(s.recipes).length);
   const config = usePlanStore((s) => s.config);
+  const plan = usePlanStore((s) => s.plan);
 
   const [days, setDays] = useState(config?.days ?? 7);
   const [mealTypes, setMealTypes] = useState<MealType[]>(
@@ -37,6 +38,12 @@ export default function PlanGenerator({
   const [startDate, setStartDate] = useState(() => toLocalDateString(new Date()));
 
   const canGenerate = recipeCount > 0 && mealTypes.length > 0;
+
+  // Starting after the last day already planned adds a week rather than
+  // replacing one — the same rule appendOrReplace applies, mirrored here only
+  // so the button can say which it's about to do.
+  const lastPlanned = plan?.length ? plan[plan.length - 1].date : undefined;
+  const appends = !!lastPlanned && startDate > lastPlanned;
 
   const today = toLocalDateString(new Date());
   const shortcuts: Array<{ label: string; date: string }> = [
@@ -166,7 +173,7 @@ export default function PlanGenerator({
           disabled={!canGenerate}
           className="btn-primary"
         >
-          {hasExistingPlan ? 'Generate & replace plan' : 'Generate plan'}
+          {!hasExistingPlan ? 'Generate plan' : appends ? 'Add to plan' : 'Generate & replace plan'}
         </button>
         {/* The dates the button is about to produce. Days and a start date are
             two numbers that only mean something together, and "replace" is not
