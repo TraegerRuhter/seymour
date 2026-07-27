@@ -77,7 +77,7 @@ rather than as *no amount given*. That's a display decision, and it's item 3.
 | 7 | **Instruction lines** — detect and quarantine, don't silently shop for them | M | Med | not started |
 | 8 | **Descriptor vs identity** — when is "heavy cream" just "cream"? | M | Med | not started |
 | 9 | **Regional and non-metric units** — kilo, sachet, pack, bunch, tali | S | Med | **shipped** |
-| 10 | **Output invariants** — assertions the aggregated list must always satisfy | S | High | not started |
+| 10 | **Output invariants** — assertions the aggregated list must always satisfy | S | High | **shipped** |
 
 ---
 
@@ -302,20 +302,41 @@ and nothing else.
 
 ---
 
-### 10. Output invariants
+### 10. Output invariants — shipped
 
-Cheap, and catches whole classes of regression from the other nine. A test
-over the *aggregated* list asserting things that must never be true:
+Cheap, and catches whole classes of regression from the other nine. The rules
+live in `tests/invariants.ts` — not a test file, so the corpus test and the
+aggregated-list test can share one definition instead of drifting apart the way
+the qualifier list did.
 
-- No name starts with `of`, `a`, `an`, `and`, `or`, `to`, `for`, `with`.
-- No name is empty, or is only a unit word.
-- No name contains a digit followed by a unit (a second measurement leaked in).
-- No name is longer than ~6 words.
-- Every unit is in the known alias table.
-- Quantity is finite and ≥ 0.
+| rule | a row must never |
+|---|---|
+| `name-empty` | have no name |
+| `name-fragment` | start with `of`, `a`, `an`, `and`, `or`, `to`, `for`, `with` |
+| `name-is-a-unit` | be nothing but a unit word |
+| `name-holds-a-measurement` | contain a number followed by a known unit |
+| `name-too-long` | run past 6 words |
+| `quantity-finite` / `quantity-negative` | have a quantity that isn't a real, non-negative number |
+| `unit-unknown` | be measured in something the alias table doesn't know |
+| `unit-without-amount` | show a unit with no number in front of it |
+| `qualifier-with-amount` | carry "to taste" *and* a real amount |
+| `id-duplicated` | share an id with another row (ids carry the checked flag) |
+| `row-redundant` | appear unmeasured when the same name is already on the list with an amount |
 
-Run it over the corpus from 4 and it becomes a genuine safety net rather than
-six assertions about one example.
+Applied three ways: to every settled corpus line at parse time, to each line
+aggregated on its own, and to the whole corpus aggregated as one shop. Known
+gaps are held only to the structural rules — a line already recorded as parsing
+wrongly would otherwise just fail twice.
+
+A checker that can't fail is worse than no checker, so every rule has a test
+that hands it the thing it exists to catch, and a final test walks the rule ids
+and fails if any of them was never triggered.
+
+**It found something on its first run.** A scraper leaving a bare `of` or `or`
+on its own row produced a shopping row named "of". `parseIngredientLines` now
+drops a line whose entire parsed name is a joining word — whole name only, so
+anything with an ingredient attached is kept however badly it parsed. Throwing
+away something you needed to buy is the worse mistake.
 
 ---
 

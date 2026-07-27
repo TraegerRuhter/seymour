@@ -295,10 +295,21 @@ export function parseIngredient(originalString: string): Ingredient {
   };
 }
 
-/** Parses a list of raw ingredient lines, dropping blanks. */
+/**
+ * A line that is nothing but a joining word once it's parsed — a stray "of",
+ * an "or" left on its own row by a scraper. As empty as a blank line, and it
+ * would otherwise reach the shopping list as a row named "of".
+ *
+ * Whole name only. Anything with an ingredient attached is kept, however badly
+ * it parsed, because dropping a line you needed to buy is the worse mistake.
+ */
+const JOINING_WORD_ONLY = /^(?:of|a|an|and|or|to|for|with|the)$/i;
+
+/** Parses a list of raw ingredient lines, dropping the ones that name nothing. */
 export function parseIngredientLines(lines: string[]): Ingredient[] {
   return lines
     .map((l) => l.trim())
     .filter(Boolean)
-    .map(parseIngredient);
+    .map(parseIngredient)
+    .filter((ing) => ing.name && !JOINING_WORD_ONLY.test(ing.name));
 }

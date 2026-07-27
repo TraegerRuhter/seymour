@@ -49,9 +49,6 @@ approx. 500 g beef	500	g	beef
 250 g / 9 oz plain flour	250	g	flour
 1 cup | 240 ml milk	1	cup	milk
 2 lb or 900 g beef	2	lb	beef
-# Same system on both sides, so it's a choice and not a conversion — left for
-# item 6 rather than silently discarded.
-1 lb chicken thighs or 2 lb beef	1	lb	chicken thighs or 2 lb beef
 
 # --- the garlic family, which people write four ways ----------------------
 1 clove garlic, minced	1	clove	garlic
@@ -116,6 +113,10 @@ juice of 1 lemon	0		lemon juice
 # Item 6 — alternatives. First one wins, the rest is a note.
 ~2 cups milk or cream	2	cup	milk
 ~butter or margarine	0		butter
+# An amount on both sides, in the same system — so item 5 leaves it alone
+# (it's a choice, not a conversion) and item 6 inherits it. Today the second
+# amount ends up inside the name, which is why this is a gap and not settled.
+~1 lb chicken thighs or 2 lb beef	1	lb	chicken thigh
 
 # Item 7 — an instruction wearing an ingredient's clothes.
 ~1 tablespoon of all purpose flour dissolve in 1/4 cup water	1	tbsp	all purpose flour
