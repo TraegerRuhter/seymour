@@ -81,6 +81,15 @@ freshly ground black pepper	0		black pepper
 # --- descriptors that are part of the identity and must survive -----------
 1 cup heavy cream	1	cup	heavy cream
 1 lb boneless skinless chicken thighs	1	lb	boneless skinless chicken thigh
+1 tsp white pepper	1	tsp	white pepper
+1 tsp smoked paprika	1	tsp	smoked paprika
+1/2 cup dark brown sugar	0.5	cup	dark brown sugar
+2 tbsp raw sugar	2	tbsp	raw sugar
+8 oz fresh mozzarella	8	oz	fresh mozzarella
+1 lb fresh pasta	1	lb	fresh pasta
+# ...and the same words behaving as ordinary descriptors elsewhere.
+1 lb raw shrimp	1	lb	shrimp
+2 cups fresh spinach	2	cup	spinach
 
 # --- regional and shop-shelf units (item 9) -------------------------------
 1 kilo pork belly	1	kg	pork belly
@@ -103,23 +112,44 @@ freshly ground black pepper	0		black pepper
 1 package cream cheese	1	package	cream cheese
 18 pieces calamansi	18	piece	calamansi
 
+# --- alternatives (item 6) — first option wins, rest becomes a note --------
+2 cups milk or cream	2	cup	milk
+butter or margarine	0		butter
+cilantro (or parsley)	0		cilantro
+2 tbsp olive oil or vegetable oil	2	tbsp	olive oil
+1 onion or 2 shallots	1		onion
+# Same system on both sides, so item 5 correctly reads it as a choice rather
+# than a conversion, and item 6 takes the first option.
+1 lb chicken thighs or 2 lb beef	1	lb	chicken thigh
+
+# --- names that merely contain the letters "or" ----------------------------
+1 orange	1		orange
+2 cups orzo	2	cup	orzo
+1 tbsp oregano	1	tbsp	oregano
+1 cup cornmeal	1	cup	cornmeal
+
+# --- a step wearing an ingredient's clothes (item 7) -----------------------
+1 tablespoon of all purpose flour dissolve in 1/4 cup water	1	tbsp	flour
+2 tbsp cornstarch dissolved in 2 tbsp water	2	tbsp	cornstarch
+1 cup water combine with the cornstarch	1	cup	water
+1 cup rice rinse until the water runs clear	1	cup	rice
+
+# --- verbs that are part of a name and must survive ------------------------
+1 cup whipping cream	1	cup	whipping cream
+2 tbsp cooking oil	2	tbsp	cooking oil
+2 cups cooked rice	2	cup	cooked rice
+# "chopped" is only stripped when it leads, so this keeps it. That's a
+# normalize question (item 8), not an item 7 one — what matters here is that
+# "chopped" did NOT get read as an instruction and take the spinach with it.
+1 package frozen chopped spinach, thawed and squeezed dry	1	package	frozen chopped spinach
+1 box cake mix	1	box	cake mix
+
 # --- derived ingredients --------------------------------------------------
 juice of 1 lemon	0		lemon juice
 
 # ==========================================================================
 # KNOWN GAPS — the expectation is right, the parser isn't there yet.
 # ==========================================================================
-
-# Item 6 — alternatives. First one wins, the rest is a note.
-~2 cups milk or cream	2	cup	milk
-~butter or margarine	0		butter
-# An amount on both sides, in the same system — so item 5 leaves it alone
-# (it's a choice, not a conversion) and item 6 inherits it. Today the second
-# amount ends up inside the name, which is why this is a gap and not settled.
-~1 lb chicken thighs or 2 lb beef	1	lb	chicken thigh
-
-# Item 7 — an instruction wearing an ingredient's clothes.
-~1 tablespoon of all purpose flour dissolve in 1/4 cup water	1	tbsp	all purpose flour
 
 # Two ingredients on one line. Splitting them is its own change.
 ~Salt and pepper to taste	0		salt	to taste

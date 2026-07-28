@@ -73,9 +73,9 @@ rather than as *no amount given*. That's a display decision, and it's item 3.
 | 3 | **Say "to taste" instead of leaving the cell blank** | S | High | **shipped** |
 | 4 | **A golden corpus** — real scraped lines, expected output, one file | M | High | **shipped** |
 | 5 | **Metric echoes** — "1 cup (240 ml) milk" should not become two rows | S | Med | **shipped** |
-| 6 | **Alternatives** — "butter or margarine", "2 cups milk or cream" | M | Med | not started |
-| 7 | **Instruction lines** — detect and quarantine, don't silently shop for them | M | Med | not started |
-| 8 | **Descriptor vs identity** — when is "heavy cream" just "cream"? | M | Med | not started |
+| 6 | **Alternatives** — "butter or margarine", "2 cups milk or cream" | M | Med | **shipped** |
+| 7 | **Instruction lines** — detect and quarantine, don't silently shop for them | M | Med | **shipped** |
+| 8 | **Descriptor vs identity** — when is "heavy cream" just "cream"? | M | Med | **shipped** |
 | 9 | **Regional and non-metric units** — kilo, sachet, pack, bunch, tali | S | Med | **shipped** |
 | 10 | **Output invariants** — assertions the aggregated list must always satisfy | S | High | **shipped** |
 
@@ -215,60 +215,98 @@ like a conversion.
 
 ---
 
-### 6. Alternatives
+### 6. Alternatives — shipped
 
 `butter or margarine`, `2 cups milk or cream`, `cilantro (or parsley)`.
 
-Today these become a single row named `butter or margarine`, which is a
-shopping item that doesn't exist. Proposal: split at ` or `, take the first as
-the name, keep the remainder as a note, and show it in the row's "why this
-many?" detail so the choice isn't lost.
+These were a single row named `butter or margarine`, which is a shopping item
+that doesn't exist. The first option is now the name and the remainder becomes
+a note.
 
-**Risk:** ingredients with `or` in their actual name are rare but exist. The
-corpus (4) is what makes this checkable.
+Two forms, because the parenthesised one has to be caught *before*
+`normalizeIngredientName` runs — that drops parentheticals wholesale and would
+take the alternative with them.
+
+The risk was always the reverse of the bug: an ingredient whose real name
+contains those two letters. Splitting on whitespace-delimited ` or ` is what
+makes it safe, and `orange`, `orzo`, `oregano`, `cornmeal`, `chorizo` and
+`coriander` are all in the corpus proving it.
+
+Nothing is hidden by this. The full line is rendered verbatim on the recipe
+page, in cook mode, and in the shopping list's "why this many" breakdown — only
+the row's *name* changes.
+
+`and` is untouched. Two ingredients on one line is a different change and is
+still a known gap.
 
 ---
 
-### 7. Instruction lines
+### 7. Instruction lines — shipped
 
 `1 tablespoon of all purpose flour dissolve in 1/4 cup water` is not an
 ingredient. Neither is `Preheat oven to 350°F`, which some sites put in the
 ingredient block.
 
-Detecting these reliably is hard, and getting it wrong deletes something you
-needed to buy. So the proposal is deliberately timid:
+Shipped as `truncateAtInstruction`, and it is as timid as this section asked
+for. Two conditions, both about refusing to guess:
 
-- Detect the *signals* — an imperative verb (`dissolve`, `preheat`, `combine`,
-  `whisk`) appearing after the ingredient name, a second measurement mid-line,
-  more than ~8 words.
-- **Truncate at the verb rather than dropping the line.** `all purpose flour
-  dissolve in 1/4 cup water` → `all purpose flour`, with the full original kept
-  (it already is — `originalString` is preserved verbatim).
-- Never drop a line entirely without showing it somewhere.
+- **Not the first word.** Nothing before the verb means nothing to keep, so
+  `Preheat oven to 350°F` is left exactly as it is. An ugly row is recoverable;
+  a missing one isn't.
+- **Not the last word.** A trailing verb is far more likely a noun —
+  `cake mix`, `pancake mix` — than an instruction with nothing after it.
 
-**Risk:** the highest on this list. Do 4 first.
+The truncated half becomes a note, and `originalString` still holds the whole
+line, so nothing is destroyed.
 
----
+The verb list is deliberately short and deliberately excludes every prep word.
+`chopped`, `crushed`, `ground`, `whipped`, `sweetened`, `shredded` and friends
+are descriptors sitting in front of a noun — `frozen chopped spinach` — and
+normalize.ts already handles them. Cutting at one would take the ingredient
+with it. That case is in the corpus, along with `whipping cream`, `cooking
+oil`, `cooked rice` and `sweetened condensed milk`.
 
-### 8. Descriptor vs identity
+The word-count and second-measurement signals this section also proposed went
+unused. The verb alone covered every case in the corpus, and each extra signal
+is another way to delete something you needed to buy.
 
-`normalize.ts` already strips prep words. The open question is where the line
-sits, and it's genuinely a judgement call per word:
+### 8. Descriptor vs identity — shipped
 
-- `freshly ground black pepper` → `black pepper`. Right.
-- `boneless skinless chicken thighs` → `chicken thighs`. Right — you buy them
-  as one thing.
-- `heavy cream` → `cream`. **Wrong.** Different product.
-- `black pepper` → `pepper`. **Wrong.** Different product from white pepper.
-- `large eggs` → `eggs`. Right, arguably — most people don't sort by size.
+`normalize.ts` already strips prep words. The open question was where the line
+sits, and it really is a judgement call per word.
 
-So this isn't one rule, it's a vocabulary: a list of words that are *always*
-descriptors (`freshly`, `finely`, `roughly`, `organic`), a list that are
-*never* (`heavy`, `double`, `black`, `white`, `smoked`), and a default for
-everything else. The corpus decides the default.
+Checking before changing anything found the doc's own worst cases were already
+right: `heavy cream`, `black pepper`, `white pepper`, `smoked paprika`,
+`dark brown sugar`, `sweet potato`, `red onion` and `wild rice` all survive
+untouched, because none of those modifiers was ever on a droppable list.
 
-Worth doing carefully because over-normalizing is invisible: two things merge
-into one row and you buy the wrong item.
+Four real over-merges did turn up, all of them a word that is an ordinary
+descriptor almost everywhere:
+
+| written | was | should be |
+|---|---|---|
+| `raw sugar` | sugar | raw sugar — that's demerara |
+| `raw honey` | honey | raw honey |
+| `fresh mozzarella` | mozzarella | fresh mozzarella — different aisle to low-moisture |
+| `fresh pasta` | pasta | fresh pasta — different aisle to dried |
+| `fresh yeast` | yeast | fresh yeast — not instant |
+
+So the fix is `IDENTITY_MODIFIERS`: keyed by the prefix, listing the heads it
+must *not* be taken off. `raw shrimp` is still shrimp and `fresh spinach` is
+still spinach. A vocabulary, not a rule — because there is no rule. Whether a
+word describes a thing or names a different thing depends entirely on what
+follows it.
+
+The more valuable half is `NEVER_DROPPABLE`: seventeen words that separate two
+things you can buy, pinned by a test. Adding one of them to
+`DROPPABLE_PREFIXES` later would be a one-line change with a silent wrong
+result — two rows merge and the list is confidently wrong. Now it fails the
+build instead, and anything that genuinely wants to drop one has to remove it
+from that list first and say why.
+
+Over-merging is the failure that matters here, so anything ambiguous belongs on
+the keep-it list. Two extra rows are a nuisance; the wrong product in the
+basket isn't.
 
 ---
 

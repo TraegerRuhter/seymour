@@ -83,6 +83,23 @@ const VAGUE_REGEX = /^(?:some|a few|few|a little|little|several)\s+/i;
  */
 const ECHO_SEPARATOR_REGEX = /^(?:[/|]|or\b)\s*/i;
 
+/**
+ * "butter or margarine" is a single shopping row for a product that doesn't
+ * exist — item 6. The first option becomes the name; the rest is kept as a
+ * note rather than thrown away.
+ *
+ * Whitespace on both sides is what makes this safe: "orange", "oregano",
+ * "chorizo" and "cornmeal" all contain the letters but never the word.
+ */
+const ALTERNATIVE_REGEX = /\s+or\s+/i;
+
+/**
+ * The parenthesised form, "cilantro (or parsley)". Caught before
+ * normalizeIngredientName, which drops parentheticals wholesale and would
+ * take the alternative with them.
+ */
+const PAREN_ALTERNATIVE_REGEX = /\s*\(\s*or\s+([^)]*)\)/i;
+
 function parseNumberToken(token: string): number {
   token = token.trim();
   if (token in UNICODE_FRACTIONS) return UNICODE_FRACTIONS[token];
@@ -170,131 +187,297 @@ function eatEcho(rest: string, unit: string): string {
 }
 
 /**
+ * What a line has been read down to so far.
+ *
+ * `rest` is what's left to read. The first half of the pipeline eats from the
+ * front of it; once `splitNotes` runs, what remains is the name and `rest` is
+ * no longer touched.
+ */
+interface Reading {
+  /** The line as given, trimmed. Some stages need the whole thing. */
+  text: string;
+  /** The unread remainder. */
+  rest: string;
+  quantity: number;
+  unit: string;
+  /**
+   * A hedge was consumed ("a few", "some"). A unit found afterwards is
+   * swallowed to clean the name but not recorded as a count.
+   */
+  vague: boolean;
+  name: string;
+  notes?: string;
+  qualifier?: string;
+}
+
+type Stage = (r: Reading) => Reading;
+
+/**
+ * "about 2 cups flour" — an approximator in front of the number would
+ * otherwise stop the quantity match dead and leave the whole line as the name.
+ */
+const readLeadingFiller: Stage = (r) => ({ ...r, rest: eatFiller(r.rest) });
+
+/**
+ * The number, or one of the two things that stand in for one.
+ *
+ * Hedges are tested before articles: "a few" opens with an "a", and testing
+ * the article first claimed it, leaving "few sprigs of thyme" as the name.
+ */
+const readQuantity: Stage = (r) => {
+  const qty = matchLeadingQuantity(r.rest);
+  if (qty) return { ...r, quantity: qty.value, rest: r.rest.slice(qty.length).trim() };
+  if (VAGUE_REGEX.test(r.rest)) {
+    return { ...r, vague: true, rest: r.rest.replace(VAGUE_REGEX, '').trim() };
+  }
+  if (ARTICLE_REGEX.test(r.rest)) {
+    return { ...r, quantity: 1, rest: r.rest.replace(ARTICLE_REGEX, '').trim() };
+  }
+  return r;
+};
+
+/**
+ * A unit with no number in front of it means one of them: "Pinch of salt",
+ * "Handful of parsley", "Can of tomatoes". This whole pass used to sit behind
+ * `quantity > 0`, so these lines kept every word and formed their own shopping
+ * row rather than joining the one for plain salt.
+ */
+const readBareUnit: Stage = (r) => {
+  if (r.quantity !== 0) return r;
+  const bare = r.rest.match(ONE_WORD_UNIT_REGEX);
+  const bareUnit = bare && canonicalUnit(bare[1]);
+  // Only when something is left to name — "Pinch" on its own is not an
+  // ingredient, and consuming it would leave nothing behind.
+  if (!bare || !bareUnit || !r.rest.slice(bare[0].length).trim()) return r;
+
+  const rest = eatFiller(r.rest.slice(bare[0].length).trim());
+  // After a hedge the unit is swallowed but not recorded: "a few sprigs of
+  // thyme" is not one sprig, and claiming a number nobody wrote is worse than
+  // showing none.
+  return r.vague ? { ...r, rest } : { ...r, rest, quantity: 1, unit: bareUnit };
+};
+
+/** The unit token right after the quantity. Two-word units first ("fl oz"). */
+const readUnit: Stage = (r) => {
+  if (r.quantity <= 0) return r;
+  const twoWord = r.rest.match(TWO_WORD_UNIT_REGEX);
+  const twoWordUnit = twoWord && canonicalUnit(twoWord[1].replace(/\./g, ''));
+  if (twoWord && twoWordUnit) {
+    return { ...r, unit: twoWordUnit, rest: eatFiller(r.rest.slice(twoWord[0].length).trim()) };
+  }
+  const oneWord = r.rest.match(ONE_WORD_UNIT_REGEX);
+  const oneWordUnit = oneWord && canonicalUnit(oneWord[1]);
+  if (oneWord && oneWordUnit) {
+    return { ...r, unit: oneWordUnit, rest: eatFiller(r.rest.slice(oneWord[0].length).trim()) };
+  }
+  // Still worth a filler strip — "2 of the onions".
+  return { ...r, rest: eatFiller(r.rest) };
+};
+
+/** A size in brackets: "1 (15 oz) can black beans". */
+const readParenthetical: Stage = (r) => {
+  if (r.quantity <= 0) return r;
+  const paren = r.rest.match(PAREN_REGEX);
+  if (!paren) return r;
+
+  const rest = eatFiller(r.rest.slice(paren[0].length));
+  const innerUnit = rest.match(ONE_WORD_UNIT_REGEX);
+  const innerCanonical = innerUnit && canonicalUnit(innerUnit[1]);
+  if (r.unit || !innerUnit || !innerCanonical) return { ...r, rest };
+  // The filler strip that was missing: "2 (14 oz) cans of tomatoes" arrives
+  // here with "of tomatoes" left, and the strip above has already run.
+  return {
+    ...r,
+    unit: innerCanonical,
+    rest: eatFiller(rest.slice(innerUnit[0].length).trim()),
+  };
+};
+
+/** The same amount restated in the other system — see `eatEcho`. */
+const readEcho: Stage = (r) => (r.quantity > 0 ? { ...r, rest: eatEcho(r.rest, r.unit) } : r);
+
+/** Trailing preparation after the first comma: "onion, finely diced". */
+const splitNotes: Stage = (r) => {
+  const comma = r.rest.indexOf(',');
+  if (comma === -1) return { ...r, name: r.rest };
+  return {
+    ...r,
+    name: r.rest.slice(0, comma).trim(),
+    notes: r.rest.slice(comma + 1).trim() || undefined,
+  };
+};
+
+/**
+ * An alternative the recipe offered. The first option is what goes on the list
+ * — you buy one of them, not a hybrid — and the rest becomes a note so the
+ * choice survives. The full line is shown verbatim on the recipe, in cook mode
+ * and in the shopping list's breakdown, so nothing is hidden.
+ */
+const readAlternative: Stage = (r) => {
+  let name = r.name;
+  let alternative: string | undefined;
+
+  const parenAlternative = name.match(PAREN_ALTERNATIVE_REGEX);
+  if (parenAlternative) {
+    alternative = parenAlternative[1].trim();
+    name = name.replace(PAREN_ALTERNATIVE_REGEX, '').trim();
+  }
+  const options = name.split(ALTERNATIVE_REGEX);
+  if (options.length > 1 && options[0].trim()) {
+    name = options[0].trim();
+    alternative ??= options.slice(1).join(' or ').trim();
+  }
+  if (!alternative) return { ...r, name };
+
+  return { ...r, name, notes: r.notes ? `or ${alternative}; ${r.notes}` : `or ${alternative}` };
+};
+
+/**
+ * Verbs that mean the line stopped naming an ingredient and started telling
+ * you what to do with it — item 7.
+ *
+ * Deliberately short, and deliberately *not* the prep words. `chopped`,
+ * `crushed`, `ground`, `whipped`, `sweetened`, `shredded` and friends are
+ * descriptors that sit in front of a noun ("frozen chopped spinach"), and
+ * normalize.ts already strips those. Cutting at one of them would take the
+ * ingredient with it.
+ *
+ * What's here is either a bare imperative or a participle with no adjectival
+ * use worth worrying about.
+ */
+const INSTRUCTION_VERBS = new Set([
+  'dissolve',
+  'dissolved',
+  'combine',
+  'combined',
+  'preheat',
+  'marinate',
+  'rinse',
+  'soak',
+  'simmer',
+  'refrigerate',
+  'whisk',
+  'knead',
+  'blanch',
+  'sprinkle',
+  'drizzle',
+  'reserve',
+  'discard',
+]);
+
+/**
+ * Truncates at the point a line stops being an ingredient — item 7.
+ *
+ * "1 tablespoon of all purpose flour dissolve in 1/4 cup water" is a
+ * measurement, an ingredient, and then a step. The name keeps the ingredient;
+ * the rest becomes a note rather than being thrown away, and `originalString`
+ * still has the whole line.
+ *
+ * Two conditions keep this timid, which is the point — getting it wrong
+ * deletes something you needed to buy:
+ *
+ *   - **not the first word.** Nothing before the verb means nothing to keep,
+ *     so "Preheat oven to 350°F" is left exactly as it is. It's an ugly row,
+ *     but an ugly row is recoverable and a missing one isn't.
+ *   - **not the last word.** A trailing verb is far more likely a noun or an
+ *     adjective — "cake mix", "pancake mix" — than an instruction with
+ *     nothing after it.
+ */
+const truncateAtInstruction: Stage = (r) => {
+  const words = r.name.split(/\s+/).filter(Boolean);
+  const at = words.findIndex(
+    (word, i) =>
+      i > 0 &&
+      i < words.length - 1 &&
+      INSTRUCTION_VERBS.has(word.toLowerCase().replace(/[.,;:]+$/, '')),
+  );
+  if (at === -1) return r;
+
+  const dropped = words.slice(at).join(' ');
+  return {
+    ...r,
+    name: words.slice(0, at).join(' '),
+    notes: r.notes ? `${dropped}; ${r.notes}` : dropped,
+  };
+};
+
+/**
+ * A countable unit word *after* the name ("2 garlic cloves") rather than
+ * before it ("2 cloves garlic"). Without this the unit word is swallowed into
+ * the name and the two phrasings bucket apart at aggregation time even though
+ * they mean the same thing.
+ */
+const readTrailingUnit: Stage = (r) => {
+  if (r.unit) return r;
+  const words = r.name.split(/\s+/).filter(Boolean);
+  if (words.length <= 1) return r;
+  const trailingUnit = canonicalUnit(words[words.length - 1]);
+  if (!trailingUnit) return r;
+  return { ...r, unit: trailingUnit, name: words.slice(0, -1).join(' ') };
+};
+
+const normalizeName: Stage = (r) => {
+  const name = normalizeIngredientName(r.name);
+  // A bare garlic count ("2 garlic") conventionally means cloves — nobody
+  // writing an ingredient list means a whole head — so default the unit to
+  // keep every garlic phrasing bucketing together instead of splitting the list.
+  const unit = name === 'garlic' && !r.unit && r.quantity > 0 ? 'clove' : r.unit;
+  return { ...r, name, unit };
+};
+
+/**
+ * What the recipe said instead of an amount. Read off the whole original line:
+ * "to taste" can trail the name or the notes ("salt, or to taste"), and by
+ * this point both have been trimmed away.
+ */
+const readQualifier: Stage = (r) =>
+  r.quantity === 0 ? { ...r, qualifier: matchQualifier(r.text) } : r;
+
+/**
+ * The order is the whole algorithm, so it's written as one list rather than
+ * buried in control flow. Each stage consumes what it recognizes and passes
+ * the rest along; a stage that doesn't apply returns its input untouched.
+ *
+ * Stages up to `readEcho` eat from the front of `rest`. `splitNotes` turns
+ * what's left into the name, and everything after it works on that.
+ */
+const STAGES: Stage[] = [
+  readLeadingFiller,
+  readQuantity,
+  readBareUnit,
+  readUnit,
+  readParenthetical,
+  readEcho,
+  splitNotes,
+  readAlternative,
+  truncateAtInstruction,
+  readTrailingUnit,
+  normalizeName,
+  readQualifier,
+];
+
+/**
  * Parses a single ingredient line into structured fields.
  * The original string is always preserved verbatim.
  */
 export function parseIngredient(originalString: string): Ingredient {
   const text = originalString.trim();
-  let rest = text;
-  let quantity = 0;
-  let unit = '';
-
-  // "about 2 cups flour" — an approximator before the number would otherwise
-  // stop the quantity match dead and leave the whole line as the name.
-  rest = eatFiller(rest);
-
-  const qty = matchLeadingQuantity(rest);
-  // Hedges before articles: "a few" opens with an "a", and testing for the
-  // article first claimed it, leaving "few sprigs of thyme" as the name.
-  let vague = false;
-  if (qty) {
-    quantity = qty.value;
-    rest = rest.slice(qty.length).trim();
-  } else if (VAGUE_REGEX.test(rest)) {
-    vague = true;
-    rest = rest.replace(VAGUE_REGEX, '').trim();
-  } else if (ARTICLE_REGEX.test(rest)) {
-    quantity = 1;
-    rest = rest.replace(ARTICLE_REGEX, '').trim();
-  }
-
-  // A unit with no number in front of it means one of them: "Pinch of salt",
-  // "Handful of parsley", "Can of tomatoes". Everything below used to sit
-  // behind `quantity > 0`, so these lines kept every word and formed their own
-  // shopping row rather than joining the one for plain salt.
-  if (quantity === 0) {
-    const bare = rest.match(ONE_WORD_UNIT_REGEX);
-    const bareUnit = bare && canonicalUnit(bare[1]);
-    // Only when something is left to name — "Pinch" on its own is not an
-    // ingredient, and consuming it would leave nothing behind.
-    if (bare && bareUnit && rest.slice(bare[0].length).trim()) {
-      rest = eatFiller(rest.slice(bare[0].length).trim());
-      // After a hedge the unit is swallowed to clean the name but not
-      // recorded: "a few sprigs of thyme" is not one sprig, and claiming a
-      // number nobody wrote is worse than showing none.
-      if (!vague) {
-        quantity = 1;
-        unit = bareUnit;
-      }
-    }
-  }
-
-  if (quantity > 0) {
-    // Optional unit token right after the quantity. Try two-word units first ("fl oz", "fluid ounces").
-    const twoWord = rest.match(TWO_WORD_UNIT_REGEX);
-    const twoWordUnit = twoWord && canonicalUnit(twoWord[1].replace(/\./g, ''));
-    if (twoWord && twoWordUnit) {
-      unit = twoWordUnit;
-      rest = rest.slice(twoWord[0].length).trim();
-    } else {
-      const oneWord = rest.match(ONE_WORD_UNIT_REGEX);
-      const oneWordUnit = oneWord && canonicalUnit(oneWord[1]);
-      if (oneWord && oneWordUnit) {
-        unit = oneWordUnit;
-        rest = rest.slice(oneWord[0].length).trim();
-      }
-    }
-    // Skip filler like "of" — "2 cups of flour"
-    rest = eatFiller(rest);
-    // Parenthetical right after quantity/unit, e.g. "1 (15 oz) can black beans"
-    const paren = rest.match(PAREN_REGEX);
-    if (paren) {
-      rest = eatFiller(rest.slice(paren[0].length));
-      const innerUnit = rest.match(ONE_WORD_UNIT_REGEX);
-      const innerCanonical = innerUnit && canonicalUnit(innerUnit[1]);
-      if (!unit && innerUnit && innerCanonical) {
-        unit = innerCanonical;
-        // The one that was missing. "2 (14 oz) cans of tomatoes" reaches here
-        // with "of tomatoes" left, and the strip above already ran.
-        rest = eatFiller(rest.slice(innerUnit[0].length).trim());
-      }
-    }
-    rest = eatEcho(rest, unit);
-  }
-
-  // Split trailing notes after the first comma: "onion, finely diced"
-  let name = rest;
-  let notes: string | undefined;
-  const comma = rest.indexOf(',');
-  if (comma !== -1) {
-    name = rest.slice(0, comma).trim();
-    notes = rest.slice(comma + 1).trim() || undefined;
-  }
-
-  // Countable unit word *after* the name ("2 garlic cloves") rather than
-  // before it ("2 cloves garlic") — without this, the unit word gets
-  // swallowed into the name and the two phrasings bucket differently at
-  // aggregation time even though they mean the same thing.
-  if (!unit) {
-    const words = name.split(/\s+/).filter(Boolean);
-    if (words.length > 1) {
-      const trailingUnit = canonicalUnit(words[words.length - 1]);
-      if (trailingUnit) {
-        unit = trailingUnit;
-        name = words.slice(0, -1).join(' ');
-      }
-    }
-  }
-
-  name = normalizeIngredientName(name);
-
-  // A bare garlic count ("2 garlic") conventionally means cloves — nobody
-  // writing an ingredient list means a whole head — so default the unit to
-  // keep every garlic phrasing ("1 garlic", "2 garlic cloves", "3 cloves
-  // garlic") bucketing together instead of splitting the shopping list.
-  if (name === 'garlic' && !unit && quantity > 0) unit = 'clove';
-
-  // Read off the whole original line: "to taste" can trail the name or the
-  // notes ("salt, or to taste"), and by this point both have been trimmed.
-  const qualifier = quantity === 0 ? matchQualifier(text) : undefined;
+  const read = STAGES.reduce<Reading>((r, stage) => stage(r), {
+    text,
+    rest: text,
+    quantity: 0,
+    unit: '',
+    vague: false,
+    name: '',
+  });
 
   return {
-    name: name || normalizeIngredientName(text),
-    quantity,
-    unit,
+    name: read.name || normalizeIngredientName(text),
+    quantity: read.quantity,
+    unit: read.unit,
     originalString,
-    ...(notes ? { notes } : {}),
-    ...(qualifier ? { qualifier } : {}),
+    ...(read.notes ? { notes: read.notes } : {}),
+    ...(read.qualifier ? { qualifier: read.qualifier } : {}),
   };
 }
 
