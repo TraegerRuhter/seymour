@@ -333,6 +333,75 @@ const readAlternative: Stage = (r) => {
 };
 
 /**
+ * Verbs that mean the line stopped naming an ingredient and started telling
+ * you what to do with it — item 7.
+ *
+ * Deliberately short, and deliberately *not* the prep words. `chopped`,
+ * `crushed`, `ground`, `whipped`, `sweetened`, `shredded` and friends are
+ * descriptors that sit in front of a noun ("frozen chopped spinach"), and
+ * normalize.ts already strips those. Cutting at one of them would take the
+ * ingredient with it.
+ *
+ * What's here is either a bare imperative or a participle with no adjectival
+ * use worth worrying about.
+ */
+const INSTRUCTION_VERBS = new Set([
+  'dissolve',
+  'dissolved',
+  'combine',
+  'combined',
+  'preheat',
+  'marinate',
+  'rinse',
+  'soak',
+  'simmer',
+  'refrigerate',
+  'whisk',
+  'knead',
+  'blanch',
+  'sprinkle',
+  'drizzle',
+  'reserve',
+  'discard',
+]);
+
+/**
+ * Truncates at the point a line stops being an ingredient — item 7.
+ *
+ * "1 tablespoon of all purpose flour dissolve in 1/4 cup water" is a
+ * measurement, an ingredient, and then a step. The name keeps the ingredient;
+ * the rest becomes a note rather than being thrown away, and `originalString`
+ * still has the whole line.
+ *
+ * Two conditions keep this timid, which is the point — getting it wrong
+ * deletes something you needed to buy:
+ *
+ *   - **not the first word.** Nothing before the verb means nothing to keep,
+ *     so "Preheat oven to 350°F" is left exactly as it is. It's an ugly row,
+ *     but an ugly row is recoverable and a missing one isn't.
+ *   - **not the last word.** A trailing verb is far more likely a noun or an
+ *     adjective — "cake mix", "pancake mix" — than an instruction with
+ *     nothing after it.
+ */
+const truncateAtInstruction: Stage = (r) => {
+  const words = r.name.split(/\s+/).filter(Boolean);
+  const at = words.findIndex(
+    (word, i) =>
+      i > 0 &&
+      i < words.length - 1 &&
+      INSTRUCTION_VERBS.has(word.toLowerCase().replace(/[.,;:]+$/, '')),
+  );
+  if (at === -1) return r;
+
+  const dropped = words.slice(at).join(' ');
+  return {
+    ...r,
+    name: words.slice(0, at).join(' '),
+    notes: r.notes ? `${dropped}; ${r.notes}` : dropped,
+  };
+};
+
+/**
  * A countable unit word *after* the name ("2 garlic cloves") rather than
  * before it ("2 cloves garlic"). Without this the unit word is swallowed into
  * the name and the two phrasings bucket apart at aggregation time even though
@@ -381,6 +450,7 @@ const STAGES: Stage[] = [
   readEcho,
   splitNotes,
   readAlternative,
+  truncateAtInstruction,
   readTrailingUnit,
   normalizeName,
   readQualifier,

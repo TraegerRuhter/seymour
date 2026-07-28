@@ -119,15 +119,28 @@ cilantro (or parsley)	0		cilantro
 1 tbsp oregano	1	tbsp	oregano
 1 cup cornmeal	1	cup	cornmeal
 
+# --- a step wearing an ingredient's clothes (item 7) -----------------------
+1 tablespoon of all purpose flour dissolve in 1/4 cup water	1	tbsp	flour
+2 tbsp cornstarch dissolved in 2 tbsp water	2	tbsp	cornstarch
+1 cup water combine with the cornstarch	1	cup	water
+1 cup rice rinse until the water runs clear	1	cup	rice
+
+# --- verbs that are part of a name and must survive ------------------------
+1 cup whipping cream	1	cup	whipping cream
+2 tbsp cooking oil	2	tbsp	cooking oil
+2 cups cooked rice	2	cup	cooked rice
+# "chopped" is only stripped when it leads, so this keeps it. That's a
+# normalize question (item 8), not an item 7 one — what matters here is that
+# "chopped" did NOT get read as an instruction and take the spinach with it.
+1 package frozen chopped spinach, thawed and squeezed dry	1	package	frozen chopped spinach
+1 box cake mix	1	box	cake mix
+
 # --- derived ingredients --------------------------------------------------
 juice of 1 lemon	0		lemon juice
 
 # ==========================================================================
 # KNOWN GAPS — the expectation is right, the parser isn't there yet.
 # ==========================================================================
-
-# Item 7 — an instruction wearing an ingredient's clothes.
-~1 tablespoon of all purpose flour dissolve in 1/4 cup water	1	tbsp	all purpose flour
 
 # Two ingredients on one line. Splitting them is its own change.
 ~Salt and pepper to taste	0		salt	to taste

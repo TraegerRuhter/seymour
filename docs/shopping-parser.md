@@ -74,7 +74,7 @@ rather than as *no amount given*. That's a display decision, and it's item 3.
 | 4 | **A golden corpus** — real scraped lines, expected output, one file | M | High | **shipped** |
 | 5 | **Metric echoes** — "1 cup (240 ml) milk" should not become two rows | S | Med | **shipped** |
 | 6 | **Alternatives** — "butter or margarine", "2 cups milk or cream" | M | Med | **shipped** |
-| 7 | **Instruction lines** — detect and quarantine, don't silently shop for them | M | Med | not started |
+| 7 | **Instruction lines** — detect and quarantine, don't silently shop for them | M | Med | **shipped** |
 | 8 | **Descriptor vs identity** — when is "heavy cream" just "cream"? | M | Med | not started |
 | 9 | **Regional and non-metric units** — kilo, sachet, pack, bunch, tali | S | Med | **shipped** |
 | 10 | **Output invariants** — assertions the aggregated list must always satisfy | S | High | **shipped** |
@@ -241,26 +241,34 @@ still a known gap.
 
 ---
 
-### 7. Instruction lines
+### 7. Instruction lines — shipped
 
 `1 tablespoon of all purpose flour dissolve in 1/4 cup water` is not an
 ingredient. Neither is `Preheat oven to 350°F`, which some sites put in the
 ingredient block.
 
-Detecting these reliably is hard, and getting it wrong deletes something you
-needed to buy. So the proposal is deliberately timid:
+Shipped as `truncateAtInstruction`, and it is as timid as this section asked
+for. Two conditions, both about refusing to guess:
 
-- Detect the *signals* — an imperative verb (`dissolve`, `preheat`, `combine`,
-  `whisk`) appearing after the ingredient name, a second measurement mid-line,
-  more than ~8 words.
-- **Truncate at the verb rather than dropping the line.** `all purpose flour
-  dissolve in 1/4 cup water` → `all purpose flour`, with the full original kept
-  (it already is — `originalString` is preserved verbatim).
-- Never drop a line entirely without showing it somewhere.
+- **Not the first word.** Nothing before the verb means nothing to keep, so
+  `Preheat oven to 350°F` is left exactly as it is. An ugly row is recoverable;
+  a missing one isn't.
+- **Not the last word.** A trailing verb is far more likely a noun —
+  `cake mix`, `pancake mix` — than an instruction with nothing after it.
 
-**Risk:** the highest on this list. Do 4 first.
+The truncated half becomes a note, and `originalString` still holds the whole
+line, so nothing is destroyed.
 
----
+The verb list is deliberately short and deliberately excludes every prep word.
+`chopped`, `crushed`, `ground`, `whipped`, `sweetened`, `shredded` and friends
+are descriptors sitting in front of a noun — `frozen chopped spinach` — and
+normalize.ts already handles them. Cutting at one would take the ingredient
+with it. That case is in the corpus, along with `whipping cream`, `cooking
+oil`, `cooked rice` and `sweetened condensed milk`.
+
+The word-count and second-measurement signals this section also proposed went
+unused. The verb alone covered every case in the corpus, and each extra signal
+is another way to delete something you needed to buy.
 
 ### 8. Descriptor vs identity
 
