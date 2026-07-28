@@ -5,6 +5,7 @@ import {
   CURRENT_BUNDLE_VERSION,
   type ArchivedPlan,
   type ExportBundle,
+  type Ingredient,
   type MealPlanConfig,
   type MealPlanDay,
   type MealSlot,
@@ -167,6 +168,33 @@ export function recipeFromParsed(data: ParsedRecipeData): Recipe {
   };
 }
 
+/** Every field the parser sets. Compared one by one — see `sameIngredients`. */
+const INGREDIENT_FIELDS = [
+  'name',
+  'quantity',
+  'unit',
+  'originalString',
+  'notes',
+  'qualifier',
+] as const;
+
+/**
+ * Whether a re-parse actually changed anything.
+ *
+ * Field by field rather than by comparing serialized forms, because key order
+ * is not ours to rely on: Postgres `jsonb` stores object keys sorted by length
+ * then bytewise, so an ingredient that has been through Supabase comes back as
+ * {name, unit, notes, quantity, …} while the parser emits {name, quantity,
+ * unit, …}. Identical data, different string — which made every synced recipe
+ * look changed on every press, rewriting the whole collection and pushing it
+ * back with a fresh updatedAt. Under last-write-wins that would also let a
+ * press quietly beat a genuinely newer edit made on another device.
+ */
+function sameIngredients(a: Ingredient[], b: Ingredient[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((left, i) => INGREDIENT_FIELDS.every((key) => left[key] === b[i][key]));
+}
+
 /**
  * Re-reads every saved recipe's ingredient lines with the current parser.
  *
@@ -192,7 +220,7 @@ export function reparseAllRecipes(): number {
     if (!recipe.ingredients.every((i) => i.originalString?.trim())) continue;
 
     const reparsed = parseIngredientLines(recipe.ingredients.map((i) => i.originalString));
-    if (JSON.stringify(reparsed) === JSON.stringify(recipe.ingredients)) continue;
+    if (sameIngredients(reparsed, recipe.ingredients)) continue;
 
     updated.push({ ...recipe, ingredients: reparsed, updatedAt: new Date().toISOString() });
   }
