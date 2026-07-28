@@ -113,3 +113,38 @@ test('only the recipes that actually change are counted', () => {
   assert.equal(useRecipeStore.getState().recipes.r2.updatedAt, undefined);
   assert.ok(useRecipeStore.getState().recipes.r1.updatedAt);
 });
+
+test('an ingredient the source already parsed is left alone', () => {
+  // Spoonacular parsed "1 lb chicken thighs" itself. Re-reading that line
+  // with our regex would replace a better answer with a worse one, so these
+  // are passed through untouched.
+  seed([
+    {
+      name: 'chicken thigh',
+      quantity: 1,
+      unit: 'lb',
+      originalString: '1 lb chicken thighs',
+      parsedBy: 'api',
+    },
+  ]);
+  assert.equal(reparseAllRecipes(), 0);
+  assert.equal(stored()[0].quantity, 1);
+  assert.equal(stored()[0].parsedBy, 'api');
+});
+
+test('a recipe with both kinds re-reads only the lines that are ours', () => {
+  seed([
+    { name: 'of tomato', quantity: 2, unit: 'can', originalString: '2 (14 oz) cans of tomatoes' },
+    {
+      name: 'chicken thigh',
+      quantity: 1,
+      unit: 'lb',
+      originalString: '1 lb chicken thighs',
+      parsedBy: 'api',
+    },
+  ]);
+  assert.equal(reparseAllRecipes(), 1);
+  assert.equal(stored()[0].name, 'tomato');
+  assert.equal(stored()[1].name, 'chicken thigh');
+  assert.equal(stored()[1].parsedBy, 'api');
+});

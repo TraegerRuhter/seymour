@@ -17,6 +17,16 @@ export interface Ingredient {
    * the number would have been.
    */
   qualifier?: string;
+  /**
+   * Set when the amount came from a source that had already parsed it (the
+   * Spoonacular API) rather than from our own reading of `originalString`.
+   *
+   * The name is normalized by us either way — bucketing has to use one
+   * vocabulary — but the quantity and unit are theirs, and re-reading the raw
+   * line with our parser would replace a better answer with a worse one. See
+   * `reparseAllRecipes`.
+   */
+  parsedBy?: 'api';
 }
 
 export interface Recipe {
@@ -162,6 +172,12 @@ export interface ParsedRecipeData {
   imageUrl?: string;
   /** Raw ingredient lines as written on the page */
   ingredientLines: string[];
+  /**
+   * Already-parsed ingredients, when the source provided them. Only
+   * Spoonacular does; a scraped page and a paste both give us strings and
+   * nothing else, so this is absent and `ingredientLines` gets parsed.
+   */
+  ingredients?: Ingredient[];
   instructions: string[];
 }
 

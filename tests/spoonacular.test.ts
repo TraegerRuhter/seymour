@@ -92,3 +92,105 @@ test('maps every result in a batch, skipping only the invalid ones', () => {
     ['Recipe A', 'Recipe B'],
   );
 });
+
+/**
+ * `fillIngredients=true` has always been set on the search request, but the
+ * response type declared only `original` — so every discovered recipe was
+ * re-parsed from a string this API had already parsed. These cover using it.
+ */
+
+test('takes the API amount and unit rather than re-deriving them', () => {
+  const [recipe] = mapSpoonacularResults([
+    makeResult({
+      extendedIngredients: [
+        { original: '1 lb chicken thighs', amount: 1, unit: 'lb', nameClean: 'chicken thighs' },
+      ],
+    }),
+  ]);
+  assert.deepEqual(recipe.ingredients, [
+    {
+      name: 'chicken thigh',
+      quantity: 1,
+      unit: 'lb',
+      originalString: '1 lb chicken thighs',
+      parsedBy: 'api',
+    },
+  ]);
+});
+
+test('the raw line is still kept verbatim', () => {
+  const [recipe] = mapSpoonacularResults([
+    makeResult({
+      extendedIngredients: [
+        { original: '2 (14 oz) cans of tomatoes', amount: 2, unit: 'cans', nameClean: 'tomatoes' },
+      ],
+    }),
+  ]);
+  assert.equal(recipe.ingredients?.[0].originalString, '2 (14 oz) cans of tomatoes');
+  assert.equal(recipe.ingredients?.[0].unit, 'can');
+});
+
+test('their name still goes through our normalizer', () => {
+  // The shopping list buckets by name, so one vocabulary has to win — and it
+  // has to be the one a hand-typed recipe goes through too, or their
+  // "chicken stock" and our "chicken broth" are two rows for one carton.
+  const [recipe] = mapSpoonacularResults([
+    makeResult({
+      extendedIngredients: [
+        { original: '2 cups chicken stock', amount: 2, unit: 'cups', nameClean: 'chicken stock' },
+      ],
+    }),
+  ]);
+  assert.equal(recipe.ingredients?.[0].name, 'chicken broth');
+});
+
+test('a unit that is not a measurement is dropped, but the ingredient is not', () => {
+  // Spoonacular hands back things like "servings" and "small" in the unit
+  // field. A bare count is right more often than a unit nothing can compare.
+  const [recipe] = mapSpoonacularResults([
+    makeResult({
+      extendedIngredients: [
+        { original: '2 small onions', amount: 2, unit: 'small', name: 'onion' },
+      ],
+    }),
+  ]);
+  assert.deepEqual(recipe.ingredients, [
+    { name: 'onion', quantity: 2, unit: '', originalString: '2 small onions', parsedBy: 'api' },
+  ]);
+});
+
+test('a line the API could not parse falls back to our parser, one line at a time', () => {
+  // Not all-or-nothing: one unusable ingredient must not cost us the good
+  // parse of the others.
+  const [recipe] = mapSpoonacularResults([
+    makeResult({
+      extendedIngredients: [
+        { original: '1 lb chicken thighs', amount: 1, unit: 'lb', nameClean: 'chicken thighs' },
+        { original: '3 cloves of garlic' },
+      ],
+    }),
+  ]);
+  assert.equal(recipe.ingredients?.length, 2);
+  assert.equal(recipe.ingredients?.[0].parsedBy, 'api');
+  // Ours, because theirs had nothing to offer.
+  assert.equal(recipe.ingredients?.[1].parsedBy, undefined);
+  assert.equal(recipe.ingredients?.[1].name, 'garlic');
+  assert.equal(recipe.ingredients?.[1].quantity, 3);
+});
+
+test('ingredientLines and ingredients stay aligned', () => {
+  const [recipe] = mapSpoonacularResults([
+    makeResult({
+      extendedIngredients: [
+        { original: '1 lb chicken thighs', amount: 1, unit: 'lb', nameClean: 'chicken thighs' },
+        { original: '   ' },
+        { original: '2 tbsp curry powder', amount: 2, unit: 'tbsp', nameClean: 'curry powder' },
+      ],
+    }),
+  ]);
+  assert.equal(recipe.ingredientLines.length, recipe.ingredients?.length);
+  assert.deepEqual(
+    recipe.ingredients?.map((i) => i.originalString),
+    recipe.ingredientLines,
+  );
+});
