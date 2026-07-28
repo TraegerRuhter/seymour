@@ -44,15 +44,23 @@ test('the first amount is the one kept, not the second', () => {
   assert.equal(item.unit, 'lb');
 });
 
-test('a genuine choice between two amounts is left alone', () => {
-  // Both sides imperial, so it's an alternative and not a conversion. Item 6
-  // owns this line; item 5 must not eat half of it first.
-  assert.equal(parsed('1 lb chicken thighs or 2 lb beef').name, 'chicken thighs or 2 lb beef');
+test('a genuine choice between two amounts is not read as a conversion', () => {
+  // Both sides imperial, so it's an alternative. Item 5 must not discard half
+  // of it as a restatement — item 6 is what splits it, keeping the first
+  // option and the amount that goes with it.
+  const p = parseIngredient('1 lb chicken thighs or 2 lb beef');
+  assert.deepEqual(
+    { quantity: p.quantity, unit: p.unit, name: p.name },
+    { quantity: 1, unit: 'lb', name: 'chicken thigh' },
+  );
+  // The far side is kept rather than dropped, which is the difference between
+  // the two items: a conversion is noise, a choice is information.
+  assert.equal(p.notes, 'or 2 lb beef');
 });
 
-test('a choice with no amount on the far side is untouched', () => {
-  assert.equal(parsed('2 cups milk or cream').name, 'milk or cream');
-  assert.equal(parsed('butter or margarine').name, 'butter or margarine');
+test('a choice with no amount on the far side is not treated as an echo either', () => {
+  assert.equal(parseIngredient('2 cups milk or cream').notes, 'or cream');
+  assert.equal(parseIngredient('butter or margarine').notes, 'or margarine');
 });
 
 test('"or" does not bite into a word that merely starts with it', () => {

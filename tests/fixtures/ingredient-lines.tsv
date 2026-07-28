@@ -103,20 +103,28 @@ freshly ground black pepper	0		black pepper
 1 package cream cheese	1	package	cream cheese
 18 pieces calamansi	18	piece	calamansi
 
+# --- alternatives (item 6) — first option wins, rest becomes a note --------
+2 cups milk or cream	2	cup	milk
+butter or margarine	0		butter
+cilantro (or parsley)	0		cilantro
+2 tbsp olive oil or vegetable oil	2	tbsp	olive oil
+1 onion or 2 shallots	1		onion
+# Same system on both sides, so item 5 correctly reads it as a choice rather
+# than a conversion, and item 6 takes the first option.
+1 lb chicken thighs or 2 lb beef	1	lb	chicken thigh
+
+# --- names that merely contain the letters "or" ----------------------------
+1 orange	1		orange
+2 cups orzo	2	cup	orzo
+1 tbsp oregano	1	tbsp	oregano
+1 cup cornmeal	1	cup	cornmeal
+
 # --- derived ingredients --------------------------------------------------
 juice of 1 lemon	0		lemon juice
 
 # ==========================================================================
 # KNOWN GAPS — the expectation is right, the parser isn't there yet.
 # ==========================================================================
-
-# Item 6 — alternatives. First one wins, the rest is a note.
-~2 cups milk or cream	2	cup	milk
-~butter or margarine	0		butter
-# An amount on both sides, in the same system — so item 5 leaves it alone
-# (it's a choice, not a conversion) and item 6 inherits it. Today the second
-# amount ends up inside the name, which is why this is a gap and not settled.
-~1 lb chicken thighs or 2 lb beef	1	lb	chicken thigh
 
 # Item 7 — an instruction wearing an ingredient's clothes.
 ~1 tablespoon of all purpose flour dissolve in 1/4 cup water	1	tbsp	all purpose flour

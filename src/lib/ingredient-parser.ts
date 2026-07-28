@@ -83,6 +83,23 @@ const VAGUE_REGEX = /^(?:some|a few|few|a little|little|several)\s+/i;
  */
 const ECHO_SEPARATOR_REGEX = /^(?:[/|]|or\b)\s*/i;
 
+/**
+ * "butter or margarine" is a single shopping row for a product that doesn't
+ * exist — item 6. The first option becomes the name; the rest is kept as a
+ * note rather than thrown away.
+ *
+ * Whitespace on both sides is what makes this safe: "orange", "oregano",
+ * "chorizo" and "cornmeal" all contain the letters but never the word.
+ */
+const ALTERNATIVE_REGEX = /\s+or\s+/i;
+
+/**
+ * The parenthesised form, "cilantro (or parsley)". Caught before
+ * normalizeIngredientName, which drops parentheticals wholesale and would
+ * take the alternative with them.
+ */
+const PAREN_ALTERNATIVE_REGEX = /\s*\(\s*or\s+([^)]*)\)/i;
+
 function parseNumberToken(token: string): number {
   token = token.trim();
   if (token in UNICODE_FRACTIONS) return UNICODE_FRACTIONS[token];
@@ -260,6 +277,23 @@ export function parseIngredient(originalString: string): Ingredient {
     name = rest.slice(0, comma).trim();
     notes = rest.slice(comma + 1).trim() || undefined;
   }
+
+  // An alternative the recipe offered. The first option is what goes on the
+  // list — you buy one of them, not a hybrid — and the rest becomes a note so
+  // the choice survives. The full line is shown verbatim on the recipe, in
+  // cook mode and in the shopping list's breakdown, so nothing is hidden.
+  let alternative: string | undefined;
+  const parenAlternative = name.match(PAREN_ALTERNATIVE_REGEX);
+  if (parenAlternative) {
+    alternative = parenAlternative[1].trim();
+    name = name.replace(PAREN_ALTERNATIVE_REGEX, '').trim();
+  }
+  const options = name.split(ALTERNATIVE_REGEX);
+  if (options.length > 1 && options[0].trim()) {
+    name = options[0].trim();
+    alternative ??= options.slice(1).join(' or ').trim();
+  }
+  if (alternative) notes = notes ? `or ${alternative}; ${notes}` : `or ${alternative}`;
 
   // Countable unit word *after* the name ("2 garlic cloves") rather than
   // before it ("2 cloves garlic") — without this, the unit word gets

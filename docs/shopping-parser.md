@@ -73,7 +73,7 @@ rather than as *no amount given*. That's a display decision, and it's item 3.
 | 3 | **Say "to taste" instead of leaving the cell blank** | S | High | **shipped** |
 | 4 | **A golden corpus** — real scraped lines, expected output, one file | M | High | **shipped** |
 | 5 | **Metric echoes** — "1 cup (240 ml) milk" should not become two rows | S | Med | **shipped** |
-| 6 | **Alternatives** — "butter or margarine", "2 cups milk or cream" | M | Med | not started |
+| 6 | **Alternatives** — "butter or margarine", "2 cups milk or cream" | M | Med | **shipped** |
 | 7 | **Instruction lines** — detect and quarantine, don't silently shop for them | M | Med | not started |
 | 8 | **Descriptor vs identity** — when is "heavy cream" just "cream"? | M | Med | not started |
 | 9 | **Regional and non-metric units** — kilo, sachet, pack, bunch, tali | S | Med | **shipped** |
@@ -215,17 +215,29 @@ like a conversion.
 
 ---
 
-### 6. Alternatives
+### 6. Alternatives — shipped
 
 `butter or margarine`, `2 cups milk or cream`, `cilantro (or parsley)`.
 
-Today these become a single row named `butter or margarine`, which is a
-shopping item that doesn't exist. Proposal: split at ` or `, take the first as
-the name, keep the remainder as a note, and show it in the row's "why this
-many?" detail so the choice isn't lost.
+These were a single row named `butter or margarine`, which is a shopping item
+that doesn't exist. The first option is now the name and the remainder becomes
+a note.
 
-**Risk:** ingredients with `or` in their actual name are rare but exist. The
-corpus (4) is what makes this checkable.
+Two forms, because the parenthesised one has to be caught *before*
+`normalizeIngredientName` runs — that drops parentheticals wholesale and would
+take the alternative with them.
+
+The risk was always the reverse of the bug: an ingredient whose real name
+contains those two letters. Splitting on whitespace-delimited ` or ` is what
+makes it safe, and `orange`, `orzo`, `oregano`, `cornmeal`, `chorizo` and
+`coriander` are all in the corpus proving it.
+
+Nothing is hidden by this. The full line is rendered verbatim on the recipe
+page, in cook mode, and in the shopping list's "why this many" breakdown — only
+the row's *name* changes.
+
+`and` is untouched. Two ingredients on one line is a different change and is
+still a known gap.
 
 ---
 
