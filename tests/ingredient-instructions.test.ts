@@ -82,3 +82,31 @@ test('nothing is ever dropped from the list by this', () => {
   ];
   assert.equal(parseIngredientLines(lines).length, lines.length);
 });
+
+test('the word that introduced the step is not left on the name', () => {
+  // The cut lands at the verb, so the connective before it survived:
+  // "olive oil to drizzle on top" came out named "olive oil to", which never
+  // merged with plain olive oil.
+  assert.equal(name('1 tbsp olive oil to drizzle on top'), 'olive oil');
+  assert.equal(name('A pinch of salt to sprinkle on top'), 'salt');
+});
+
+test('a verb with no connective after it is naming a product', () => {
+  // "simmer sauce" and "sprinkle topping" are things on a shelf. A step says
+  // what to do it *to* — "dissolve in", "combine with", "rinse until".
+  assert.equal(name('1 jar tikka masala simmer sauce'), 'tikka masala simmer sauce');
+  assert.equal(name('2 tbsp chocolate sprinkle topping'), 'chocolate sprinkle topping');
+});
+
+test('truncation never shrinks a line out of existence', () => {
+  // A line opening with a connective would truncate to that single word, and
+  // parseIngredientLines deletes a name that is only a joining word — so the
+  // row vanished. Directly contradicts the promise above.
+  const lines = ['and combine with the rest of the flour', 'or discard the fat before serving'];
+  const parsed = parseIngredientLines(lines);
+  assert.equal(parsed.length, 2);
+  assert.deepEqual(
+    parsed.map((i) => i.originalString),
+    lines,
+  );
+});

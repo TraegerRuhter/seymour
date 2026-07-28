@@ -122,6 +122,20 @@ cilantro (or parsley)	0		cilantro
 # than a conversion, and item 6 takes the first option.
 1 lb chicken thighs or 2 lb beef	1	lb	chicken thigh
 
+# --- alternations that share a head noun -----------------------------------
+# The first "option" is only an adjective, so splitting naively named the row
+# "vegetable" / "olive" / "black" and the head went missing.
+1 cup vegetable or chicken broth	1	cup	vegetable broth
+2 tbsp olive or vegetable oil	2	tbsp	olive oil
+1 cup red or white wine	1	cup	red wine
+1/2 tsp kosher or sea salt	0.5	tsp	salt
+# ...against the identical shape that really is two ingredients, where the
+# first option is a product in its own right and "butter oil" is not.
+1 tbsp butter or olive oil	1	tbsp	butter
+1 cup milk or heavy cream	1	cup	milk
+# ...and the one where neither reading is safe, so the phrase is kept whole.
+1 cup water or chicken broth	1	cup	water or chicken broth
+
 # --- names that merely contain the letters "or" ----------------------------
 1 orange	1		orange
 2 cups orzo	2	cup	orzo
@@ -143,6 +157,10 @@ cilantro (or parsley)	0		cilantro
 # "chopped" did NOT get read as an instruction and take the spinach with it.
 1 package frozen chopped spinach, thawed and squeezed dry	1	package	frozen chopped spinach
 1 box cake mix	1	box	cake mix
+# A verb with no connective after it is naming a product, not giving a step.
+1 jar tikka masala simmer sauce	1	jar	tikka masala simmer sauce
+# ...and when it is a step, the word that introduced it goes too.
+1 tbsp olive oil to drizzle on top	1	tbsp	olive oil
 
 # --- derived ingredients --------------------------------------------------
 juice of 1 lemon	0		lemon juice

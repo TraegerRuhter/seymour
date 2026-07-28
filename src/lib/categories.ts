@@ -322,6 +322,14 @@ const LOOKUP: Array<[string, Category]> = (
 ).flatMap(([category, words]) => words.map((w): [string, Category] => [w, category]));
 LOOKUP.sort((a, b) => b[0].length - a[0].length);
 
+/**
+ * Every keyword, for *exact* membership rather than the substring matching
+ * `categorize` does. Used as a small food lexicon: `isKnownFoodPhrase` in
+ * normalize.ts asks whether a phrase names something real, and "butter oil"
+ * must answer no even though "butter" is in here.
+ */
+export const KNOWN_FOOD_PHRASES: ReadonlySet<string> = new Set(LOOKUP.map(([word]) => word));
+
 function containsWord(haystack: string, needle: string): boolean {
   const i = haystack.indexOf(needle);
   if (i === -1) return false;

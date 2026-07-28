@@ -77,10 +77,18 @@ test('no word that separates two products is on a droppable list', () => {
   // The guard that matters most, because adding one of these later would be a
   // one-line change with a silent, wrong result. If a future item wants to
   // drop one of these words, it has to delete it from here first and say why.
+  //
+  // Both directions: there are two droppable lists, and checking only the
+  // prefix one would let `roasted` be added as a *suffix* and quietly merge
+  // "red peppers, roasted" into "red pepper".
   const dropped: string[] = [];
   for (const word of NEVER_DROPPABLE) {
-    // A name made of the word plus a head must keep the word.
-    if (normalizeIngredientName(`${word} thing`) !== `${word} thing`) dropped.push(word);
+    if (normalizeIngredientName(`${word} thing`) !== `${word} thing`) {
+      dropped.push(`${word} (as a prefix)`);
+    }
+    if (normalizeIngredientName(`thing ${word}`) !== `thing ${word}`) {
+      dropped.push(`${word} (as a suffix)`);
+    }
   }
   assert.deepEqual(dropped, []);
 });
@@ -101,4 +109,18 @@ test('a kept distinction really is two rows on the list', () => {
     parseIngredient('1 tsp white pepper'),
   ]);
   assert.equal(items.length, 2);
+});
+
+test('a plural head is protected the same as a singular one', () => {
+  // The guard ran before the stemmer, so "raw sugars" stripped to "sugars"
+  // and only then became "sugar" — the exact over-merge the table exists to
+  // prevent, reachable by writing the word in the plural.
+  for (const [written, plain] of [
+    ['raw sugars', 'sugars'],
+    ['fresh pastas', 'pastas'],
+    ['raw honeys', 'honeys'],
+  ] as const) {
+    assert.ok(!merges(written, plain), `${written} should NOT merge with ${plain}`);
+  }
+  assert.equal(normalizeIngredientName('raw sugars'), 'raw sugar');
 });
