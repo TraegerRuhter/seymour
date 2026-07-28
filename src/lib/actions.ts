@@ -145,7 +145,9 @@ export function removePantryStaple(name: string): void {
  * field stays a normal editable field afterward (RecipeForm/edit page).
  */
 export function recipeFromParsed(data: ParsedRecipeData): Recipe {
-  const ingredients = parseIngredientLines(data.ingredientLines);
+  // A source that already parsed its own ingredients (Spoonacular) beats our
+  // reading of the same strings; everything else hands us text and nothing more.
+  const ingredients = data.ingredients ?? parseIngredientLines(data.ingredientLines);
   const existingCategories = Object.values(useRecipeStore.getState().recipes)
     .map((r) => r.category)
     .filter((c): c is string => !!c);
@@ -206,6 +208,10 @@ function sameIngredients(a: Ingredient[], b: Ingredient[]): boolean {
  * the raw line the recipe actually had is always still there to re-read. That
  * also makes it idempotent — running it twice changes nothing the second time.
  *
+ * Ingredients marked `parsedBy: 'api'` are left alone. Their amount came from
+ * a source that reads these lines better than we do, and re-reading it here
+ * would be a downgrade dressed up as an improvement.
+ *
  * Returns how many recipes actually changed, so the UI can say something true
  * rather than "done".
  */
@@ -219,7 +225,13 @@ export function reparseAllRecipes(): number {
     // guess would be a bad way to find out.
     if (!recipe.ingredients.every((i) => i.originalString?.trim())) continue;
 
-    const reparsed = parseIngredientLines(recipe.ingredients.map((i) => i.originalString));
+    // Line by line rather than all at once, so an ingredient the source had
+    // already parsed keeps its amount instead of being replaced by our
+    // reading of the same string. Still one line in, at most one out —
+    // parseIngredientLines drops a line that names nothing.
+    const reparsed = recipe.ingredients.flatMap((ing) =>
+      ing.parsedBy === 'api' ? [ing] : parseIngredientLines([ing.originalString]),
+    );
     if (sameIngredients(reparsed, recipe.ingredients)) continue;
 
     updated.push({ ...recipe, ingredients: reparsed, updatedAt: new Date().toISOString() });
