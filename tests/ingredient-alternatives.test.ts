@@ -112,3 +112,62 @@ test('two recipes offering the same choice buy one thing', () => {
   assert.equal(items.length, 1);
   assert.equal(items[0].ingredientName, 'butter');
 });
+
+/**
+ * Two alternations can have identical shape and opposite right answers:
+ *
+ *     "butter or olive oil"     — two things, keep "butter"
+ *     "olive or vegetable oil"  — one thing twice, keep "olive oil"
+ *
+ * Splitting at the first " or " unconditionally named the second one "olive",
+ * which then categorized as olives. There is no structural rule that separates
+ * these, so `chooseOption` asks a vocabulary and stays silent when unsure.
+ */
+
+test('a shared head noun is carried onto the option that was kept', () => {
+  for (const [line, expected] of [
+    ['1 cup vegetable or chicken broth', 'vegetable broth'],
+    ['2 tbsp olive or vegetable oil', 'olive oil'],
+    ['black or white pepper', 'black pepper'],
+    ['1 cup red or white wine', 'red wine'],
+    // Both of these resolve further through the synonym map, which is the
+    // point — they reach a real product rather than a bare adjective.
+    ['1/2 tsp kosher or sea salt', 'salt'],
+    ['1 cup white or brown sugar', 'sugar'],
+    ['1 lb salted or unsalted butter', 'butter'],
+  ] as const) {
+    assert.equal(parseIngredient(line).name, expected, line);
+  }
+});
+
+test('a standalone ingredient beats a shared head', () => {
+  // "butter oil" is not a product, so this is two choices and butter wins.
+  assert.equal(parseIngredient('butter or olive oil').name, 'butter');
+  assert.equal(parseIngredient('1 cup milk or heavy cream').name, 'milk');
+});
+
+test('an ambiguous alternation keeps the whole phrase rather than guessing', () => {
+  // "water" isn't in the lexicon and "water broth" isn't a thing, so neither
+  // reading is safe. A long name is honest; a row called "water" or "chicken"
+  // would not be. This is the deliberate no-op case.
+  assert.equal(parseIngredient('1 cup water or chicken broth').name, 'water or chicken broth');
+});
+
+test('declining to split never leaves a fragment at the front', () => {
+  // The trap in the no-op case: normalize strips leading descriptors, so
+  // keeping "fresh or frozen blueberries" whole risked "or frozen blueberry".
+  for (const line of [
+    'fresh or frozen blueberries',
+    'dried or fresh thyme',
+    'raw or cooked beet',
+  ]) {
+    assert.doesNotMatch(parseIngredient(line).name, /^(?:of|a|an|and|or|to|for|with)\b/, line);
+  }
+});
+
+test('every option that was not kept is recorded, not just the first', () => {
+  // "butter (or margarine) or ghee" used to lose the ghee entirely — it came
+  // out of the name and went nowhere.
+  assert.equal(parseIngredient('butter (or margarine) or ghee').notes, 'or margarine or ghee');
+  assert.equal(parseIngredient('1 lb beef (or lamb) or chicken').notes, 'or lamb or chicken');
+});

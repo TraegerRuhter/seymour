@@ -1,6 +1,11 @@
 import type { Ingredient } from './types';
 import { canonicalUnit, unitSystem } from './units';
-import { normalizeIngredientName, QUALIFIERS } from './normalize';
+import {
+  isKnownFoodPhrase,
+  MODIFIER_WORDS,
+  normalizeIngredientName,
+  QUALIFIERS,
+} from './normalize';
 
 const UNICODE_FRACTIONS: Record<string, number> = {
   '¼': 0.25,
@@ -75,6 +80,16 @@ function matchQualifier(text: string): string | undefined {
  * quantity stays 0 — "some salt" genuinely doesn't say how much.
  */
 const VAGUE_REGEX = /^(?:some|a few|few|a little|little|several)\s+/i;
+
+/**
+ * A line that is nothing but a joining word once it's parsed — a stray "of",
+ * an "or" left on its own row by a scraper. As empty as a blank line, and it
+ * would otherwise reach the shopping list as a row named "of".
+ *
+ * Whole name only. Anything with an ingredient attached is kept, however badly
+ * it parsed, because dropping a line you needed to buy is the worse mistake.
+ */
+const JOINING_WORD_ONLY = /^(?:of|a|an|and|or|to|for|with|the)$/i;
 
 /**
  * How a recipe joins an amount to its restatement in the other system:
@@ -313,23 +328,87 @@ const splitNotes: Stage = (r) => {
  * choice survives. The full line is shown verbatim on the recipe, in cook mode
  * and in the shopping list's breakdown, so nothing is hidden.
  */
+const wordsIn = (s: string) => s.split(/\s+/).filter(Boolean);
+
+/**
+ * Which option to keep, or null to keep the phrase whole.
+ *
+ * Two alternations can have exactly the same shape and opposite answers:
+ *
+ *     "butter or olive oil"      — two things, keep "butter"
+ *     "olive or vegetable oil"   — one thing twice, keep "olive oil"
+ *
+ * so there is no structural rule that separates them, only a vocabulary. Three
+ * ways to be confident, and silence otherwise:
+ *
+ *   1. The options are parallel — same word count — so neither can be missing
+ *      a shared head. "milk or cream", "olive oil or vegetable oil".
+ *   2. The later option opens with its own amount, which a shared head never
+ *      does. "chicken thighs or 2 lb beef".
+ *   3. The last option's final word completes the first into something the app
+ *      recognizes as food. "olive" + "oil" is a thing; "butter" + "oil" isn't,
+ *      so "butter or olive oil" falls through to (1)/(2) instead.
+ *
+ * When none of those holds the whole phrase is kept, exactly as it was before
+ * alternatives were handled at all. A long name is honest; a row called
+ * "vegetable" or "white" is not.
+ */
+function chooseOption(options: string[]): string | null {
+  const first = options[0].trim();
+  const last = options[options.length - 1].trim();
+  if (!first || !last) return null;
+
+  const firstWords = wordsIn(first);
+  const lastWords = wordsIn(last);
+
+  if (firstWords.length === 1 && lastWords.length > 1) {
+    const head = lastWords[lastWords.length - 1];
+    // (3) The first option completes into something real: "olive" + "oil",
+    // "black" + "pepper", "white" + "sugar".
+    if (isKnownFoodPhrase(`${first} ${head}`)) return `${first} ${head}`;
+    // Otherwise a standalone food beats a shared head: "butter or olive oil"
+    // is two things, and "butter oil" is not a product.
+    if (isKnownFoodPhrase(first)) return first;
+    // A modifier in front of a food we recognize is the shared-head shape
+    // again — "fresh or frozen blueberries". The modifier test is what keeps
+    // "water or chicken broth" out: water is an ingredient, not a description.
+    if (MODIFIER_WORDS.has(first.toLowerCase()) && isKnownFoodPhrase(head)) {
+      return `${first} ${head}`;
+    }
+    return null;
+  }
+  if (firstWords.length === lastWords.length) return first;
+  if (matchLeadingQuantity(last)) return first;
+  if (isKnownFoodPhrase(first)) return first;
+  return null;
+}
+
 const readAlternative: Stage = (r) => {
   let name = r.name;
-  let alternative: string | undefined;
+  const alternatives: string[] = [];
 
   const parenAlternative = name.match(PAREN_ALTERNATIVE_REGEX);
   if (parenAlternative) {
-    alternative = parenAlternative[1].trim();
+    alternatives.push(parenAlternative[1].trim());
     name = name.replace(PAREN_ALTERNATIVE_REGEX, '').trim();
   }
-  const options = name.split(ALTERNATIVE_REGEX);
-  if (options.length > 1 && options[0].trim()) {
-    name = options[0].trim();
-    alternative ??= options.slice(1).join(' or ').trim();
-  }
-  if (!alternative) return { ...r, name };
 
-  return { ...r, name, notes: r.notes ? `or ${alternative}; ${r.notes}` : `or ${alternative}` };
+  const options = name.split(ALTERNATIVE_REGEX);
+  if (options.length > 1) {
+    const chosen = chooseOption(options);
+    if (chosen) {
+      name = chosen;
+      // Every option we didn't keep, not just the first — "butter (or
+      // margarine) or ghee" used to lose the ghee entirely.
+      alternatives.push(...options.slice(1).map((o) => o.trim()));
+    }
+  }
+
+  const kept = alternatives.filter(Boolean);
+  if (kept.length === 0) return { ...r, name };
+
+  const note = `or ${kept.join(' or ')}`;
+  return { ...r, name, notes: r.notes ? `${note}; ${r.notes}` : note };
 };
 
 /**
@@ -383,6 +462,34 @@ const INSTRUCTION_VERBS = new Set([
  *     adjective — "cake mix", "pancake mix" — than an instruction with
  *     nothing after it.
  */
+/**
+ * Words that join a step to what it acts on. A step says where or what to do
+ * it *to*; a product name doesn't. "dissolve **in** water", "combine **with**
+ * the cornstarch", "rinse **until** it runs clear" — against "simmer sauce"
+ * and "sprinkle topping", which are things on a shelf.
+ */
+const STEP_CONNECTIVES = new Set([
+  'in',
+  'into',
+  'with',
+  'until',
+  'to',
+  'on',
+  'over',
+  'onto',
+  'before',
+  'after',
+  'then',
+  'and',
+  'at',
+  'for',
+  'from',
+  'together',
+]);
+
+/** Trailing joining words left behind by a cut: "olive oil to" → "olive oil". */
+const TRAILING_CONNECTIVE = /\s+(?:to|for|and|or|with|in|into|on|onto|then|until|at|from)$/i;
+
 const truncateAtInstruction: Stage = (r) => {
   const words = r.name.split(/\s+/).filter(Boolean);
   const at = words.findIndex(
@@ -394,11 +501,19 @@ const truncateAtInstruction: Stage = (r) => {
   if (at === -1) return r;
 
   const dropped = words.slice(at).join(' ');
-  return {
-    ...r,
-    name: words.slice(0, at).join(' '),
-    notes: r.notes ? `${dropped}; ${r.notes}` : dropped,
-  };
+  // A verb with no connective after it is naming a product, not giving an
+  // instruction: "tikka masala simmer sauce", "chocolate sprinkle topping".
+  if (!words.slice(at + 1).some((w) => STEP_CONNECTIVES.has(w.toLowerCase()))) return r;
+
+  // The cut lands after the word that introduced the step, so "olive oil to
+  // drizzle on top" would keep the "to".
+  const name = words.slice(0, at).join(' ').replace(TRAILING_CONNECTIVE, '').trim();
+  // Nothing recognizable left to buy. Leaving the line ugly is the whole
+  // policy here — parseIngredientLines deletes a name that is only a joining
+  // word, so truncating to one would silently drop the row.
+  if (!name || JOINING_WORD_ONLY.test(name)) return r;
+
+  return { ...r, name, notes: r.notes ? `${dropped}; ${r.notes}` : dropped };
 };
 
 /**
@@ -480,16 +595,6 @@ export function parseIngredient(originalString: string): Ingredient {
     ...(read.qualifier ? { qualifier: read.qualifier } : {}),
   };
 }
-
-/**
- * A line that is nothing but a joining word once it's parsed — a stray "of",
- * an "or" left on its own row by a scraper. As empty as a blank line, and it
- * would otherwise reach the shopping list as a row named "of".
- *
- * Whole name only. Anything with an ingredient attached is kept, however badly
- * it parsed, because dropping a line you needed to buy is the worse mistake.
- */
-const JOINING_WORD_ONLY = /^(?:of|a|an|and|or|to|for|with|the)$/i;
 
 /** Parses a list of raw ingredient lines, dropping the ones that name nothing. */
 export function parseIngredientLines(lines: string[]): Ingredient[] {

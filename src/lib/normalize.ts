@@ -1,3 +1,5 @@
+import { KNOWN_FOOD_PHRASES } from './categories';
+
 /**
  * Ingredient name normalization: lowercase, trim adjectives/synonyms via a
  * curated mapping, and a light suffix stripper so "tomatoes" and "tomato"
@@ -216,6 +218,32 @@ export const NEVER_DROPPABLE = [
   'condensed',
 ] as const;
 
+const LEADING_JOINING_WORD = /^(?:of|a|an|and|or|to|for|with|the)\b/i;
+
+/**
+ * Every word this module treats as a modifier rather than a thing — the ones
+ * it strips, plus the ones it deliberately keeps.
+ *
+ * Exported because the parser needs the same question answered: in "fresh or
+ * frozen blueberries" the first option is a modifier and the head noun is
+ * shared, while in "water or chicken broth" it isn't and they're two
+ * ingredients.
+ */
+export const MODIFIER_WORDS: ReadonlySet<string> = new Set([
+  ...DROPPABLE_PREFIXES,
+  ...NEVER_DROPPABLE,
+]);
+
+/** Whether `prefix` is part of the identity of `head` rather than a description of it. */
+function isIdentityModifier(prefix: string, head: string): boolean {
+  const heads = IDENTITY_MODIFIERS[prefix];
+  if (!heads) return false;
+  const singular = stemLastWord(head);
+  return heads.some(
+    (h) => head === h || head.startsWith(h + ' ') || singular === h || singular.startsWith(h + ' '),
+  );
+}
+
 /**
  * Optimized affix stripping: separate forward and backward passes with early
  * termination on each match. Avoids O(n²) behavior of nested loops checking
@@ -231,8 +259,17 @@ function stripAffixes(name: string): string {
     for (const p of DROPPABLE_PREFIXES) {
       if (!out.startsWith(p + ' ')) continue;
       const head = out.slice(p.length + 1);
-      // Not a descriptor in front of this particular thing.
-      if (IDENTITY_MODIFIERS[p]?.some((h) => head === h || head.startsWith(h + ' '))) continue;
+      // Not a descriptor in front of this particular thing. Matched against
+      // the stemmed head as well, because stemming happens *after* this pass —
+      // without it "raw sugars" strips to "sugars" and only then becomes
+      // "sugar", which is precisely the silent over-merge the table exists to
+      // stop.
+      if (isIdentityModifier(p, head)) continue;
+      // Never strip a word if doing so leaves a fragment at the front.
+      // "fresh or frozen blueberries" would otherwise become "or frozen
+      // blueberries" — a name that reads as a parse failure, and one the
+      // output invariants reject.
+      if (LEADING_JOINING_WORD.test(head)) continue;
       out = head;
       changed = true;
       break; // Restart after each match
@@ -280,6 +317,32 @@ function stemLastWord(name: string): string {
   }
   words[words.length - 1] = stemmed;
   return words.join(' ');
+}
+
+/**
+ * Whether a phrase names something you could actually buy.
+ *
+ * A small lexicon assembled from what the app already knows: the synonym map's
+ * keys and values, plus the aisle keyword table. Exact matches only — "butter"
+ * is in it and "butter oil" is not, which is the entire point.
+ *
+ * Used by the parser to tell two identically-shaped alternations apart:
+ * "butter or olive oil" offers two things, while "olive or vegetable oil"
+ * offers one thing twice. No structural rule can separate those, so it takes a
+ * vocabulary.
+ */
+const KNOWN_NAMES: ReadonlySet<string> = new Set([
+  ...Object.keys(SYNONYMS),
+  ...Object.values(SYNONYMS),
+  ...KNOWN_FOOD_PHRASES,
+]);
+
+export function isKnownFoodPhrase(phrase: string): boolean {
+  const clean = phrase.trim().toLowerCase();
+  // The lexicon is singular, recipes are not. Stemming here rather than at
+  // every call site — "blueberries" has to find "blueberry", and "butter oil"
+  // still has to find nothing.
+  return KNOWN_NAMES.has(clean) || KNOWN_NAMES.has(stemLastWord(clean));
 }
 
 /**
