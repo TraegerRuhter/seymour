@@ -81,6 +81,15 @@ freshly ground black pepper	0		black pepper
 # --- descriptors that are part of the identity and must survive -----------
 1 cup heavy cream	1	cup	heavy cream
 1 lb boneless skinless chicken thighs	1	lb	boneless skinless chicken thigh
+1 tsp white pepper	1	tsp	white pepper
+1 tsp smoked paprika	1	tsp	smoked paprika
+1/2 cup dark brown sugar	0.5	cup	dark brown sugar
+2 tbsp raw sugar	2	tbsp	raw sugar
+8 oz fresh mozzarella	8	oz	fresh mozzarella
+1 lb fresh pasta	1	lb	fresh pasta
+# ...and the same words behaving as ordinary descriptors elsewhere.
+1 lb raw shrimp	1	lb	shrimp
+2 cups fresh spinach	2	cup	spinach
 
 # --- regional and shop-shelf units (item 9) -------------------------------
 1 kilo pork belly	1	kg	pork belly

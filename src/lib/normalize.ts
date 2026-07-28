@@ -171,6 +171,52 @@ const DROPPABLE_SUFFIXES = [
 ];
 
 /**
+ * Item 8 — the words in DROPPABLE_PREFIXES are descriptors *usually*, and name
+ * a different product in front of a particular few things.
+ *
+ * `raw sugar` is demerara, not sugar. `fresh pasta` and dried pasta are two
+ * different aisles. Keyed by the prefix, listing the heads it must not be
+ * taken off.
+ *
+ * A vocabulary rather than a rule, because there isn't a rule: whether a word
+ * is a descriptor depends entirely on what follows it. Over-merging is the
+ * failure that matters here — it's invisible, and it makes you buy the wrong
+ * thing — so anything genuinely ambiguous belongs on this list.
+ */
+const IDENTITY_MODIFIERS: Record<string, readonly string[]> = {
+  raw: ['sugar', 'cane sugar', 'honey', 'cacao', 'cocoa'],
+  fresh: ['mozzarella', 'pasta', 'yeast'],
+};
+
+/**
+ * Words that must never be added to DROPPABLE_PREFIXES or DROPPABLE_SUFFIXES.
+ *
+ * Every one of them separates two things you can buy — white pepper is not
+ * black pepper, smoked paprika is not paprika, roasted red peppers are not red
+ * peppers. Pinned by a test, because the damage from adding one is silent:
+ * two rows merge and the shopping list is confidently wrong.
+ */
+export const NEVER_DROPPABLE = [
+  'heavy',
+  'double',
+  'black',
+  'white',
+  'smoked',
+  'dark',
+  'sweet',
+  'sour',
+  'wild',
+  'golden',
+  'red',
+  'green',
+  'coarse',
+  'toasted',
+  'roasted',
+  'unsweetened',
+  'condensed',
+] as const;
+
+/**
  * Optimized affix stripping: separate forward and backward passes with early
  * termination on each match. Avoids O(n²) behavior of nested loops checking
  * all affixes repeatedly.
@@ -183,11 +229,13 @@ function stripAffixes(name: string): string {
   while (changed) {
     changed = false;
     for (const p of DROPPABLE_PREFIXES) {
-      if (out.startsWith(p + ' ')) {
-        out = out.slice(p.length + 1);
-        changed = true;
-        break; // Restart after each match
-      }
+      if (!out.startsWith(p + ' ')) continue;
+      const head = out.slice(p.length + 1);
+      // Not a descriptor in front of this particular thing.
+      if (IDENTITY_MODIFIERS[p]?.some((h) => head === h || head.startsWith(h + ' '))) continue;
+      out = head;
+      changed = true;
+      break; // Restart after each match
     }
   }
 

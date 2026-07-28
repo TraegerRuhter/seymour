@@ -75,7 +75,7 @@ rather than as *no amount given*. That's a display decision, and it's item 3.
 | 5 | **Metric echoes** — "1 cup (240 ml) milk" should not become two rows | S | Med | **shipped** |
 | 6 | **Alternatives** — "butter or margarine", "2 cups milk or cream" | M | Med | **shipped** |
 | 7 | **Instruction lines** — detect and quarantine, don't silently shop for them | M | Med | **shipped** |
-| 8 | **Descriptor vs identity** — when is "heavy cream" just "cream"? | M | Med | not started |
+| 8 | **Descriptor vs identity** — when is "heavy cream" just "cream"? | M | Med | **shipped** |
 | 9 | **Regional and non-metric units** — kilo, sachet, pack, bunch, tali | S | Med | **shipped** |
 | 10 | **Output invariants** — assertions the aggregated list must always satisfy | S | High | **shipped** |
 
@@ -270,25 +270,43 @@ The word-count and second-measurement signals this section also proposed went
 unused. The verb alone covered every case in the corpus, and each extra signal
 is another way to delete something you needed to buy.
 
-### 8. Descriptor vs identity
+### 8. Descriptor vs identity — shipped
 
-`normalize.ts` already strips prep words. The open question is where the line
-sits, and it's genuinely a judgement call per word:
+`normalize.ts` already strips prep words. The open question was where the line
+sits, and it really is a judgement call per word.
 
-- `freshly ground black pepper` → `black pepper`. Right.
-- `boneless skinless chicken thighs` → `chicken thighs`. Right — you buy them
-  as one thing.
-- `heavy cream` → `cream`. **Wrong.** Different product.
-- `black pepper` → `pepper`. **Wrong.** Different product from white pepper.
-- `large eggs` → `eggs`. Right, arguably — most people don't sort by size.
+Checking before changing anything found the doc's own worst cases were already
+right: `heavy cream`, `black pepper`, `white pepper`, `smoked paprika`,
+`dark brown sugar`, `sweet potato`, `red onion` and `wild rice` all survive
+untouched, because none of those modifiers was ever on a droppable list.
 
-So this isn't one rule, it's a vocabulary: a list of words that are *always*
-descriptors (`freshly`, `finely`, `roughly`, `organic`), a list that are
-*never* (`heavy`, `double`, `black`, `white`, `smoked`), and a default for
-everything else. The corpus decides the default.
+Four real over-merges did turn up, all of them a word that is an ordinary
+descriptor almost everywhere:
 
-Worth doing carefully because over-normalizing is invisible: two things merge
-into one row and you buy the wrong item.
+| written | was | should be |
+|---|---|---|
+| `raw sugar` | sugar | raw sugar — that's demerara |
+| `raw honey` | honey | raw honey |
+| `fresh mozzarella` | mozzarella | fresh mozzarella — different aisle to low-moisture |
+| `fresh pasta` | pasta | fresh pasta — different aisle to dried |
+| `fresh yeast` | yeast | fresh yeast — not instant |
+
+So the fix is `IDENTITY_MODIFIERS`: keyed by the prefix, listing the heads it
+must *not* be taken off. `raw shrimp` is still shrimp and `fresh spinach` is
+still spinach. A vocabulary, not a rule — because there is no rule. Whether a
+word describes a thing or names a different thing depends entirely on what
+follows it.
+
+The more valuable half is `NEVER_DROPPABLE`: seventeen words that separate two
+things you can buy, pinned by a test. Adding one of them to
+`DROPPABLE_PREFIXES` later would be a one-line change with a silent wrong
+result — two rows merge and the list is confidently wrong. Now it fails the
+build instead, and anything that genuinely wants to drop one has to remove it
+from that list first and say why.
+
+Over-merging is the failure that matters here, so anything ambiguous belongs on
+the keep-it list. Two extra rows are a nuisance; the wrong product in the
+basket isn't.
 
 ---
 
