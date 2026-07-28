@@ -60,10 +60,13 @@ const ARTICLE_REGEX = /^(?:a|an)\s+/i;
  * in normalize.ts, which also strips these off the name — one list, so the
  * name can't keep a phrase the amount column is already showing.
  */
+// Longest first, so "for serving" wins over a bare "for". Sorted once: the
+// list is static, and this runs on every line of every recipe.
+const QUALIFIERS_BY_LENGTH = [...QUALIFIERS].sort((a, b) => b.length - a.length);
+
 function matchQualifier(text: string): string | undefined {
   const lower = text.toLowerCase();
-  // Longest first, so "for serving" wins over a bare "for".
-  return [...QUALIFIERS].sort((a, b) => b.length - a.length).find((q) => lower.includes(q));
+  return QUALIFIERS_BY_LENGTH.find((q) => lower.includes(q));
 }
 
 /**

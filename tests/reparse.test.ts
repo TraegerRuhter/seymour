@@ -64,6 +64,21 @@ test('a collection already parsed by the current version reports no change', () 
   assert.equal(reparseAllRecipes(), 0);
 });
 
+test('a recipe that has been through Supabase is not mistaken for a stale one', () => {
+  // Postgres jsonb sorts object keys by length then bytewise, so an ingredient
+  // that has round-tripped through the server comes back as
+  // {name, unit, notes, quantity, …} rather than the order the parser emits.
+  // Comparing serialized forms called that a change, so every synced recipe
+  // was rewritten and pushed back on every press — with a fresh updatedAt,
+  // which under last-write-wins would beat a newer edit from another device.
+  const jsonbOrder = JSON.parse(
+    '{"name":"bread","unit":"slice","quantity":2,"originalString":"2 slices bread"}',
+  ) as Ingredient;
+  seed([jsonbOrder]);
+  assert.equal(reparseAllRecipes(), 0);
+  assert.equal(useRecipeStore.getState().recipes.r1.updatedAt, undefined);
+});
+
 test('a recipe with no original line to re-read is left alone', () => {
   // Rewriting a recipe's ingredients from a guess would be a bad way to find
   // out this can happen.
