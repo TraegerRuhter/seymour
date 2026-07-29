@@ -278,6 +278,17 @@ export function PencilIcon(p: IconProps) {
   );
 }
 
+/** A little flag on a pole — "this row is wrong". */
+export function FlagIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M7 4.5v15" stroke={K} strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M7 5.5h9.5l-2 3 2 3H7z" fill={C} />
+      <path d="M7 5.5h9.5l-2 3 2 3H7z" stroke={K} strokeWidth="1.1" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 export function MoreIcon(p: IconProps) {
   return (
     <Svg {...p}>

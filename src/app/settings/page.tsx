@@ -10,8 +10,10 @@ import {
   reparseAllRecipes,
   setUnitSystem,
   validateBundle,
+  withdrawCorrection,
 } from '@/lib/actions';
 import {
+  useCorrectionStore,
   useRecipeStore,
   useShoppingStore,
   usePlanStore,
@@ -50,6 +52,7 @@ export default function SettingsPage() {
   const syncConfigured = getSupabaseClient() !== null;
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const staples = usePantryStore((s) => s.staples);
+  const corrections = useCorrectionStore((s) => s.corrections);
   const [stapleInput, setStapleInput] = useState('');
 
   function handleAddStaple(e: React.FormEvent) {
@@ -274,6 +277,49 @@ export default function SettingsPage() {
           <p className="text-sm text-charcoal/70">
             Nothing on the rack yet — add staples like salt, flour, or olive oil.
           </p>
+        )}
+      </section>
+
+      <section aria-label="Corrections" className="glass-card space-y-3 p-5">
+        <div>
+          <h2 className="text-xl font-semibold">Corrections</h2>
+          <p className="mt-1 text-sm text-charcoal/70">
+            When you tell a shopping row it&apos;s wrong, the answer is kept here and used for every
+            recipe that says the same thing — including ones you add later. Undo one and the reader
+            goes back to its own answer.
+          </p>
+        </div>
+        {corrections.length === 0 ? (
+          <p className="text-sm text-charcoal/60">
+            Nothing corrected yet. Use <span className="font-medium">This is wrong</span> on any
+            shopping list row.
+          </p>
+        ) : (
+          <ul className="divide-y divide-charcoal/10">
+            {corrections.map((c) => (
+              <li key={c.id} className="flex items-center gap-3 py-2.5">
+                <div className="min-w-0 flex-1 text-sm">
+                  <span className="text-charcoal/60 line-through">{c.got.name}</span>
+                  <span className="mx-2 text-charcoal/40">→</span>
+                  <span className="font-medium text-charcoal">{c.expected.name ?? c.got.name}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const changed = withdrawCorrection(c.id);
+                    setReparsed(
+                      changed === 0
+                        ? 'Undone. Nothing else changed.'
+                        : `Undone. ${changed} recipe${changed === 1 ? '' : 's'} went back.`,
+                    );
+                  }}
+                  className="shrink-0 rounded-full px-3 py-1 text-sm text-charcoal/70 hover:bg-charcoal/5"
+                >
+                  Undo
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 

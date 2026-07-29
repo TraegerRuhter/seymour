@@ -126,10 +126,15 @@ export function aggregateIngredients(
       quantity = readable.quantity;
       unit = readable.unit;
     }
-    // Only worth showing a "why this many" breakdown when the merge
-    // actually combined two differently-worded lines — a bucket built from
-    // one recipe's line repeated across several planned meals has nothing
-    // to explain.
+    // Every row keeps the lines it came from, even when there's only one.
+    //
+    // This used to be dropped unless a merge had combined two differently
+    // worded lines, because the only consumer was the "why this many"
+    // breakdown and that has nothing to explain about a single line. But
+    // provenance is data and "is it worth showing" is a display decision:
+    // ShoppingList already guards the disclosure on `length > 1`, and the
+    // correction dialog needs the original line most in exactly the case the
+    // old rule threw it away.
     const distinctSources = [
       ...new Map(bucket.sources.map((s) => [`${s.originalString}|${s.scale ?? 1}`, s])).values(),
     ];
@@ -142,7 +147,7 @@ export function aggregateIngredients(
       // Only meaningful with nothing to show in its place.
       ...(quantity === 0 && bucket.qualifier ? { qualifier: bucket.qualifier } : {}),
       ...(bucket.recipeIds.size > 0 ? { recipeIds: [...bucket.recipeIds].sort() } : {}),
-      ...(distinctSources.length > 1 ? { sources: distinctSources } : {}),
+      ...(distinctSources.length > 0 ? { sources: distinctSources } : {}),
     });
   }
 

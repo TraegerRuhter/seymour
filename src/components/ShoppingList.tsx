@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { Recipe, ShoppingListItem } from '@/lib/types';
 import { useRecipeStore, useShoppingStore } from '@/lib/stores';
 import { addPantryStaple, setShoppingItemOverride, toggleShoppingItem } from '@/lib/actions';
+import CorrectionDialog from './CorrectionDialog';
 import { displayUnit, formatAmount } from '@/lib/units';
 import { categorize, CATEGORY_ORDER, type Category } from '@/lib/categories';
 import { DURATION, EASE, enter, fadeRise, layoutSpring, listRowExit } from '@/lib/motion';
@@ -19,6 +20,7 @@ import {
   PantryIcon,
   SpicesIcon,
   BasketIcon,
+  FlagIcon,
   MoreIcon,
   PencilIcon,
   RecipesIcon,
@@ -104,11 +106,13 @@ function RowMenu({
   sourceRecipes,
   editable,
   onEdit,
+  onReport,
 }: {
   item: ShoppingListItem;
   sourceRecipes: Recipe[];
   editable: boolean;
   onEdit: () => void;
+  onReport: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top?: number; bottom?: number; right: number } | null>(
@@ -221,6 +225,19 @@ function RowMenu({
                 Edit
               </button>
             )}
+            {editable && (
+              <button
+                type="button"
+                onClick={() => {
+                  onReport();
+                  setOpen(false);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-charcoal hover:bg-charcoal/5"
+              >
+                <FlagIcon className="h-4 w-4 shrink-0" />
+                This is wrong
+              </button>
+            )}
           </div>,
           document.body,
         )}
@@ -236,6 +253,8 @@ function RowMenu({
 function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) {
   const recipes = useRecipeStore((s) => s.recipes);
   const [editing, setEditing] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const [fixed, setFixed] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [expanded, setExpanded] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
@@ -384,6 +403,29 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
         )}
       </div>
 
+      {reporting && (
+        <CorrectionDialog
+          item={item}
+          originalLines={[...new Set((item.sources ?? []).map((s) => s.originalString))]}
+          onClose={(result) => {
+            setReporting(false);
+            if (!result) return;
+            // Says what actually happened rather than "saved". A correction
+            // that changed nothing is worth knowing about too.
+            setFixed(
+              result.updated === 0
+                ? 'Nothing else to change'
+                : `Fixed in ${result.updated} recipe${result.updated === 1 ? '' : 's'}`,
+            );
+            setTimeout(() => setFixed(null), 3000);
+          }}
+        />
+      )}
+      {fixed && (
+        <span className="shrink-0 text-xs text-moss" role="status">
+          {fixed}
+        </span>
+      )}
       {!editing && (
         <RowMenu
           item={item}
@@ -393,6 +435,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
             setDraft(item.manualOverride ?? label);
             setEditing(true);
           }}
+          onReport={() => setReporting(true)}
         />
       )}
     </motion.li>
