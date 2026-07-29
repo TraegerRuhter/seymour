@@ -1,5 +1,6 @@
 import { getSupabaseClient } from './supabase';
 import { mergeCookLogs } from './cook-log';
+import type { Correction } from './corrections';
 import {
   useAuthUserStore,
   usePantryStore,
@@ -700,6 +701,38 @@ interface WholeBlobState {
 }
 
 /** Upserts the entire staples list. Low edit frequency and low conflict risk made per-staple rows not worth the extra table — see supabase/schema.sql. */
+/**
+ * Submits a correction for review.
+ *
+ * The one write in this file that isn't about getting a person's own data back
+ * onto their own devices. It goes to `parser_reports`, which nothing reads —
+ * not this client, not any other. A correction already applies locally the
+ * moment it's made; this only puts it where a maintainer can see it and decide
+ * whether it belongs in the shipped vocabulary.
+ *
+ * Returns whether it was actually sent, so the caller only records a
+ * submission that happened. Signed out, or offline, it simply doesn't.
+ */
+export async function pushParserReport(correction: Correction): Promise<boolean> {
+  const supabase = getSupabaseClient();
+  const userId = currentUserId();
+  if (!supabase || !userId) return false;
+  try {
+    const { error } = await supabase.from('parser_reports').insert({
+      user_id: userId,
+      // Only the line and the two readings of it. No title, no source URL,
+      // nothing that says which dish this came from.
+      original_string: correction.kind === 'line' ? correction.match : correction.got.name,
+      got: correction.got,
+      expected: correction.expected,
+      kind: correction.kind,
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 export async function pushPantryStaples(staples: string[]): Promise<void> {
   const supabase = getSupabaseClient();
   const userId = currentUserId();

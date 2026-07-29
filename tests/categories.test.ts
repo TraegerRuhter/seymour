@@ -105,8 +105,12 @@ test('almost nothing in the corpus falls through to Other', () => {
   // isn't grouping anything.
   const names = [...new Set(CORPUS.map((c) => parseIngredient(c.line).name))];
   const other = names.filter((n) => categorize(n) === 'Other');
+  // Proportional rather than a fixed count: the corpus grows every time the
+  // benchmark turns up a new shape, and a hard limit would fail on arrival of
+  // any unusual ingredient rather than on the table actually getting worse.
+  const share = other.length / names.length;
   assert.ok(
-    other.length <= 2,
-    `${other.length} of ${names.length} names uncategorized: ${other.join(', ')}`,
+    share <= 0.05,
+    `${other.length} of ${names.length} names uncategorized (${(100 * share).toFixed(1)}%): ${other.join(', ')}`,
   );
 });

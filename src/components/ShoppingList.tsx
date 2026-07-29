@@ -7,6 +7,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { Recipe, ShoppingListItem } from '@/lib/types';
 import { useRecipeStore, useShoppingStore } from '@/lib/stores';
 import { addPantryStaple, setShoppingItemOverride, toggleShoppingItem } from '@/lib/actions';
+import CorrectionDialog from './CorrectionDialog';
+import { shoppingListViolations } from '@/lib/invariants';
 import { displayUnit, formatAmount } from '@/lib/units';
 import { categorize, CATEGORY_ORDER, type Category } from '@/lib/categories';
 import { DURATION, EASE, enter, fadeRise, layoutSpring, listRowExit } from '@/lib/motion';
@@ -19,6 +21,7 @@ import {
   PantryIcon,
   SpicesIcon,
   BasketIcon,
+  FlagIcon,
   MoreIcon,
   PencilIcon,
   RecipesIcon,
@@ -104,11 +107,13 @@ function RowMenu({
   sourceRecipes,
   editable,
   onEdit,
+  onReport,
 }: {
   item: ShoppingListItem;
   sourceRecipes: Recipe[];
   editable: boolean;
   onEdit: () => void;
+  onReport: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top?: number; bottom?: number; right: number } | null>(
@@ -221,6 +226,19 @@ function RowMenu({
                 Edit
               </button>
             )}
+            {editable && (
+              <button
+                type="button"
+                onClick={() => {
+                  onReport();
+                  setOpen(false);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-charcoal hover:bg-charcoal/5"
+              >
+                <FlagIcon className="h-4 w-4 shrink-0" />
+                This is wrong
+              </button>
+            )}
           </div>,
           document.body,
         )}
@@ -233,9 +251,31 @@ function RowMenu({
  * strikethrough line slides across the label; the row then relocates to the
  * "Checked" section via a shared layout animation.
  */
-function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) {
+function Row({
+  item,
+  editable,
+  onCorrected,
+}: {
+  item: ShoppingListItem;
+  editable: boolean;
+  /**
+   * Reported to the list rather than shown here. A correction changes the
+   * row's name, and the name is part of its id — so this component unmounts
+   * on the very render that would have displayed the confirmation, and the
+   * message never appeared. Found by the e2e test, which is exactly the class
+   * of thing only a browser catches.
+   */
+  onCorrected?: (message: string) => void;
+}) {
   const recipes = useRecipeStore((s) => s.recipes);
   const [editing, setEditing] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  // Our own rules, run over the row in front of you. They catch a name holding
+  // a unit or a digit, a fragment, a sentence — the kinds of broken that are
+  // obvious once pointed at and easy to scroll past otherwise. They cannot
+  // catch a parse that is wrong but tidy, which is what the menu item is for.
+  const suspicious = shoppingListViolations([item]).length > 0;
+  const [fixed, setFixed] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [expanded, setExpanded] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
@@ -384,6 +424,36 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
         )}
       </div>
 
+      {suspicious && (
+        <button
+          type="button"
+          onClick={() => setReporting(true)}
+          // The app noticing is the point: confirming a guess is much cheaper
+          // than spotting the problem yourself, so this asks rather than waits.
+          title="This row looks wrong — tell us what it should be"
+          aria-label={`${itemName(item)} looks wrong — correct it`}
+          className="shrink-0 rounded-full p-1 text-clay/80 transition-colors hover:bg-clay/10"
+        >
+          <FlagIcon className="h-4 w-4" />
+        </button>
+      )}
+      {reporting && (
+        <CorrectionDialog
+          item={item}
+          originalLines={[...new Set((item.sources ?? []).map((s) => s.originalString))]}
+          onClose={(result) => {
+            setReporting(false);
+            if (!result) return;
+            // Says what actually happened rather than "saved". A correction
+            // that changed nothing is worth knowing about too.
+            onCorrected?.(
+              result.updated === 0
+                ? 'Nothing else to change'
+                : `Fixed in ${result.updated} recipe${result.updated === 1 ? '' : 's'}`,
+            );
+          }}
+        />
+      )}
       {!editing && (
         <RowMenu
           item={item}
@@ -393,6 +463,7 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
             setDraft(item.manualOverride ?? label);
             setEditing(true);
           }}
+          onReport={() => setReporting(true)}
         />
       )}
     </motion.li>
@@ -515,6 +586,12 @@ export default function ShoppingList({
   // checked it. Holding it back for 650ms also put it out of step with the
   // dashboard's "N items to pick up", which counts immediately.
   const doneCount = items.filter((i) => i.checked).length;
+  // Lives here because a corrected row renames itself and unmounts.
+  const [notice, setNotice] = useState<string | null>(null);
+  const announce = (message: string) => {
+    setNotice(message);
+    setTimeout(() => setNotice(null), 3000);
+  };
 
   if (items.length === 0) {
     return (
@@ -559,6 +636,11 @@ export default function ShoppingList({
   return (
     <div>
       <div className="mb-5">
+        {notice && (
+          <p role="status" className="text-sm text-moss">
+            {notice}
+          </p>
+        )}
         <ProgressBar done={doneCount} total={items.length} />
       </div>
 
@@ -575,7 +657,7 @@ export default function ShoppingList({
             <ul>
               <AnimatePresence initial={false}>
                 {catItems.map((item) => (
-                  <Row key={item.id} item={item} editable={editable} />
+                  <Row key={item.id} item={item} editable={editable} onCorrected={announce} />
                 ))}
               </AnimatePresence>
             </ul>
@@ -603,7 +685,7 @@ export default function ShoppingList({
             <ul className="space-y-2">
               <AnimatePresence initial={false}>
                 {checked.map((item) => (
-                  <Row key={item.id} item={item} editable={editable} />
+                  <Row key={item.id} item={item} editable={editable} onCorrected={announce} />
                 ))}
               </AnimatePresence>
             </ul>

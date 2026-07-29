@@ -33,9 +33,28 @@
 1-2 jalapenos, seeded	1.5		jalapeno
 1 to 2 tablespoons honey	1.5	tbsp	honey
 
-# --- approximators (item 1) -----------------------------------------------
+# --- approximators and spelled-out numbers ---------------------------------
 about 2 cups flour	2	cup	flour
 approx. 500 g beef	500	g	beef
+Scant 1/2 cup sugar	0.5	cup	sugar
+generous 1 cup flour	1	cup	flour
+one onion	1		onion
+two cloves garlic	2	clove	garlic
+half a lemon	0.5		lemon
+
+# --- a size hyphenated onto the amount -------------------------------------
+# Found by the novelty metric, which flagged "-inch piece" and "-and-half" as
+# unrecognized ingredients — they were broken parses wearing a name.
+1 1/2-inch piece fresh ginger	1	piece	ginger
+a 3-inch piece of cassia bark	1	piece	cassia bark
+1/2 cup half-and-half	0.5	cup	half-and-half
+half-and-half	0		half-and-half
+
+# --- a size written without brackets ---------------------------------------
+2 28-ounce cans crushed tomatoes	2	can	tomato
+1 6-ounce can tomato paste	1	can	tomato paste
+1 6-inch white-corn tortilla	1		white-corn tortilla
+2 3-inch cinnamon sticks	2	stick	cinnamon
 
 # --- parentheticals (item 1) ----------------------------------------------
 1 (15 oz) can black beans, drained and rinsed	1	can	black bean
@@ -111,6 +130,8 @@ freshly ground black pepper	0		black pepper
 3 slices bacon	3	slice	bacon
 1 package cream cheese	1	package	cream cheese
 18 pieces calamansi	18	piece	calamansi
+2 pcs calamansi, halved	2	piece	calamansi
+3 pcs dried bay leaves	3	piece	dried bay leave
 
 # --- alternatives (item 6) — first option wins, rest becomes a note --------
 2 cups milk or cream	2	cup	milk
@@ -121,6 +142,19 @@ cilantro (or parsley)	0		cilantro
 # Same system on both sides, so item 5 correctly reads it as a choice rather
 # than a conversion, and item 6 takes the first option.
 1 lb chicken thighs or 2 lb beef	1	lb	chicken thigh
+
+# --- amounts written across two units, and open-ended ones -----------------
+# Found by the benchmark, not by anyone hitting them. "plus" is how a recipe
+# writes an amount that doesn't divide neatly; the two are summed into the unit
+# the line opened with.
+2 tablespoons plus 2 teaspoons baking powder	2.6667	tbsp	baking powder
+1/3 cup plus 1/4 cup kirsch	0.5833	cup	kirsch
+2 cups flour plus more for dusting	2	cup	flour
+30 or more basil leaves	30		basil leave
+1 tablespoon or more nam pla	1	tbsp	nam pla
+# A range written with "or" rather than a dash.
+3 or 4 stalks lemon grass	3.5	stalk	lemon grass
+1 or 2 tablespoons honey	1.5	tbsp	honey
 
 # --- alternations that share a head noun -----------------------------------
 # The first "option" is only an adjective, so splitting naively named the row
@@ -163,14 +197,22 @@ cilantro (or parsley)	0		cilantro
 1 tbsp olive oil to drizzle on top	1	tbsp	olive oil
 
 # --- derived ingredients --------------------------------------------------
-juice of 1 lemon	0		lemon juice
+# The count belongs to the fruit: you buy one lemon to get its juice.
+juice of 1 lemon	1		lemon juice
+zest of 1 orange	1		orange zest
+Grated zest of 2 lemons	2		lemon zest
+juice of 2 limes	2		lime juice
 
 # ==========================================================================
 # KNOWN GAPS — the expectation is right, the parser isn't there yet.
 # ==========================================================================
 
 # Two ingredients on one line. Splitting them is its own change.
-~Salt and pepper to taste	0		salt	to taste
-
-# "juice of 1 lemon" works; its sibling doesn't.
-~zest of 1 orange	0		orange zest
+# "Salt and pepper to taste" is not here any more, and not because it was
+# forgotten: two ingredients on one line are split by parseIngredientLines,
+# which this file cannot express — every row here is one line in, one parse
+# out. See tests/ingredient-splitting.test.ts.
+#
+# A "plus" after the name is the same shape and is still a gap: the second
+# amount stays in the name.
+~1 cup sugar plus 2 tbsp butter	1	cup	sugar

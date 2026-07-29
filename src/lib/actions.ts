@@ -14,6 +14,7 @@ import {
   type Recipe,
 } from './types';
 import { parseIngredientLines } from './ingredient-parser';
+import { applyCorrection, indexCorrections, type Correction } from './corrections';
 import { appendCook, removeLastCook } from './cook-log';
 import { suggestTags } from './auto-tag';
 import { buildShoppingList, mergeShoppingList } from './aggregate';
@@ -38,9 +39,11 @@ import {
   pushSettings,
   clearShoppingItemStatesRemote,
   pushShoppingItemState,
+  pushParserReport,
   pushShoppingItemStates,
 } from './sync';
 import {
+  useCorrectionStore,
   usePantryStore,
   usePlanStore,
   useRecipeStore,
@@ -147,7 +150,10 @@ export function removePantryStaple(name: string): void {
 export function recipeFromParsed(data: ParsedRecipeData): Recipe {
   // A source that already parsed its own ingredients (Spoonacular) beats our
   // reading of the same strings; everything else hands us text and nothing more.
-  const ingredients = data.ingredients ?? parseIngredientLines(data.ingredientLines);
+  const corrections = indexCorrections(useCorrectionStore.getState().corrections);
+  const ingredients =
+    data.ingredients?.map((i) => applyCorrection(i, corrections)) ??
+    parseIngredientLines(data.ingredientLines, corrections);
   const existingCategories = Object.values(useRecipeStore.getState().recipes)
     .map((r) => r.category)
     .filter((c): c is string => !!c);
@@ -178,6 +184,9 @@ const INGREDIENT_FIELDS = [
   'originalString',
   'notes',
   'qualifier',
+  // Provenance counts as a change: a correction that happens to agree with the
+  // parser still needs recording, or withdrawing it later can't undo anything.
+  'correctedBy',
 ] as const;
 
 /**
@@ -217,6 +226,7 @@ function sameIngredients(a: Ingredient[], b: Ingredient[]): boolean {
  */
 export function reparseAllRecipes(): number {
   const all = Object.values(useRecipeStore.getState().recipes);
+  const corrections = indexCorrections(useCorrectionStore.getState().corrections);
   const updated: Recipe[] = [];
 
   for (const recipe of all) {
@@ -230,7 +240,11 @@ export function reparseAllRecipes(): number {
     // reading of the same string. Still one line in, at most one out —
     // parseIngredientLines drops a line that names nothing.
     const reparsed = recipe.ingredients.flatMap((ing) =>
-      ing.parsedBy === 'api' ? [ing] : parseIngredientLines([ing.originalString]),
+      // A correction outranks even the API's own parse. Someone looked at the
+      // row and said it was wrong; that is the most reliable signal there is.
+      ing.parsedBy === 'api'
+        ? [applyCorrection(ing, corrections)]
+        : parseIngredientLines([ing.originalString], corrections),
     );
     if (sameIngredients(reparsed, recipe.ingredients)) continue;
 
@@ -246,6 +260,62 @@ export function reparseAllRecipes(): number {
   // whole visible point of the exercise.
   regenerateShoppingList();
   return updated.length;
+}
+
+// --- Corrections ---
+
+/**
+ * Records that the parser got a line wrong, and fixes it immediately.
+ *
+ * "Immediately" is the whole point. Parsing happens once, at import, so a new
+ * rule normally does nothing for recipes already saved — that's what the
+ * Settings button exists to undo. A correction has to be different: you told
+ * the app it was wrong, and the row has to change while you're looking at it.
+ *
+ * So this re-reads every recipe against the new correction and rebuilds the
+ * list, exactly as `reparseAllRecipes` does. That's a whole-collection pass
+ * for one correction, which is the right trade at the size a person's recipe
+ * box actually reaches, and it means a correction can never half-apply.
+ *
+ * Returns how many recipes changed.
+ */
+export function saveCorrection(correction: Correction): number {
+  useCorrectionStore.getState().addCorrection(correction);
+  return reparseAllRecipes();
+}
+
+/**
+ * Offers a correction up for review, or takes the offer back.
+ *
+ * Sharing is a second, separate act from correcting. The fix already happened
+ * locally and stays whether this is on or off; this is only about whether a
+ * maintainer gets to see the line and decide it belongs in the shipped
+ * vocabulary. Off by default, on every correction, because a correction is
+ * about a recipe somebody is cooking.
+ *
+ * Signed out it stores the intent and sends nothing — there's nowhere to send
+ * it, and quietly dropping the toggle would be worse than remembering it.
+ */
+export async function shareCorrection(id: string, share: boolean): Promise<void> {
+  useCorrectionStore.getState().setShare(id, share);
+  if (!share) return;
+
+  const correction = useCorrectionStore.getState().corrections.find((c) => c.id === id);
+  if (!correction || correction.submittedAt) return;
+  if (await pushParserReport(correction)) {
+    useCorrectionStore.getState().markSubmitted([id], new Date().toISOString());
+  }
+}
+
+/**
+ * Withdraws a correction and lets the parser have its own answer back.
+ *
+ * The undo path matters as much as the apply path: a correction made in haste
+ * is otherwise permanent, and nobody trusts a button they can't take back.
+ */
+export function withdrawCorrection(id: string): number {
+  useCorrectionStore.getState().removeCorrection(id);
+  return reparseAllRecipes();
 }
 
 /**

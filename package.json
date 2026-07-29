@@ -2,7 +2,7 @@
   "name": "seymour",
   "version": "0.1.0",
   "private": true,
-  "description": "Feed Seymour your recipes: a personal collection, randomized meal planning, and smart consolidated shopping lists — all in your browser.",
+  "description": "Feed Seymour your recipes: a personal collection, randomized meal planning, and smart consolidated shopping lists \u2014 all in your browser.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -14,7 +14,10 @@
     "check": "npm test && npm run typecheck && npm run lint && npm run format:check && npm run build",
     "test": "tsx --test tests/*.test.ts",
     "e2e": "playwright test",
-    "e2e:sw": "playwright test -c playwright.sw.config.ts"
+    "e2e:sw": "playwright test -c playwright.sw.config.ts",
+    "benchmark:fetch": "tsx benchmark/fetch.ts",
+    "benchmark": "tsx benchmark/score.ts",
+    "benchmark:harvest": "tsx benchmark/harvest.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

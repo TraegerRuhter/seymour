@@ -1,5 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
+
+/** Every .ts/.tsx under a directory, relative to the repo root. */
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const path = join(dir, e.name);
+    if (e.isDirectory()) return sourceFiles(path);
+    return /\.tsx?$/.test(e.name) ? [path] : [];
+  });
+}
 import { readFileSync } from 'node:fs';
 
 /**
@@ -120,4 +131,25 @@ test('the muted level is the lowest one that actually passes', () => {
   const t = tokens(':root');
   const weaker = contrast(composite(t.ink, t.bg, MUTED - 0.1), t.bg);
   assert.ok(weaker < 4.5, `ink at ${(MUTED - 0.1) * 100}% now passes — MUTED can come down`);
+});
+
+test('no text colour is dimmed below the AA floor', () => {
+  // 0.7 is where this palette stops meeting 4.5:1 — the finding behind the
+  // 116 contrast failures earlier in this project. A `/60` on a paragraph is a
+  // one-character change that reads as a stylistic choice and is actually a
+  // WCAG failure, and the e2e axe run only visits a page in one state, so it
+  // can miss a surface that needs seeding to appear.
+  //
+  // Icons are exempt: they carry no text and axe doesn't measure them.
+  const ICON_ONLY = new Set(['src/components/MealPlanView.tsx', 'src/components/StarRating.tsx']);
+  const offenders: string[] = [];
+
+  for (const file of sourceFiles('src')) {
+    if (ICON_ONLY.has(file)) continue;
+    const text = readFileSync(file, 'utf8');
+    for (const [match, alpha] of text.matchAll(/text-(?:charcoal|ink|stock)\/(\d+)/g)) {
+      if (Number(alpha) < 70) offenders.push(`${file}: ${match}`);
+    }
+  }
+  assert.deepEqual(offenders, []);
 });

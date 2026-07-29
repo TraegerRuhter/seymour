@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import { arrayMove } from '@dnd-kit/sortable';
 import localforage from 'localforage';
+import type { Correction } from './corrections';
 import {
   MEAL_TYPES,
   type ArchivedPlan,
@@ -381,6 +382,71 @@ export const usePantryStore = create<PantryState>()(
   ),
 );
 
+// --- Parser corrections ---
+
+interface CorrectionState {
+  corrections: Correction[];
+  /** Set on every local change; compared against the server's row on a pull. */
+  updatedAt: string | null;
+  hasHydrated: boolean;
+  /** Replaces any existing correction with the same kind+match — being told twice means the first answer was wrong. */
+  addCorrection: (correction: Correction) => void;
+  removeCorrection: (id: string) => void;
+  setShare: (id: string, share: boolean) => void;
+  markSubmitted: (ids: string[], at: string) => void;
+  replaceAll: (corrections: Correction[], updatedAt?: string) => void;
+}
+
+const sameTarget = (a: Correction, b: Correction) =>
+  a.kind === b.kind && a.match.trim().toLowerCase() === b.match.trim().toLowerCase();
+
+export const useCorrectionStore = create<CorrectionState>()(
+  persist(
+    (set) => ({
+      corrections: [],
+      updatedAt: null,
+      hasHydrated: false,
+      addCorrection: (correction) =>
+        set((s) => ({
+          corrections: [...s.corrections.filter((c) => !sameTarget(c, correction)), correction],
+          updatedAt: new Date().toISOString(),
+        })),
+      removeCorrection: (id) =>
+        set((s) => ({
+          corrections: s.corrections.filter((c) => c.id !== id),
+          updatedAt: new Date().toISOString(),
+        })),
+      setShare: (id, share) =>
+        set((s) => ({
+          corrections: s.corrections.map((c) => (c.id === id ? { ...c, share } : c)),
+          updatedAt: new Date().toISOString(),
+        })),
+      markSubmitted: (ids, at) =>
+        set((s) => ({
+          corrections: s.corrections.map((c) =>
+            ids.includes(c.id) ? { ...c, submittedAt: at } : c,
+          ),
+          updatedAt: new Date().toISOString(),
+        })),
+      replaceAll: (corrections, updatedAt) =>
+        set({ corrections, updatedAt: updatedAt ?? new Date().toISOString() }),
+    }),
+    {
+      name: 'corrections',
+      storage: createJSONStorage(() => makeStorage('corrections')),
+      partialize: (s) => ({ corrections: s.corrections, updatedAt: s.updatedAt }),
+      version: 1,
+      migrate: (persisted) => {
+        const s = (persisted ?? {}) as Partial<{
+          corrections: Correction[];
+          updatedAt: string | null;
+        }>;
+        return { corrections: s.corrections ?? [], updatedAt: s.updatedAt ?? null };
+      },
+    },
+  ),
+);
+
 // --- Signed-in user id (session-only, not persisted) ---
 //
 // Mirrors Supabase's own session state so plain functions outside React
@@ -445,6 +511,7 @@ const hydrationFlags = {
   shopping: false,
   settings: false,
   pantry: false,
+  corrections: false,
 };
 
 function markHydrated(
@@ -461,12 +528,16 @@ if (typeof window !== 'undefined') {
   useShoppingStore.persist.onFinishHydration(() => markHydrated('shopping', useShoppingStore));
   useSettingsStore.persist.onFinishHydration(() => markHydrated('settings', useSettingsStore));
   usePantryStore.persist.onFinishHydration(() => markHydrated('pantry', usePantryStore));
+  useCorrectionStore.persist.onFinishHydration(() =>
+    markHydrated('corrections', useCorrectionStore),
+  );
   // If rehydration already finished before listeners attached:
   if (useRecipeStore.persist.hasHydrated()) markHydrated('recipes', useRecipeStore);
   if (usePlanStore.persist.hasHydrated()) markHydrated('plan', usePlanStore);
   if (useShoppingStore.persist.hasHydrated()) markHydrated('shopping', useShoppingStore);
   if (useSettingsStore.persist.hasHydrated()) markHydrated('settings', useSettingsStore);
   if (usePantryStore.persist.hasHydrated()) markHydrated('pantry', usePantryStore);
+  if (useCorrectionStore.persist.hasHydrated()) markHydrated('corrections', useCorrectionStore);
 }
 
 /** True once all stores have rehydrated from IndexedDB. */
@@ -476,5 +547,6 @@ export function useAllHydrated(): boolean {
   const c = useShoppingStore((s) => s.hasHydrated);
   const d = useSettingsStore((s) => s.hasHydrated);
   const e = usePantryStore((s) => s.hasHydrated);
-  return a && b && c && d && e;
+  const f = useCorrectionStore((s) => s.hasHydrated);
+  return a && b && c && d && e && f;
 }

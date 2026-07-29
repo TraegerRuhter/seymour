@@ -29,3 +29,6 @@ next-env.d.ts
 /playwright-report/
 /test-results/
 /blob-report/
+
+# Benchmark corpus: ~20 MB, fetched on demand (npm run benchmark:fetch), never committed.
+benchmark/data/

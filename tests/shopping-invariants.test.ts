@@ -4,7 +4,7 @@ import { parseIngredient, parseIngredientLines } from '../src/lib/ingredient-par
 import { aggregateIngredients } from '../src/lib/aggregate.ts';
 import type { ShoppingListItem } from '../src/lib/types.ts';
 import { SETTLED } from './corpus.ts';
-import { ALL_RULE_IDS, shoppingListViolations } from './invariants.ts';
+import { ALL_RULE_IDS, shoppingListViolations } from '../src/lib/invariants.ts';
 
 /**
  * Item 10 of docs/shopping-parser.md — assertions the aggregated list must
@@ -178,4 +178,21 @@ test('every rule was exercised by the tests above', () => {
   }
   const unreachable = ALL_RULE_IDS.filter((id) => !exercised.has(id));
   assert.deepEqual(unreachable, [], `rules no test ever triggers: ${unreachable.join(', ')}`);
+});
+
+test('a clean row is not flagged, and a broken one is', () => {
+  // What the shopping list uses to decide whether to draw a flag on a row.
+  // The value is that the app notices without being asked — confirming a
+  // guess is much cheaper than spotting the problem yourself.
+  assert.equal(shoppingListViolations([row({ ingredientName: 'flour' })]).length, 0);
+  assert.ok(
+    shoppingListViolations([row({ ingredientName: 'bouquet garni of 1 sprig thyme' })]).length > 0,
+  );
+});
+
+test('the flag cannot see a parse that is wrong but tidy', () => {
+  // The limit worth knowing. If "heavy cream" silently merged into "cream",
+  // every rule passes — it's a clean row for the wrong product. That case is
+  // what the menu's "This is wrong" exists for; the two halves don't overlap.
+  assert.deepEqual(shoppingListViolations([row({ ingredientName: 'cream' })]), []);
 });

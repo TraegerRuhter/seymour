@@ -220,6 +220,12 @@ export const NEVER_DROPPABLE = [
 
 const LEADING_JOINING_WORD = /^(?:of|a|an|and|or|to|for|with|the)\b/i;
 
+/** What joins two descriptors: "peeled and cooked", "rinsed, drained". */
+const LEADING_CONJUNCTION = /^(?:and|,)\s+/i;
+
+const startsWithDescriptor = (s: string) =>
+  DROPPABLE_PREFIXES.some((p) => s === p || s.startsWith(p + ' '));
+
 /**
  * Every word this module treats as a modifier rather than a thing — the ones
  * it strips, plus the ones it deliberately keeps.
@@ -265,12 +271,20 @@ function stripAffixes(name: string): string {
       // "sugar", which is precisely the silent over-merge the table exists to
       // stop.
       if (isIdentityModifier(p, head)) continue;
+
+      // "peeled and cooked fresh chestnuts" — recipes join descriptors with
+      // "and", and stripping one at a time stalls on the conjunction. Eat it
+      // too, but only when another descriptor genuinely follows.
+      const joined = head.replace(LEADING_CONJUNCTION, '');
+      const conjoined = joined !== head && startsWithDescriptor(joined);
+      const next = conjoined ? joined : head;
+
       // Never strip a word if doing so leaves a fragment at the front.
       // "fresh or frozen blueberries" would otherwise become "or frozen
       // blueberries" — a name that reads as a parse failure, and one the
       // output invariants reject.
-      if (LEADING_JOINING_WORD.test(head)) continue;
-      out = head;
+      if (LEADING_JOINING_WORD.test(next)) continue;
+      out = next;
       changed = true;
       break; // Restart after each match
     }

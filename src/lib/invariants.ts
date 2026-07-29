@@ -1,15 +1,16 @@
-import type { Ingredient, ShoppingListItem } from '../src/lib/types.ts';
-import { canonicalUnit } from '../src/lib/units.ts';
+import type { Ingredient, ShoppingListItem } from './types';
+import { canonicalUnit } from './units';
 
 /**
  * Item 10 of docs/shopping-parser.md — the things a shopping row must never
  * be, whatever the parser did to get there.
  *
- * Not a test file. It's the shared vocabulary the corpus test and the
- * aggregated-list test both assert against, so that "a row can't have a
- * measurement buried in its name" is written down once rather than drifting
- * between two files (which is exactly what happened to the qualifier list
- * before item 4 caught it).
+ * Written down once and used everywhere: the corpus test, the aggregated-list
+ * test, the benchmark over 178,000 real lines, and the app itself. That last
+ * one is the reason this lives in src/ rather than tests/ — the same rules
+ * that fail a build can point at a suspicious row on your shopping list and
+ * ask whether it's wrong, which is a much cheaper question to answer than
+ * noticing unprompted.
  *
  * Every rule is phrased as `violated` — true when something is wrong — so a
  * failure message can just list the rules that fired.

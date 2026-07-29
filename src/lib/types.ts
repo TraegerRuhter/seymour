@@ -27,6 +27,12 @@ export interface Ingredient {
    * `reparseAllRecipes`.
    */
   parsedBy?: 'api';
+  /**
+   * Id of the correction that produced these fields, when the parser was
+   * overruled. Kept so the row can say where its answer came from, and so a
+   * correction that gets withdrawn can be undone.
+   */
+  correctedBy?: string;
 }
 
 export interface Recipe {

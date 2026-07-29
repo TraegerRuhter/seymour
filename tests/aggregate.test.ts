@@ -69,17 +69,21 @@ test('a merge of differently-worded lines carries a "why this many" source break
   ]);
 });
 
-test('a single-line item (or one repeated verbatim across meals) has no breakdown to show', () => {
+test('a single-line item keeps its one source, and nothing more', () => {
+  // Provenance is recorded for every row, including this one — the correction
+  // dialog shows a row the line it came from, and needs it most here. Whether
+  // that's worth *showing* as a "why this many" breakdown is a display
+  // decision, and ShoppingList makes it by checking for more than one.
   const single = aggregateIngredients([parseIngredient('1 cup milk')]);
-  assert.equal(single[0].sources, undefined);
+  assert.deepEqual(single[0].sources, [{ originalString: '1 cup milk', recipeId: undefined }]);
 
-  // Same recipe planned twice contributes the identical line twice — nothing
-  // different to explain, so no breakdown either.
+  // Same recipe planned twice contributes the identical line twice — one
+  // distinct source, so still nothing to explain.
   const repeated = aggregateIngredients([
     parseIngredient('1 onion, diced'),
     parseIngredient('1 onion, diced'),
   ]);
-  assert.equal(repeated[0].sources, undefined);
+  assert.equal(repeated[0].sources?.length, 1);
 });
 
 test('does not sum unlike units (sticks vs tbsp)', () => {

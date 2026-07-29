@@ -1,5 +1,6 @@
 import type { Ingredient } from './types';
-import { canonicalUnit, unitSystem } from './units';
+import { applyCorrection, EMPTY_INDEX, type CorrectionIndex } from './corrections';
+import { canonicalUnit, toBase, unitSystem } from './units';
 import {
   isKnownFoodPhrase,
   MODIFIER_WORDS,
@@ -35,7 +36,10 @@ const NUMBER_RE = /(\d+\s+\d+\s*\/\s*\d+|\d+\s*\/\s*\d+|\d*\.\d+|\d+|[¼½¾⅐�
 const MIXED_NUMBER_REGEX = /^(\d+)\s+(\d+)\s*\/\s*(\d+)$/;
 const FRACTION_REGEX = /^(\d+)\s*\/\s*(\d+)$/;
 const GLUED_FRACTION_REGEX = /^(\d+)([¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/;
-const RANGE_SEPARATOR_REGEX = /^\s*(?:-|–|—|to)\s*/;
+// "or" belongs here as much as "to" does: "3 or 4 stalks lemon grass" is a
+// range, and without it the "or" survived into the name. A digit has to follow,
+// so "1 orange" is untouched.
+const RANGE_SEPARATOR_REGEX = /^\s*(?:-|–|—|to|or)\s*/;
 const LEADING_NUMBER_REGEX = new RegExp(`^${NUMBER_RE.source}`);
 const LEADING_RANGE_REGEX = new RegExp(`${RANGE_SEPARATOR_REGEX.source}${NUMBER_RE.source}`);
 const TWO_WORD_UNIT_REGEX = /^([a-zA-Z]+\.?\s+[a-zA-Z]+\.?)\s+/;
@@ -51,7 +55,8 @@ const PAREN_REGEX = /^\(([^)]*)\)\s*/;
  * below could eat "(14 oz) cans" and expose a fresh "of" that nothing removed:
  * "2 (14 oz) cans of tomatoes" came out named "of tomato".
  */
-const FILLER_REGEX = /^(?:of\s+the|of|about|approx\.?|approximately|around|roughly)\s+/i;
+const FILLER_REGEX =
+  /^(?:of\s+the|of|about|approx\.?|approximately|around|roughly|scant|generous|heaping|heaped|rounded)\s+/i;
 const eatFiller = (s: string) => s.replace(FILLER_REGEX, '').trim();
 
 /**
@@ -92,6 +97,22 @@ const VAGUE_REGEX = /^(?:some|a few|few|a little|little|several)\s+/i;
 const JOINING_WORD_ONLY = /^(?:of|a|an|and|or|to|for|with|the)$/i;
 
 /**
+ * A name that is only the amount echoed back: "1 teaspoon", "3 tbsp", "2".
+ *
+ * parseIngredient never returns an empty name — it falls back to the whole
+ * line rather than a blank row — so a line with nothing but a measurement in
+ * it comes out named after its own measurement. There is no ingredient here to
+ * shop for, which makes it as empty as a blank line.
+ */
+const AMOUNT_ONLY = /^[\d\s./¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞-]+([a-z.]*)$/i;
+
+function namesNothing(name: string): boolean {
+  if (JOINING_WORD_ONLY.test(name)) return true;
+  const amount = name.match(AMOUNT_ONLY);
+  return !!amount && (!amount[1] || canonicalUnit(amount[1]) !== null);
+}
+
+/**
  * How a recipe joins an amount to its restatement in the other system:
  * "2 lb / 900 g beef", "250 g | 9 oz flour", "1 cup or 240 ml milk".
  * `or` needs the word boundary so it can't bite into "orange".
@@ -114,6 +135,38 @@ const ALTERNATIVE_REGEX = /\s+or\s+/i;
  * take the alternative with them.
  */
 const PAREN_ALTERNATIVE_REGEX = /\s*\(\s*or\s+([^)]*)\)/i;
+
+/**
+ * Numbers a recipe spells out. "one onion", "half a lemon" — uncommon in the
+ * middle of a list and normal at the start of one.
+ */
+const NUMBER_WORDS: Record<string, number> = {
+  a: 1,
+  an: 1,
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  eleven: 11,
+  twelve: 12,
+  half: 0.5,
+  quarter: 0.25,
+};
+
+// Whitespace after, not a word boundary: a hyphen satisfies \b, so "half" in
+// "half-and-half" matched and the line came out named "-and-half".
+const NUMBER_WORD_REGEX = new RegExp(
+  `^(${Object.keys(NUMBER_WORDS)
+    .filter((w) => w !== 'a' && w !== 'an')
+    .join('|')})(?:\\s+|$)`,
+  'i',
+);
 
 function parseNumberToken(token: string): number {
   token = token.trim();
@@ -140,6 +193,17 @@ interface QuantityMatch {
  * elsewhere for display).
  */
 function matchLeadingQuantity(text: string): QuantityMatch | null {
+  const spelled = text.match(NUMBER_WORD_REGEX);
+  if (spelled) {
+    // "half a lemon" — the article after a spelled number is part of the
+    // phrase, not a second count.
+    const after = text.slice(spelled[0].length).replace(ARTICLE_REGEX, '');
+    return {
+      value: NUMBER_WORDS[spelled[1].toLowerCase()],
+      length: text.length - after.length,
+    };
+  }
+
   // integer immediately followed by a unicode fraction: "1½"
   const glued = text.match(GLUED_FRACTION_REGEX);
   let first: number;
@@ -152,6 +216,17 @@ function matchLeadingQuantity(text: string): QuantityMatch | null {
     if (!m) return null;
     first = parseNumberToken(m[0]);
     consumed = m[0].length;
+
+    // "1 1/2-inch piece fresh ginger" is one piece an inch and a half long,
+    // not one and a half of anything. A hyphen straight after a mixed number
+    // means the fraction belongs to the size that follows, so only the whole
+    // number is the count — otherwise the size is left stranded as "-inch
+    // piece fresh ginger", which is what the name became.
+    const mixed = m[0].match(MIXED_NUMBER_REGEX);
+    if (mixed && text[consumed] === '-') {
+      first = parseInt(mixed[1], 10);
+      consumed = mixed[1].length;
+    }
   }
 
   // range: "- 2", "– 2", "to 2"
@@ -220,6 +295,8 @@ interface Reading {
    * swallowed to clean the name but not recorded as a count.
    */
   vague: boolean;
+  /** The part of the ingredient a line asked for — "juice", "zest". */
+  derivative?: string;
   name: string;
   notes?: string;
   qualifier?: string;
@@ -289,6 +366,47 @@ const readUnit: Stage = (r) => {
   return { ...r, rest: eatFiller(r.rest) };
 };
 
+/**
+ * Lengths, which a recipe uses to size a thing but nobody buys by. Not in
+ * units.ts because the shopping list can never sum them.
+ */
+const LENGTH_WORDS = new Set(['inch', 'inches', 'in', 'cm', 'centimeter', 'centimetre', 'mm']);
+
+/**
+ * A size stated without brackets: "2 28-ounce cans crushed tomatoes",
+ * "1 6-inch tortilla", "1 2-pound-3-ounce can tomatoes".
+ *
+ * Exactly what `readParenthetical` handles, minus the brackets, and it left
+ * "28-ounce cans crushed tomato" as the name. The count is what matters on a
+ * shopping list — you take two cans off the shelf, not 56 ounces — so the size
+ * is consumed and discarded, which is what the bracketed form already does.
+ *
+ * The giveaway is a second number where a unit should be. A real unit has to
+ * follow it, so "1 1/2 cups" (already eaten as a mixed number) and ordinary
+ * counts can't trip it.
+ */
+const SIZE_REGEX = /^(\d+(?:[./]\d+)?)\s*-?\s*([a-zA-Z]+)\.?[\s-]+/;
+
+const readSize: Stage = (r) => {
+  if (r.quantity <= 0) return r;
+  let rest = r.rest;
+
+  // A loop, because recipes stack them: "1 2-pound-3-ounce can".
+  for (;;) {
+    const size = rest.match(SIZE_REGEX);
+    if (!size) break;
+    const word = size[2].toLowerCase();
+    if (!canonicalUnit(word) && !LENGTH_WORDS.has(word)) break;
+    const remainder = rest.slice(size[0].length).trim();
+    // Never eat the whole line: "2 28-ounce" with nothing after it keeps what
+    // it had rather than becoming nameless.
+    if (!remainder) break;
+    rest = remainder;
+  }
+
+  return rest === r.rest ? r : { ...r, rest: eatFiller(rest) };
+};
+
 /** A size in brackets: "1 (15 oz) can black beans". */
 const readParenthetical: Stage = (r) => {
   if (r.quantity <= 0) return r;
@@ -308,8 +426,95 @@ const readParenthetical: Stage = (r) => {
   };
 };
 
+/**
+ * An open-ended amount: "30 or more basil leaves", "2 cups or so of stock".
+ * The number is real; the hedge after it isn't part of the ingredient.
+ */
+const OPEN_ENDED_REGEX = /^(?:or\s+more|or\s+so|or\s+to\s+taste|plus\s+more)\b[,\s]*/i;
+
+const readOpenEnded: Stage = (r) =>
+  r.quantity > 0 ? { ...r, rest: eatFiller(r.rest.replace(OPEN_ENDED_REGEX, '').trim()) } : r;
+
+/**
+ * A second amount of the same thing: "2 tablespoons plus 2 teaspoons baking
+ * powder", "1/3 cup plus 1/4 cup kirsch".
+ *
+ * Recipes write this when a measurement is awkward in one unit. It is one
+ * ingredient with one total, and without handling it the whole tail — "plus 2
+ * teaspoons baking powder" — became the name.
+ *
+ * The two amounts are summed when they convert to the same base, which is the
+ * common case since the reason for writing it this way is that the amount
+ * doesn't divide neatly. When they don't convert the second is dropped: a
+ * slightly low amount on a correctly-named row beats an exact amount on a row
+ * called "plus 2 teaspoons baking powder".
+ */
+const PLUS_REGEX = /^plus\s+/i;
+
+const round = (n: number) => Math.round(n * 1e4) / 1e4;
+
+const readPlusAmount: Stage = (r) => {
+  if (r.quantity <= 0 || !PLUS_REGEX.test(r.rest)) return r;
+
+  const afterPlus = r.rest.replace(PLUS_REGEX, '').trim();
+  const second = matchLeadingQuantity(afterPlus);
+  if (!second) return r;
+
+  const afterQuantity = afterPlus.slice(second.length).trim();
+  const word = afterQuantity.match(ONE_WORD_UNIT_REGEX);
+  const secondUnit = word && canonicalUnit(word[1]);
+  if (!word || !secondUnit) return r;
+
+  const rest = eatFiller(afterQuantity.slice(word[0].length).trim());
+  if (!rest) return r;
+
+  // Same unit needs no conversion, and shouldn't get one: a round trip
+  // through base units turns 1/3 + 1/4 into something with a tail on it.
+  if (secondUnit === r.unit) {
+    return { ...r, rest, quantity: round(r.quantity + second.value) };
+  }
+
+  const here = toBase(r.quantity, r.unit);
+  const there = toBase(second.value, secondUnit);
+  const perUnit = toBase(1, r.unit);
+  if (!here || !there || !perUnit || here.baseUnit !== there.baseUnit) {
+    return { ...r, rest };
+  }
+  // Back into the unit the line opened with, which is the one the cook wrote.
+  // Rounded because our conversion constants aren't exact multiples of each
+  // other — 3 tsp is 14.78676 mL and a tablespoon is 14.7868 — and a quantity
+  // with fourteen decimal places on it helps nobody.
+  return { ...r, rest, quantity: round((here.quantity + there.quantity) / perUnit.quantity) };
+};
+
 /** The same amount restated in the other system — see `eatEcho`. */
 const readEcho: Stage = (r) => (r.quantity > 0 ? { ...r, rest: eatEcho(r.rest, r.unit) } : r);
+
+/**
+ * A part of something rather than the thing: "juice of 1 lemon", "zest of 2
+ * oranges", "leaves from 1 bunch of parsley".
+ *
+ * You buy the lemon, so the count belongs to the lemon — this used to leave
+ * the quantity at 0 because the line doesn't open with a number. The part is
+ * carried through and rejoined to the name at the end, giving "lemon juice",
+ * which is what every other phrasing of it normalizes to.
+ *
+ * Only the parts that read as a product. "leaves of parsley" is parsley, and
+ * "parsley leaves" is a worse name for it than "parsley".
+ */
+const DERIVED_REGEX = /^(?:([a-z-]+)\s+)?(juice|zest|peel|rind)\s+(?:of|from)\s+/i;
+
+const readDerived: Stage = (r) => {
+  const match = r.rest.match(DERIVED_REGEX);
+  if (!match) return r;
+  // A leading word is only allowed when it's a descriptor — "grated zest of 1
+  // lemon" yes, "orange juice of some kind" no.
+  if (match[1] && !MODIFIER_WORDS.has(match[1].toLowerCase())) return r;
+
+  const rest = r.rest.slice(match[0].length).trim();
+  if (!rest) return r;
+  return { ...r, rest, derivative: match[2].toLowerCase() };
+};
 
 /** Trailing preparation after the first comma: "onion, finely diced". */
 const splitNotes: Stage = (r) => {
@@ -532,7 +737,11 @@ const readTrailingUnit: Stage = (r) => {
 };
 
 const normalizeName: Stage = (r) => {
-  const name = normalizeIngredientName(r.name);
+  // The name is normalized *before* the part is rejoined, because the stemmer
+  // only ever works on the last word: "juice of 2 lemons" has to become
+  // "lemon juice", not "lemons juice".
+  const base = normalizeIngredientName(r.name);
+  const name = r.derivative ? normalizeIngredientName(`${base} ${r.derivative}`) : base;
   // A bare garlic count ("2 garlic") conventionally means cloves — nobody
   // writing an ingredient list means a whole head — so default the unit to
   // keep every garlic phrasing bucketing together instead of splitting the list.
@@ -558,11 +767,15 @@ const readQualifier: Stage = (r) =>
  */
 const STAGES: Stage[] = [
   readLeadingFiller,
+  readDerived,
   readQuantity,
+  readSize,
   readBareUnit,
   readUnit,
   readParenthetical,
   readEcho,
+  readPlusAmount,
+  readOpenEnded,
   splitNotes,
   readAlternative,
   truncateAtInstruction,
@@ -596,11 +809,53 @@ export function parseIngredient(originalString: string): Ingredient {
   };
 }
 
-/** Parses a list of raw ingredient lines, dropping the ones that name nothing. */
-export function parseIngredientLines(lines: string[]): Ingredient[] {
+/**
+ * Two ingredients written on one line: "Salt and pepper to taste".
+ *
+ * Splitting on "and" is dangerous in a way splitting on "or" is not, because
+ * plenty of single products have one in the middle — macaroni and cheese, half
+ * and half, sweet and sour sauce, chicken and rice. Two guards, and between
+ * them every one of those survives:
+ *
+ *   - **No quantity.** An amount belongs to one thing. "1 box macaroni and
+ *     cheese" has one and is left alone; "salt and pepper to taste" hasn't.
+ *   - **Both halves name something we recognize.** "sweet" is not a food, so
+ *     "sweet and sour sauce" cannot split even without a quantity.
+ *
+ * The qualifier carries to both halves, because "to taste" was said about the
+ * pair. Each keeps the whole original line — they genuinely came from it, and
+ * the recipe page still shows what was written.
+ */
+function splitCompound(ing: Ingredient, corrections: CorrectionIndex): Ingredient[] {
+  if (ing.quantity !== 0 || ing.unit) return [ing];
+  const halves = ing.name.split(/\s+and\s+/i);
+  if (halves.length !== 2) return [ing];
+
+  const parsed = halves.map((half) => applyCorrection(parseIngredient(half), corrections));
+  if (!parsed.every((p) => p.name && isKnownFoodPhrase(p.name))) return [ing];
+
+  return parsed.map((p) => ({
+    ...p,
+    originalString: ing.originalString,
+    ...(ing.qualifier && !p.qualifier ? { qualifier: ing.qualifier } : {}),
+  }));
+}
+
+/**
+ * Parses a list of raw ingredient lines, dropping the ones that name nothing.
+ *
+ * `corrections` overrule the parse for lines someone has said it got wrong.
+ * They're applied last, after every rule has had its go, so a correction is
+ * always the final word — that's the whole promise of the button.
+ */
+export function parseIngredientLines(
+  lines: string[],
+  corrections: CorrectionIndex = EMPTY_INDEX,
+): Ingredient[] {
   return lines
     .map((l) => l.trim())
     .filter(Boolean)
-    .map(parseIngredient)
-    .filter((ing) => ing.name && !JOINING_WORD_ONLY.test(ing.name));
+    .map((line) => applyCorrection(parseIngredient(line), corrections))
+    .flatMap((ing) => splitCompound(ing, corrections))
+    .filter((ing) => ing.name && !namesNothing(ing.name));
 }
