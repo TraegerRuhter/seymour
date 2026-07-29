@@ -235,6 +235,63 @@ create policy "deleted_records is owner-only" on public.deleted_records
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- --- Realtime: broadcast changes on synced tables to subscribed clients ---
+-- ---------------------------------------------------------------------------
+-- parser_reports — an inbox, not a source of truth
+-- ---------------------------------------------------------------------------
+--
+-- Every other table here is one person's data, synced back to that same
+-- person. This one is different: it collects corrections that testers have
+-- chosen to share, so a fix can reach the shipped vocabulary without anyone
+-- emailing a list around.
+--
+-- The design decision that keeps this cheap: **nothing reads it**. No client
+-- consults this table, ever. A correction already applies locally the moment
+-- it's made; sharing one submits it for review and nothing more. That removes
+-- the entire problem a crowdsourced dataset normally has — no consensus
+-- thresholds, no moderation queue, no risk of one person's wrong answer
+-- propagating to everybody else. The maintainer reads it in the dashboard and
+-- decides what becomes canonical, which at a handful of testers is exactly the
+-- right amount of process.
+--
+-- What it deliberately does not hold: recipe titles, source URLs, anything
+-- identifying a dish. Only the raw ingredient line, what the parser made of
+-- it, and what the person said it should be.
+
+create table if not exists public.parser_reports (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  -- The raw line as the recipe wrote it.
+  original_string text not null,
+  -- What the parser produced, and what it should have produced.
+  got jsonb not null,
+  expected jsonb not null,
+  -- 'line' fixes one exact string; 'name' fixes a name wherever it appears.
+  kind text not null default 'name',
+  created_at timestamptz not null default now()
+);
+
+alter table public.parser_reports enable row level security;
+
+-- Insert your own, read your own back. Deliberately no update and no delete:
+-- a submission is a thing that was said at a point in time, and letting it be
+-- edited afterwards would make the inbox untrustworthy without buying
+-- anything. Withdrawing a correction locally is a separate act and doesn't
+-- unsay this.
+drop policy if exists "parser_reports insert own" on public.parser_reports;
+create policy "parser_reports insert own" on public.parser_reports
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "parser_reports select own" on public.parser_reports;
+create policy "parser_reports select own" on public.parser_reports
+  for select using (auth.uid() = user_id);
+
+-- The maintainer reads everything from the dashboard, which uses the service
+-- role and bypasses RLS. Grouping by original_string gives the one thing a
+-- single person's corrections can never provide: how often a line trips people
+-- up, and therefore what to fix first.
+create index if not exists parser_reports_line_idx
+  on public.parser_reports (original_string);
+
 --
 -- The default `supabase_realtime` publication starts empty; a table must be
 -- added explicitly before postgres_changes subscriptions receive anything

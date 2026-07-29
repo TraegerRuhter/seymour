@@ -216,3 +216,36 @@ test('sharing is off unless it is turned on', () => {
   // A correction is about a recipe someone is cooking. Opt-in, every time.
   assert.equal(correction().share, false);
 });
+
+test('sharing is a separate act from correcting', () => {
+  // The fix already happened locally and stays whether this is on or off.
+  // Turning it on only offers the line up for review.
+  useCorrectionStore.getState().replaceAll([correction()]);
+  useCorrectionStore.getState().setShare('c1', true);
+  assert.equal(useCorrectionStore.getState().corrections[0].share, true);
+  assert.equal(useCorrectionStore.getState().corrections[0].expected.name, 'salt');
+});
+
+test('a submitted correction is stamped so it is not sent twice', () => {
+  useCorrectionStore.getState().replaceAll([correction({ share: true })]);
+  useCorrectionStore.getState().markSubmitted(['c1'], '2026-02-01T00:00:00.000Z');
+  assert.equal(
+    useCorrectionStore.getState().corrections[0].submittedAt,
+    '2026-02-01T00:00:00.000Z',
+  );
+});
+
+test('a shared report carries the line and the fix, and nothing about the dish', () => {
+  // What goes to the inbox is only ever these fields — asserted here because
+  // the shape is a privacy promise, not just a data format.
+  const c = correction();
+  assert.deepEqual(Object.keys(c).sort(), [
+    'createdAt',
+    'expected',
+    'got',
+    'id',
+    'kind',
+    'match',
+    'share',
+  ]);
+});

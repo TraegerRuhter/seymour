@@ -39,6 +39,7 @@ import {
   pushSettings,
   clearShoppingItemStatesRemote,
   pushShoppingItemState,
+  pushParserReport,
   pushShoppingItemStates,
 } from './sync';
 import {
@@ -281,6 +282,29 @@ export function reparseAllRecipes(): number {
 export function saveCorrection(correction: Correction): number {
   useCorrectionStore.getState().addCorrection(correction);
   return reparseAllRecipes();
+}
+
+/**
+ * Offers a correction up for review, or takes the offer back.
+ *
+ * Sharing is a second, separate act from correcting. The fix already happened
+ * locally and stays whether this is on or off; this is only about whether a
+ * maintainer gets to see the line and decide it belongs in the shipped
+ * vocabulary. Off by default, on every correction, because a correction is
+ * about a recipe somebody is cooking.
+ *
+ * Signed out it stores the intent and sends nothing — there's nowhere to send
+ * it, and quietly dropping the toggle would be worse than remembering it.
+ */
+export async function shareCorrection(id: string, share: boolean): Promise<void> {
+  useCorrectionStore.getState().setShare(id, share);
+  if (!share) return;
+
+  const correction = useCorrectionStore.getState().corrections.find((c) => c.id === id);
+  if (!correction || correction.submittedAt) return;
+  if (await pushParserReport(correction)) {
+    useCorrectionStore.getState().markSubmitted([id], new Date().toISOString());
+  }
 }
 
 /**

@@ -9,6 +9,7 @@ import {
   removePantryStaple,
   reparseAllRecipes,
   setUnitSystem,
+  shareCorrection,
   validateBundle,
   withdrawCorrection,
 } from '@/lib/actions';
@@ -303,6 +304,15 @@ export default function SettingsPage() {
                   <span className="mx-2 text-charcoal/40">→</span>
                   <span className="font-medium text-charcoal">{c.expected.name ?? c.got.name}</span>
                 </div>
+                <label className="flex shrink-0 items-center gap-1.5 text-xs text-charcoal/70">
+                  <input
+                    type="checkbox"
+                    checked={c.share}
+                    onChange={(e) => void shareCorrection(c.id, e.target.checked)}
+                    className="h-3.5 w-3.5 accent-moss"
+                  />
+                  Share
+                </label>
                 <button
                   type="button"
                   onClick={() => {
