@@ -1,4 +1,5 @@
 import type { Ingredient } from './types';
+import { applyCorrection, EMPTY_INDEX, type CorrectionIndex } from './corrections';
 import { canonicalUnit, unitSystem } from './units';
 import {
   isKnownFoodPhrase,
@@ -596,11 +597,20 @@ export function parseIngredient(originalString: string): Ingredient {
   };
 }
 
-/** Parses a list of raw ingredient lines, dropping the ones that name nothing. */
-export function parseIngredientLines(lines: string[]): Ingredient[] {
+/**
+ * Parses a list of raw ingredient lines, dropping the ones that name nothing.
+ *
+ * `corrections` overrule the parse for lines someone has said it got wrong.
+ * They're applied last, after every rule has had its go, so a correction is
+ * always the final word — that's the whole promise of the button.
+ */
+export function parseIngredientLines(
+  lines: string[],
+  corrections: CorrectionIndex = EMPTY_INDEX,
+): Ingredient[] {
   return lines
     .map((l) => l.trim())
     .filter(Boolean)
-    .map(parseIngredient)
+    .map((line) => applyCorrection(parseIngredient(line), corrections))
     .filter((ing) => ing.name && !JOINING_WORD_ONLY.test(ing.name));
 }
