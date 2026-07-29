@@ -17,7 +17,8 @@
  */
 
 import { parseIngredient } from '../src/lib/ingredient-parser.ts';
-import { normalizeIngredientName } from '../src/lib/normalize.ts';
+import { isKnownFoodPhrase, normalizeIngredientName } from '../src/lib/normalize.ts';
+import { categorize } from '../src/lib/categories.ts';
 import { canonicalUnit } from '../src/lib/units.ts';
 import { ingredientViolations } from '../src/lib/invariants.ts';
 import { discoverDatasets, type Dataset, type LabelledLine } from './source.ts';
@@ -80,6 +81,12 @@ function scoreDataset(dataset: Dataset, limit: number, samples: number) {
   const unitPairs = new Tally();
   const quantityShape = new Tally();
   const brokenRows = new Tally();
+  // How much of this dataset is food we've never met. The single most useful
+  // number when deciding whether a new source is worth the trouble: 178,000
+  // more American lines teach us almost nothing, while ten Filipino ones
+  // taught us "pcs". Volume isn't the lever, coverage is.
+  const seen = new Set<string>();
+  const unknown = new Set<string>();
 
   for (const row of rows) {
     all++;
@@ -94,6 +101,11 @@ function scoreDataset(dataset: Dataset, limit: number, samples: number) {
     if (violations.length === 0) clean++;
     for (const v of violations) {
       brokenRows.add(v.slice(v.lastIndexOf('[')), `${row.input}\n      -> ${got.name}`);
+    }
+
+    if (got.name) {
+      seen.add(got.name);
+      if (!isKnownFoodPhrase(got.name) && categorize(got.name) === 'Other') unknown.add(got.name);
     }
 
     if (!dataset.labelled) continue;
@@ -146,6 +158,10 @@ function scoreDataset(dataset: Dataset, limit: number, samples: number) {
     console.log('\n  no labels — scored against our own rules only');
   }
   console.log(`\n  satisfies our own invariants  ${pct(clean, all).padStart(6)}`);
+  console.log(
+    `  ingredients we don't recognize  ${pct(unknown.size, seen.size).padStart(6)}` +
+      `  (${unknown.size.toLocaleString()} of ${seen.size.toLocaleString()} distinct names)`,
+  );
 
   const section = (title: string, tally: Tally, n: number) => {
     const top = tally.top(n);
@@ -156,6 +172,9 @@ function scoreDataset(dataset: Dataset, limit: number, samples: number) {
       for (const ex of examples.slice(0, samples)) console.log(`      ${ex}`);
     }
   };
+
+  const strangers = [...unknown].sort().slice(0, samples * 8);
+  if (strangers.length) console.log(`\n  never seen before: ${strangers.join(', ')}`);
 
   section('OUR OWN INVARIANTS, broken', brokenRows, 8);
   section('NAME disagreements', nameShape, 3);

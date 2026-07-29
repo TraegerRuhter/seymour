@@ -159,10 +159,12 @@ const NUMBER_WORDS: Record<string, number> = {
   quarter: 0.25,
 };
 
+// Whitespace after, not a word boundary: a hyphen satisfies \b, so "half" in
+// "half-and-half" matched and the line came out named "-and-half".
 const NUMBER_WORD_REGEX = new RegExp(
   `^(${Object.keys(NUMBER_WORDS)
     .filter((w) => w !== 'a' && w !== 'an')
-    .join('|')})\\b\\s*`,
+    .join('|')})(?:\\s+|$)`,
   'i',
 );
 
@@ -214,6 +216,17 @@ function matchLeadingQuantity(text: string): QuantityMatch | null {
     if (!m) return null;
     first = parseNumberToken(m[0]);
     consumed = m[0].length;
+
+    // "1 1/2-inch piece fresh ginger" is one piece an inch and a half long,
+    // not one and a half of anything. A hyphen straight after a mixed number
+    // means the fraction belongs to the size that follows, so only the whole
+    // number is the count — otherwise the size is left stranded as "-inch
+    // piece fresh ginger", which is what the name became.
+    const mixed = m[0].match(MIXED_NUMBER_REGEX);
+    if (mixed && text[consumed] === '-') {
+      first = parseInt(mixed[1], 10);
+      consumed = mixed[1].length;
+    }
   }
 
   // range: "- 2", "– 2", "to 2"

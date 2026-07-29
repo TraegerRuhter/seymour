@@ -42,6 +42,14 @@ one onion	1		onion
 two cloves garlic	2	clove	garlic
 half a lemon	0.5		lemon
 
+# --- a size hyphenated onto the amount -------------------------------------
+# Found by the novelty metric, which flagged "-inch piece" and "-and-half" as
+# unrecognized ingredients — they were broken parses wearing a name.
+1 1/2-inch piece fresh ginger	1	piece	ginger
+a 3-inch piece of cassia bark	1	piece	cassia bark
+1/2 cup half-and-half	0.5	cup	half-and-half
+half-and-half	0		half-and-half
+
 # --- a size written without brackets ---------------------------------------
 2 28-ounce cans crushed tomatoes	2	can	tomato
 1 6-ounce can tomato paste	1	can	tomato paste
