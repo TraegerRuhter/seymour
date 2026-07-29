@@ -251,7 +251,22 @@ function RowMenu({
  * strikethrough line slides across the label; the row then relocates to the
  * "Checked" section via a shared layout animation.
  */
-function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) {
+function Row({
+  item,
+  editable,
+  onCorrected,
+}: {
+  item: ShoppingListItem;
+  editable: boolean;
+  /**
+   * Reported to the list rather than shown here. A correction changes the
+   * row's name, and the name is part of its id — so this component unmounts
+   * on the very render that would have displayed the confirmation, and the
+   * message never appeared. Found by the e2e test, which is exactly the class
+   * of thing only a browser catches.
+   */
+  onCorrected?: (message: string) => void;
+}) {
   const recipes = useRecipeStore((s) => s.recipes);
   const [editing, setEditing] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -431,19 +446,13 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
             if (!result) return;
             // Says what actually happened rather than "saved". A correction
             // that changed nothing is worth knowing about too.
-            setFixed(
+            onCorrected?.(
               result.updated === 0
                 ? 'Nothing else to change'
                 : `Fixed in ${result.updated} recipe${result.updated === 1 ? '' : 's'}`,
             );
-            setTimeout(() => setFixed(null), 3000);
           }}
         />
-      )}
-      {fixed && (
-        <span className="shrink-0 text-xs text-moss" role="status">
-          {fixed}
-        </span>
       )}
       {!editing && (
         <RowMenu
@@ -577,6 +586,12 @@ export default function ShoppingList({
   // checked it. Holding it back for 650ms also put it out of step with the
   // dashboard's "N items to pick up", which counts immediately.
   const doneCount = items.filter((i) => i.checked).length;
+  // Lives here because a corrected row renames itself and unmounts.
+  const [notice, setNotice] = useState<string | null>(null);
+  const announce = (message: string) => {
+    setNotice(message);
+    setTimeout(() => setNotice(null), 3000);
+  };
 
   if (items.length === 0) {
     return (
@@ -621,6 +636,11 @@ export default function ShoppingList({
   return (
     <div>
       <div className="mb-5">
+        {notice && (
+          <p role="status" className="text-sm text-moss">
+            {notice}
+          </p>
+        )}
         <ProgressBar done={doneCount} total={items.length} />
       </div>
 
@@ -637,7 +657,7 @@ export default function ShoppingList({
             <ul>
               <AnimatePresence initial={false}>
                 {catItems.map((item) => (
-                  <Row key={item.id} item={item} editable={editable} />
+                  <Row key={item.id} item={item} editable={editable} onCorrected={announce} />
                 ))}
               </AnimatePresence>
             </ul>
@@ -665,7 +685,7 @@ export default function ShoppingList({
             <ul className="space-y-2">
               <AnimatePresence initial={false}>
                 {checked.map((item) => (
-                  <Row key={item.id} item={item} editable={editable} />
+                  <Row key={item.id} item={item} editable={editable} onCorrected={announce} />
                 ))}
               </AnimatePresence>
             </ul>
