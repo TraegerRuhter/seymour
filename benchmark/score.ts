@@ -1,45 +1,44 @@
 /**
- * Scores the parser against 178,000 hand-labelled ingredient lines.
+ * Scores the ingredient parser against whatever is in benchmark/data/.
  *
  * The golden corpus in tests/fixtures answers "did this change break
  * something?". It cannot answer "is the parser better than it was last week?",
- * because it only holds cases someone already thought of — about 110 of them,
- * all chosen by whoever was fixing a bug at the time. This answers the second
+ * because it only holds cases someone already thought of — a hundred or so, all
+ * chosen by whoever was fixing a bug at the time. This answers the second
  * question, and prints the biggest disagreement patterns so the answer comes
  * with a to-do list rather than just a number.
  *
- * Never part of `npm run check`. It needs a 20 MB download and takes seconds,
- * neither of which belongs in CI.
+ * Never part of `npm run check`. It needs a download and it's a measurement,
+ * not a gate.
  *
- *   npm run benchmark:fetch     once
- *   npm run benchmark           any time
- *   npm run benchmark -- --limit 5000 --samples 5
+ *   npm run benchmark:fetch     once, for the built-in dataset
+ *   npm run benchmark           scores every file in benchmark/data/
+ *   npm run benchmark -- --source nyt --limit 5000 --samples 5
  */
 
-import { readFile } from 'node:fs/promises';
 import { parseIngredient } from '../src/lib/ingredient-parser.ts';
 import { normalizeIngredientName } from '../src/lib/normalize.ts';
 import { canonicalUnit } from '../src/lib/units.ts';
 import { ingredientViolations } from '../src/lib/invariants.ts';
-import { CACHE_PATH, readLabelled, type LabelledLine } from './source.ts';
+import { discoverDatasets, type Dataset, type LabelledLine } from './source.ts';
 
 /**
  * Their labels in our vocabulary.
  *
- * This translation is the whole reason the number means anything. They tag
- * "carrots" where we say "carrot", "tablespoon" where we say "tbsp", and they
- * record a range as two columns where we average. Scoring the raw strings
- * would mostly measure the difference between two house styles — a parser that
- * is completely correct would score near zero.
+ * This translation is the whole reason an agreement number means anything.
+ * NYT tags "carrots" where we say "carrot" and "tablespoon" where we say
+ * "tbsp", and records a range as two columns where we average. Scoring the raw
+ * strings would mostly measure the difference between two house styles — a
+ * parser that is completely correct would score near zero.
  *
  * Both sides go through *our* normalizer, which is the fair comparison: the
  * question is whether we extracted the same ingredient, not whether we spell
  * it their way.
  */
 function expectedFrom(row: LabelledLine) {
-  const qty = Number(row.qty);
-  const rangeEnd = Number(row.rangeEnd);
-  // They store "1 to 2" as qty=1, range_end=2; we average it.
+  const qty = Number(row.qty ?? '');
+  const rangeEnd = Number(row.rangeEnd ?? '');
+  // A range stored as two columns ("1 to 2" as qty=1, range_end=2); we average.
   const quantity =
     Number.isFinite(qty) && Number.isFinite(rangeEnd) && rangeEnd > qty
       ? (qty + rangeEnd) / 2
@@ -47,8 +46,8 @@ function expectedFrom(row: LabelledLine) {
 
   return {
     quantity: Number.isFinite(quantity) ? quantity : 0,
-    unit: row.unit.trim() ? (canonicalUnit(row.unit.trim()) ?? '') : '',
-    name: normalizeIngredientName(row.name),
+    unit: row.unit?.trim() ? (canonicalUnit(row.unit.trim()) ?? '') : '',
+    name: normalizeIngredientName(row.name ?? ''),
   };
 }
 
@@ -70,23 +69,12 @@ class Tally {
   }
 }
 
-async function main() {
-  const arg = (flag: string, fallback: number) => {
-    const i = process.argv.indexOf(flag);
-    return i === -1 ? fallback : Number(process.argv[i + 1]);
-  };
-  const limit = arg('--limit', Infinity);
-  const samples = arg('--samples', 3);
-
-  const text = await readFile(CACHE_PATH, 'utf8').catch(() => {
-    throw new Error(`No cached corpus. Run: npm run benchmark:fetch`);
-  });
-
-  const rows = readLabelled(text).slice(0, limit);
-  const started = Date.now();
+function scoreDataset(dataset: Dataset, limit: number, samples: number) {
+  const rows = dataset.rows.slice(0, limit);
 
   let all = 0;
   let clean = 0;
+  let comparable = 0;
   const correct = { quantity: 0, unit: 0, name: 0, every: 0 };
   const nameShape = new Tally();
   const unitPairs = new Tally();
@@ -94,22 +82,25 @@ async function main() {
   const brokenRows = new Tally();
 
   for (const row of rows) {
-    const expected = expectedFrom(row);
-    // A row whose own label is empty teaches us nothing about our parser.
-    if (!expected.name) continue;
     all++;
-
     const got = parseIngredient(row.input);
 
-    // Our own standard, applied to somebody else's data. Unlike agreement
-    // with NYT this involves no house style at all: a name holding a unit or
-    // a digit is broken by the rules we wrote, whatever anyone else would
-    // have called that ingredient. It's the honest half of this benchmark.
+    // Our own standard, applied to somebody else's data. Unlike agreement this
+    // involves no house style at all: a name holding a unit or a digit is
+    // broken by the rules we wrote, whatever anyone else would have called
+    // that ingredient. It's the half of this that needs no answer key, which
+    // is why an unlabelled dataset is still worth having.
     const violations = ingredientViolations(got);
     if (violations.length === 0) clean++;
     for (const v of violations) {
       brokenRows.add(v.slice(v.lastIndexOf('[')), `${row.input}\n      -> ${got.name}`);
     }
+
+    if (!dataset.labelled) continue;
+    const expected = expectedFrom(row);
+    // A row whose own label is empty teaches us nothing about our parser.
+    if (!expected.name) continue;
+    comparable++;
 
     const okQuantity = Math.abs(got.quantity - expected.quantity) < 1e-6;
     const okUnit = got.unit === expected.unit;
@@ -120,12 +111,12 @@ async function main() {
     if (okName) correct.name++;
     if (okQuantity && okUnit && okName) correct.every++;
 
-    const example = `${row.input}\n      ours: ${JSON.stringify({ quantity: got.quantity, unit: got.unit, name: got.name })}\n      NYT:  ${JSON.stringify(expected)}`;
+    const example = `${row.input}\n      ours: ${JSON.stringify({ quantity: got.quantity, unit: got.unit, name: got.name })}\n      theirs: ${JSON.stringify(expected)}`;
 
     if (!okName) {
-      // The *shape* of the disagreement, because 178k distinct name pairs
-      // group into nothing. Whether we kept too much or too little is the
-      // part that points at a rule.
+      // The *shape* of the disagreement, because a hundred thousand distinct
+      // name pairs group into nothing. Whether we kept too much or too little
+      // is the part that points at a rule.
       const shape = got.name.includes(expected.name)
         ? 'we kept extra words around their name'
         : expected.name.includes(got.name)
@@ -145,13 +136,16 @@ async function main() {
     }
   }
 
-  const elapsed = ((Date.now() - started) / 1000).toFixed(1);
-  console.log(`\n  ${all.toLocaleString()} labelled lines, scored in ${elapsed}s\n`);
-  console.log(`  quantity   ${pct(correct.quantity, all).padStart(6)}`);
-  console.log(`  unit       ${pct(correct.unit, all).padStart(6)}`);
-  console.log(`  name       ${pct(correct.name, all).padStart(6)}`);
-  console.log(`  all three  ${pct(correct.every, all).padStart(6)}`);
-  console.log(`\n  rows that satisfy our own invariants  ${pct(clean, all).padStart(6)}\n`);
+  console.log(`\n  ── ${dataset.id} — ${all.toLocaleString()} lines`);
+  if (dataset.labelled && comparable > 0) {
+    console.log(`\n  quantity   ${pct(correct.quantity, comparable).padStart(6)}`);
+    console.log(`  unit       ${pct(correct.unit, comparable).padStart(6)}`);
+    console.log(`  name       ${pct(correct.name, comparable).padStart(6)}`);
+    console.log(`  all three  ${pct(correct.every, comparable).padStart(6)}`);
+  } else {
+    console.log('\n  no labels — scored against our own rules only');
+  }
+  console.log(`\n  satisfies our own invariants  ${pct(clean, all).padStart(6)}`);
 
   const section = (title: string, tally: Tally, n: number) => {
     const top = tally.top(n);
@@ -167,10 +161,35 @@ async function main() {
   section('NAME disagreements', nameShape, 3);
   section('UNIT disagreements (theirs → ours)', unitPairs, 12);
   section('QUANTITY disagreements', quantityShape, 3);
-  console.log();
 }
 
-main().catch((err) => {
+function main() {
+  const arg = (flag: string, fallback: number) => {
+    const i = process.argv.indexOf(flag);
+    return i === -1 ? fallback : Number(process.argv[i + 1]);
+  };
+  const only = process.argv.indexOf('--source');
+  const wanted = only === -1 ? null : process.argv[only + 1];
+
+  const datasets = discoverDatasets().filter((d) => !wanted || d.id === wanted);
+  if (datasets.length === 0) {
+    throw new Error(
+      wanted
+        ? `No dataset "${wanted}" in benchmark/data/.`
+        : 'benchmark/data/ is empty. Run `npm run benchmark:fetch`, or drop any ' +
+            'CSV/TSV/TXT of ingredient lines in there — it will be picked up.',
+    );
+  }
+
+  const started = Date.now();
+  for (const dataset of datasets)
+    scoreDataset(dataset, arg('--limit', Infinity), arg('--samples', 3));
+  console.log(`\n  ${((Date.now() - started) / 1000).toFixed(1)}s\n`);
+}
+
+try {
+  main();
+} catch (err) {
   console.error(`\n  ${err instanceof Error ? err.message : err}\n`);
   process.exit(1);
-});
+}

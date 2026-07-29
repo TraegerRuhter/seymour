@@ -4,9 +4,32 @@ Scores the ingredient parser against 178,000 hand-labelled lines.
 
 ```
 npm run benchmark:fetch          once — downloads ~20 MB into benchmark/data/
-npm run benchmark                any time
-npm run benchmark -- --limit 5000 --samples 5
+npm run benchmark                scores every file in benchmark/data/
+npm run benchmark -- --source nyt --limit 5000 --samples 5
 ```
+
+## Adding your own data
+
+**Drop any CSV, TSV or `.txt` into `benchmark/data/` and it gets scored.** No
+adapter to write, no config: the header row is matched against a list of
+plausible column names (`input`/`line`/`ingredient`, `name`/`food`,
+`qty`/`quantity`/`amount`, `unit`/`units`/`measure`), and a file with no
+recognisable line column is read as one ingredient per line.
+
+That last case matters more than it sounds. **Unlabelled data is still worth
+having**, because the invariants don't need an answer key to say a row is
+broken. A file of ten Filipino adobo lines found `pcs` — twice in ten lines,
+and NYT's 178,000 American ones contain none of it.
+
+Datasets worth a look, none of which this sandbox can reach (so download them
+yourself and drop them in):
+
+| | licence | why |
+|---|---|---|
+| [Open Food Facts](https://world.openfoodfacts.org/data) | **ODbL** — share-alike applies to derived databases, so read it before shipping a keyword list built from it | ~3M international products with categories; the best fit for our two weakest hand-written tables |
+| [USDA FoodData Central](https://fdc.nal.usda.gov/download-datasets.html) | public domain | cleanest licence there is; US-centric but a canonical ingredient vocabulary |
+| [RecipeNLG](https://recipenlg.cs.put.poznan.pl/) | non-commercial research | 2.2M recipes with extracted ingredient names |
+| [Food.com on Kaggle](https://www.kaggle.com/datasets/shuyangli94/food-com-recipes-and-user-interactions) | varies | 230k recipes |
 
 Never part of `npm run check`. It needs a download and it isn't a pass/fail
 gate — it's a measurement.

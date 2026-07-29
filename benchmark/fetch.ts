@@ -6,11 +6,16 @@
  * golden corpus in tests/fixtures runs on every CI build and has to stay small
  * enough to be read by a person. This is the other kind of dataset — big,
  * external, and consulted deliberately.
+ *
+ * Only fetches the one built-in dataset. Anything else you want scored can
+ * simply be dropped into benchmark/data/ — `npm run benchmark` picks up every
+ * CSV, TSV or TXT in there and works out the columns itself. Most of the
+ * interesting food datasets need a login or a licence click anyway.
  */
 
 import { mkdir, writeFile, stat } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { CACHE_PATH, SOURCE_URL } from './source.ts';
+import { BUILT_IN, CACHE_PATH } from './source.ts';
 
 async function main() {
   const force = process.argv.includes('--force');
@@ -24,8 +29,8 @@ async function main() {
     }
   }
 
-  console.log(`Fetching ${SOURCE_URL}`);
-  const res = await fetch(SOURCE_URL);
+  console.log(`Fetching ${BUILT_IN.url}`);
+  const res = await fetch(BUILT_IN.url);
   if (!res.ok) throw new Error(`HTTP ${res.status} — could not reach the dataset`);
 
   const body = await res.text();

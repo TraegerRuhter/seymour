@@ -142,6 +142,14 @@ const UNIT_ALIASES: Record<string, string> = {
   tali: 'bunch',
   piece: 'piece',
   pieces: 'piece',
+  // How Filipino and wider South-East Asian recipes count things. Found by
+  // dropping ten real adobo lines into the benchmark: two of the ten came out
+  // named "pcs calamansi" and "pcs dried bay leaves", and neither tripped an
+  // invariant — a tidy-looking name for the wrong thing is exactly what the
+  // rules can't see.
+  pcs: 'piece',
+  pc: 'piece',
+  pkt: 'package',
   handful: 'handful',
   handfuls: 'handful',
   ear: 'ear',
