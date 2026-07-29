@@ -8,6 +8,7 @@ import type { Recipe, ShoppingListItem } from '@/lib/types';
 import { useRecipeStore, useShoppingStore } from '@/lib/stores';
 import { addPantryStaple, setShoppingItemOverride, toggleShoppingItem } from '@/lib/actions';
 import CorrectionDialog from './CorrectionDialog';
+import { shoppingListViolations } from '@/lib/invariants';
 import { displayUnit, formatAmount } from '@/lib/units';
 import { categorize, CATEGORY_ORDER, type Category } from '@/lib/categories';
 import { DURATION, EASE, enter, fadeRise, layoutSpring, listRowExit } from '@/lib/motion';
@@ -254,6 +255,11 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
   const recipes = useRecipeStore((s) => s.recipes);
   const [editing, setEditing] = useState(false);
   const [reporting, setReporting] = useState(false);
+  // Our own rules, run over the row in front of you. They catch a name holding
+  // a unit or a digit, a fragment, a sentence — the kinds of broken that are
+  // obvious once pointed at and easy to scroll past otherwise. They cannot
+  // catch a parse that is wrong but tidy, which is what the menu item is for.
+  const suspicious = shoppingListViolations([item]).length > 0;
   const [fixed, setFixed] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [expanded, setExpanded] = useState(false);
@@ -403,6 +409,19 @@ function Row({ item, editable }: { item: ShoppingListItem; editable: boolean }) 
         )}
       </div>
 
+      {suspicious && (
+        <button
+          type="button"
+          onClick={() => setReporting(true)}
+          // The app noticing is the point: confirming a guess is much cheaper
+          // than spotting the problem yourself, so this asks rather than waits.
+          title="This row looks wrong — tell us what it should be"
+          aria-label={`${itemName(item)} looks wrong — correct it`}
+          className="shrink-0 rounded-full p-1 text-clay/80 transition-colors hover:bg-clay/10"
+        >
+          <FlagIcon className="h-4 w-4" />
+        </button>
+      )}
       {reporting && (
         <CorrectionDialog
           item={item}

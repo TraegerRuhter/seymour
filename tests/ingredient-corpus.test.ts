@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseIngredient } from '../src/lib/ingredient-parser.ts';
 import { CORPUS, PENDING, SETTLED } from './corpus.ts';
-import { ingredientViolations } from './invariants.ts';
+import { ingredientViolations } from '../src/lib/invariants.ts';
 
 /**
  * The golden corpus — item 4 of docs/shopping-parser.md.

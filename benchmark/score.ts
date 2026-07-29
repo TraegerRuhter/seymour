@@ -20,7 +20,7 @@ import { readFile } from 'node:fs/promises';
 import { parseIngredient } from '../src/lib/ingredient-parser.ts';
 import { normalizeIngredientName } from '../src/lib/normalize.ts';
 import { canonicalUnit } from '../src/lib/units.ts';
-import { ingredientViolations } from '../tests/invariants.ts';
+import { ingredientViolations } from '../src/lib/invariants.ts';
 import { CACHE_PATH, readLabelled, type LabelledLine } from './source.ts';
 
 /**
