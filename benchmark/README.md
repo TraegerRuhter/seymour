@@ -63,23 +63,21 @@ name `lemon, thinly`, which is nobody's ingredient.
 First run, at `f6061d2` plus the corrections engine — all ten items of
 `docs/shopping-parser.md` shipped:
 
-| field | |
-|---|---|
-| | first run | after the first pass of fixes |
+| field | first run | after the first pass of fixes |
 |---|---|---|
-| quantity | 93.0% | 92.9% |
-| unit | 91.8% | 91.9% |
-| name | 69.5% | 70.1% |
-| all three | 63.3% | 63.4% |
+| quantity | 93.0% | 93.5% |
+| unit | 91.8% | 92.0% |
+| name | 69.5% | 70.6% |
+| all three | 63.3% | 63.6% |
 | **satisfies our own invariants** | 97.3% | **98.1%** |
 
 The last row is the one worth watching. Agreement with NYT is partly a
 measure of whose house style you prefer; "does this row break the rules we
 wrote ourselves" has no opinion in it at all, and it moved 0.8 points.
 
-Quantity went *down* by a tenth of a point, deliberately. `2 tablespoons plus
-2 teaspoons baking powder` is now 2.6667 tbsp where NYT records 2 — summing is
-right for a shopping list and wrong for their display formatting.
+Summing compound amounts costs a little agreement on purpose: `2 tablespoons
+plus 2 teaspoons baking powder` is now 2.6667 tbsp where NYT records 2. Summing
+is right for a shopping list and wrong for their display formatting.
 
 What that first run surfaced, in order of how often it happens:
 

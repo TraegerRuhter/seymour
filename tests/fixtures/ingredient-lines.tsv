@@ -33,9 +33,20 @@
 1-2 jalapenos, seeded	1.5		jalapeno
 1 to 2 tablespoons honey	1.5	tbsp	honey
 
-# --- approximators (item 1) -----------------------------------------------
+# --- approximators and spelled-out numbers ---------------------------------
 about 2 cups flour	2	cup	flour
 approx. 500 g beef	500	g	beef
+Scant 1/2 cup sugar	0.5	cup	sugar
+generous 1 cup flour	1	cup	flour
+one onion	1		onion
+two cloves garlic	2	clove	garlic
+half a lemon	0.5		lemon
+
+# --- a size written without brackets ---------------------------------------
+2 28-ounce cans crushed tomatoes	2	can	tomato
+1 6-ounce can tomato paste	1	can	tomato paste
+1 6-inch white-corn tortilla	1		white-corn tortilla
+2 3-inch cinnamon sticks	2	stick	cinnamon
 
 # --- parentheticals (item 1) ----------------------------------------------
 1 (15 oz) can black beans, drained and rinsed	1	can	black bean
@@ -176,7 +187,11 @@ cilantro (or parsley)	0		cilantro
 1 tbsp olive oil to drizzle on top	1	tbsp	olive oil
 
 # --- derived ingredients --------------------------------------------------
-juice of 1 lemon	0		lemon juice
+# The count belongs to the fruit: you buy one lemon to get its juice.
+juice of 1 lemon	1		lemon juice
+zest of 1 orange	1		orange zest
+Grated zest of 2 lemons	2		lemon zest
+juice of 2 limes	2		lime juice
 
 # ==========================================================================
 # KNOWN GAPS — the expectation is right, the parser isn't there yet.
@@ -184,6 +199,3 @@ juice of 1 lemon	0		lemon juice
 
 # Two ingredients on one line. Splitting them is its own change.
 ~Salt and pepper to taste	0		salt	to taste
-
-# "juice of 1 lemon" works; its sibling doesn't.
-~zest of 1 orange	0		orange zest
