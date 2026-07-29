@@ -21,8 +21,35 @@ having**, because the invariants don't need an answer key to say a row is
 broken. A file of ten Filipino adobo lines found `pcs` — twice in ten lines,
 and NYT's 178,000 American ones contain none of it.
 
-Datasets worth a look, none of which this sandbox can reach (so download them
-yourself and drop them in):
+### Harvesting your own
+
+```
+npm run benchmark:harvest -- urls.txt          # one URL per line
+npm run benchmark:harvest -- urls.txt --delay 2000 --max 200
+```
+
+Fetches recipe pages, pulls their ingredient lines out with the same schema.org
+reader the app's URL import uses, and appends them to
+`benchmark/data/harvested.txt` for `npm run benchmark` to pick up.
+
+**It keeps ingredient lines and nothing else** — no titles, instructions,
+images or URLs. That's everything a parser benchmark needs and nothing that
+amounts to warehousing someone's recipe.
+
+It tries to be a polite guest: robots.txt fetched once per host and honoured,
+one request at a time with a delay between them, a 429 or 403 stops that host
+for the rest of the run, and already-fetched URLs are skipped so re-running
+resumes instead of re-fetching. The robots.txt reader ignores `Allow`
+overrides and wildcards, which makes it stricter than the standard rather than
+looser — erring toward not fetching is the right way to be wrong.
+
+**It can't run in the Claude Code sandbox**, whose proxy reaches
+raw.githubusercontent.com and little else. Run it somewhere with ordinary
+network access.
+
+### Or download something bigger
+
+Datasets worth a look, none of which this sandbox can reach either:
 
 | | licence | why |
 |---|---|---|

@@ -16,7 +16,8 @@
     "e2e": "playwright test",
     "e2e:sw": "playwright test -c playwright.sw.config.ts",
     "benchmark:fetch": "tsx benchmark/fetch.ts",
-    "benchmark": "tsx benchmark/score.ts"
+    "benchmark": "tsx benchmark/score.ts",
+    "benchmark:harvest": "tsx benchmark/harvest.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
