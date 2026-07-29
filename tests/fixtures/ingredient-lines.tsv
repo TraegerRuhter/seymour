@@ -200,4 +200,11 @@ juice of 2 limes	2		lime juice
 # ==========================================================================
 
 # Two ingredients on one line. Splitting them is its own change.
-~Salt and pepper to taste	0		salt	to taste
+# "Salt and pepper to taste" is not here any more, and not because it was
+# forgotten: two ingredients on one line are split by parseIngredientLines,
+# which this file cannot express — every row here is one line in, one parse
+# out. See tests/ingredient-splitting.test.ts.
+#
+# A "plus" after the name is the same shape and is still a gap: the second
+# amount stays in the name.
+~1 cup sugar plus 2 tbsp butter	1	cup	sugar

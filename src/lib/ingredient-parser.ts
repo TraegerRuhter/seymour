@@ -97,6 +97,22 @@ const VAGUE_REGEX = /^(?:some|a few|few|a little|little|several)\s+/i;
 const JOINING_WORD_ONLY = /^(?:of|a|an|and|or|to|for|with|the)$/i;
 
 /**
+ * A name that is only the amount echoed back: "1 teaspoon", "3 tbsp", "2".
+ *
+ * parseIngredient never returns an empty name — it falls back to the whole
+ * line rather than a blank row — so a line with nothing but a measurement in
+ * it comes out named after its own measurement. There is no ingredient here to
+ * shop for, which makes it as empty as a blank line.
+ */
+const AMOUNT_ONLY = /^[\d\s./¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞-]+([a-z.]*)$/i;
+
+function namesNothing(name: string): boolean {
+  if (JOINING_WORD_ONLY.test(name)) return true;
+  const amount = name.match(AMOUNT_ONLY);
+  return !!amount && (!amount[1] || canonicalUnit(amount[1]) !== null);
+}
+
+/**
  * How a recipe joins an amount to its restatement in the other system:
  * "2 lb / 900 g beef", "250 g | 9 oz flour", "1 cup or 240 ml milk".
  * `or` needs the word boundary so it can't bite into "orange".
@@ -781,6 +797,38 @@ export function parseIngredient(originalString: string): Ingredient {
 }
 
 /**
+ * Two ingredients written on one line: "Salt and pepper to taste".
+ *
+ * Splitting on "and" is dangerous in a way splitting on "or" is not, because
+ * plenty of single products have one in the middle — macaroni and cheese, half
+ * and half, sweet and sour sauce, chicken and rice. Two guards, and between
+ * them every one of those survives:
+ *
+ *   - **No quantity.** An amount belongs to one thing. "1 box macaroni and
+ *     cheese" has one and is left alone; "salt and pepper to taste" hasn't.
+ *   - **Both halves name something we recognize.** "sweet" is not a food, so
+ *     "sweet and sour sauce" cannot split even without a quantity.
+ *
+ * The qualifier carries to both halves, because "to taste" was said about the
+ * pair. Each keeps the whole original line — they genuinely came from it, and
+ * the recipe page still shows what was written.
+ */
+function splitCompound(ing: Ingredient, corrections: CorrectionIndex): Ingredient[] {
+  if (ing.quantity !== 0 || ing.unit) return [ing];
+  const halves = ing.name.split(/\s+and\s+/i);
+  if (halves.length !== 2) return [ing];
+
+  const parsed = halves.map((half) => applyCorrection(parseIngredient(half), corrections));
+  if (!parsed.every((p) => p.name && isKnownFoodPhrase(p.name))) return [ing];
+
+  return parsed.map((p) => ({
+    ...p,
+    originalString: ing.originalString,
+    ...(ing.qualifier && !p.qualifier ? { qualifier: ing.qualifier } : {}),
+  }));
+}
+
+/**
  * Parses a list of raw ingredient lines, dropping the ones that name nothing.
  *
  * `corrections` overrule the parse for lines someone has said it got wrong.
@@ -795,5 +843,6 @@ export function parseIngredientLines(
     .map((l) => l.trim())
     .filter(Boolean)
     .map((line) => applyCorrection(parseIngredient(line), corrections))
-    .filter((ing) => ing.name && !JOINING_WORD_ONLY.test(ing.name));
+    .flatMap((ing) => splitCompound(ing, corrections))
+    .filter((ing) => ing.name && !namesNothing(ing.name));
 }

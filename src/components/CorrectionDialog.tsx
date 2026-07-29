@@ -77,7 +77,7 @@ export default function CorrectionDialog({
 
         {originalLines.length > 0 && (
           <div className="mt-3 rounded-xl bg-charcoal/[0.04] p-3">
-            <p className="text-xs uppercase tracking-wide text-charcoal/60">The recipe said</p>
+            <p className="text-xs uppercase tracking-wide text-charcoal/70">The recipe said</p>
             <ul className="mt-1 space-y-0.5">
               {originalLines.map((line) => (
                 <li key={line} className="font-mono text-xs text-charcoal/80">
@@ -99,7 +99,7 @@ export default function CorrectionDialog({
           onKeyDown={(e) => e.key === 'Enter' && submit()}
           className="mt-1 w-full rounded-xl border border-charcoal/15 bg-surface px-3 py-2 text-charcoal focus:border-moss focus:outline-none"
         />
-        <p className="mt-2 text-xs text-charcoal/60">
+        <p className="mt-2 text-xs text-charcoal/70">
           Applies to every recipe that says this, now and later. You can undo it in Settings.
         </p>
 

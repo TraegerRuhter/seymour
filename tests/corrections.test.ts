@@ -26,15 +26,15 @@ import type { Recipe } from '../src/lib/types.ts';
  * remaining known gaps. Using a line that already parses correctly would make
  * these tests pass for the wrong reason.
  */
-const GAP = 'Salt and pepper to taste';
+const GAP = '1 cup sugar plus 2 tbsp butter';
 
 function correction(over: Partial<Correction> = {}): Correction {
   return {
     id: 'c1',
     kind: 'line',
     match: GAP,
-    got: { name: 'salt and pepper', quantity: 0, unit: '' },
-    expected: { name: 'salt' },
+    got: { name: 'sugar plus 2 tbsp butter', quantity: 1, unit: 'cup' },
+    expected: { name: 'sugar' },
     createdAt: '2026-01-01T00:00:00.000Z',
     share: false,
     ...over,
@@ -60,17 +60,17 @@ const stored = () => useRecipeStore.getState().recipes.r1.ingredients;
 // --- applying ---------------------------------------------------------------
 
 test('a line correction overrules the parse for that exact line', () => {
-  const index = indexCorrections([correction({ expected: { name: 'salt', unit: 'pinch' } })]);
+  const index = indexCorrections([correction({ expected: { name: 'sugar', unit: 'tbsp' } })]);
   const [parsed] = parseIngredientLines([GAP], index);
-  assert.equal(parsed.name, 'salt');
-  assert.equal(parsed.unit, 'pinch');
+  assert.equal(parsed.name, 'sugar');
+  assert.equal(parsed.unit, 'tbsp');
   assert.equal(parsed.correctedBy, 'c1');
 });
 
 test('matching ignores case and spacing, which a recipe never means', () => {
   const index = indexCorrections([correction()]);
-  const [parsed] = parseIngredientLines(['  salt AND   pepper to taste '], index);
-  assert.equal(parsed.name, 'salt');
+  const [parsed] = parseIngredientLines(['  1 CUP  sugar   plus 2 tbsp butter '], index);
+  assert.equal(parsed.name, 'sugar');
 });
 
 test('a name correction applies to lines it has never seen', () => {
@@ -111,8 +111,8 @@ test('a line correction beats a name correction for the same ingredient', () => 
     correction({
       id: 'name',
       kind: 'name',
-      match: 'salt and pepper',
-      expected: { name: 'pepper' },
+      match: 'sugar plus 2 tbsp butter',
+      expected: { name: 'butter' },
     }),
   ]);
   assert.equal(parseIngredientLines([GAP], index)[0].correctedBy, 'line');
@@ -120,8 +120,10 @@ test('a line correction beats a name correction for the same ingredient', () => 
 
 test('correcting the same thing twice keeps the newer answer', () => {
   useCorrectionStore.getState().replaceAll([]);
-  useCorrectionStore.getState().addCorrection(correction({ expected: { name: 'pepper' } }));
-  useCorrectionStore.getState().addCorrection(correction({ id: 'c2', expected: { name: 'salt' } }));
+  useCorrectionStore.getState().addCorrection(correction({ expected: { name: 'butter' } }));
+  useCorrectionStore
+    .getState()
+    .addCorrection(correction({ id: 'c2', expected: { name: 'sugar' } }));
   const { corrections } = useCorrectionStore.getState();
   assert.equal(corrections.length, 1);
   assert.equal(corrections[0].id, 'c2');
@@ -138,10 +140,10 @@ test('a correction fixes the collection immediately', () => {
   // The whole promise. A rule change needs the Settings button; a correction
   // has to land while you're looking at the row.
   seed([GAP]);
-  assert.equal(stored()[0].name, 'salt and pepper');
+  assert.equal(stored()[0].name, 'sugar plus 2 tbsp butter');
 
   assert.equal(saveCorrection(correction()), 1);
-  assert.equal(stored()[0].name, 'salt');
+  assert.equal(stored()[0].name, 'sugar');
 });
 
 test('the original line is never rewritten by a correction', () => {
@@ -155,10 +157,10 @@ test('withdrawing a correction gives the parser its answer back', () => {
   // trusts a button they can't take back.
   seed([GAP]);
   saveCorrection(correction());
-  assert.equal(stored()[0].name, 'salt');
+  assert.equal(stored()[0].name, 'sugar');
 
   assert.equal(withdrawCorrection('c1'), 1);
-  assert.equal(stored()[0].name, 'salt and pepper');
+  assert.equal(stored()[0].name, 'sugar plus 2 tbsp butter');
   assert.equal(stored()[0].correctedBy, undefined);
 });
 
@@ -173,9 +175,9 @@ test('a correction outranks an amount the API supplied', () => {
       sourceUrl: '',
       ingredients: [
         {
-          name: 'salt and pepper',
-          quantity: 0,
-          unit: '',
+          name: 'sugar plus 2 tbsp butter',
+          quantity: 1,
+          unit: 'cup',
           originalString: GAP,
           parsedBy: 'api',
         },
@@ -185,7 +187,7 @@ test('a correction outranks an amount the API supplied', () => {
     },
   });
   assert.equal(saveCorrection(correction()), 1);
-  assert.equal(stored()[0].name, 'salt');
+  assert.equal(stored()[0].name, 'sugar');
   assert.equal(stored()[0].parsedBy, 'api');
 });
 
@@ -201,7 +203,7 @@ test('recipes the correction does not touch are left alone', () => {
 test('a correction exports as a corpus line', () => {
   // The point of collecting them: a real case someone hit becomes a case the
   // parser is held to forever.
-  assert.equal(asCorpusLine(correction()), `${GAP}\t0\t\tsalt`);
+  assert.equal(asCorpusLine(correction()), `${GAP}\t1\tcup\tsugar`);
 });
 
 test('a name correction exports against the name the parser produced', () => {
@@ -223,7 +225,7 @@ test('sharing is a separate act from correcting', () => {
   useCorrectionStore.getState().replaceAll([correction()]);
   useCorrectionStore.getState().setShare('c1', true);
   assert.equal(useCorrectionStore.getState().corrections[0].share, true);
-  assert.equal(useCorrectionStore.getState().corrections[0].expected.name, 'salt');
+  assert.equal(useCorrectionStore.getState().corrections[0].expected.name, 'sugar');
 });
 
 test('a submitted correction is stamped so it is not sent twice', () => {
