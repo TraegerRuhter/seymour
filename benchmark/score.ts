@@ -20,6 +20,7 @@ import { readFile } from 'node:fs/promises';
 import { parseIngredient } from '../src/lib/ingredient-parser.ts';
 import { normalizeIngredientName } from '../src/lib/normalize.ts';
 import { canonicalUnit } from '../src/lib/units.ts';
+import { ingredientViolations } from '../tests/invariants.ts';
 import { CACHE_PATH, readLabelled, type LabelledLine } from './source.ts';
 
 /**
@@ -85,10 +86,12 @@ async function main() {
   const started = Date.now();
 
   let all = 0;
+  let clean = 0;
   const correct = { quantity: 0, unit: 0, name: 0, every: 0 };
   const nameShape = new Tally();
   const unitPairs = new Tally();
   const quantityShape = new Tally();
+  const brokenRows = new Tally();
 
   for (const row of rows) {
     const expected = expectedFrom(row);
@@ -97,6 +100,17 @@ async function main() {
     all++;
 
     const got = parseIngredient(row.input);
+
+    // Our own standard, applied to somebody else's data. Unlike agreement
+    // with NYT this involves no house style at all: a name holding a unit or
+    // a digit is broken by the rules we wrote, whatever anyone else would
+    // have called that ingredient. It's the honest half of this benchmark.
+    const violations = ingredientViolations(got);
+    if (violations.length === 0) clean++;
+    for (const v of violations) {
+      brokenRows.add(v.slice(v.lastIndexOf('[')), `${row.input}\n      -> ${got.name}`);
+    }
+
     const okQuantity = Math.abs(got.quantity - expected.quantity) < 1e-6;
     const okUnit = got.unit === expected.unit;
     const okName = got.name === expected.name;
@@ -136,7 +150,8 @@ async function main() {
   console.log(`  quantity   ${pct(correct.quantity, all).padStart(6)}`);
   console.log(`  unit       ${pct(correct.unit, all).padStart(6)}`);
   console.log(`  name       ${pct(correct.name, all).padStart(6)}`);
-  console.log(`  all three  ${pct(correct.every, all).padStart(6)}\n`);
+  console.log(`  all three  ${pct(correct.every, all).padStart(6)}`);
+  console.log(`\n  rows that satisfy our own invariants  ${pct(clean, all).padStart(6)}\n`);
 
   const section = (title: string, tally: Tally, n: number) => {
     const top = tally.top(n);
@@ -148,6 +163,7 @@ async function main() {
     }
   };
 
+  section('OUR OWN INVARIANTS, broken', brokenRows, 8);
   section('NAME disagreements', nameShape, 3);
   section('UNIT disagreements (theirs → ours)', unitPairs, 12);
   section('QUANTITY disagreements', quantityShape, 3);

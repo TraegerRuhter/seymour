@@ -1,6 +1,6 @@
 import type { Ingredient } from './types';
 import { applyCorrection, EMPTY_INDEX, type CorrectionIndex } from './corrections';
-import { canonicalUnit, unitSystem } from './units';
+import { canonicalUnit, toBase, unitSystem } from './units';
 import {
   isKnownFoodPhrase,
   MODIFIER_WORDS,
@@ -36,7 +36,10 @@ const NUMBER_RE = /(\d+\s+\d+\s*\/\s*\d+|\d+\s*\/\s*\d+|\d*\.\d+|\d+|[¼½¾⅐�
 const MIXED_NUMBER_REGEX = /^(\d+)\s+(\d+)\s*\/\s*(\d+)$/;
 const FRACTION_REGEX = /^(\d+)\s*\/\s*(\d+)$/;
 const GLUED_FRACTION_REGEX = /^(\d+)([¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/;
-const RANGE_SEPARATOR_REGEX = /^\s*(?:-|–|—|to)\s*/;
+// "or" belongs here as much as "to" does: "3 or 4 stalks lemon grass" is a
+// range, and without it the "or" survived into the name. A digit has to follow,
+// so "1 orange" is untouched.
+const RANGE_SEPARATOR_REGEX = /^\s*(?:-|–|—|to|or)\s*/;
 const LEADING_NUMBER_REGEX = new RegExp(`^${NUMBER_RE.source}`);
 const LEADING_RANGE_REGEX = new RegExp(`${RANGE_SEPARATOR_REGEX.source}${NUMBER_RE.source}`);
 const TWO_WORD_UNIT_REGEX = /^([a-zA-Z]+\.?\s+[a-zA-Z]+\.?)\s+/;
@@ -309,6 +312,67 @@ const readParenthetical: Stage = (r) => {
   };
 };
 
+/**
+ * An open-ended amount: "30 or more basil leaves", "2 cups or so of stock".
+ * The number is real; the hedge after it isn't part of the ingredient.
+ */
+const OPEN_ENDED_REGEX = /^(?:or\s+more|or\s+so|or\s+to\s+taste|plus\s+more)\b[,\s]*/i;
+
+const readOpenEnded: Stage = (r) =>
+  r.quantity > 0 ? { ...r, rest: eatFiller(r.rest.replace(OPEN_ENDED_REGEX, '').trim()) } : r;
+
+/**
+ * A second amount of the same thing: "2 tablespoons plus 2 teaspoons baking
+ * powder", "1/3 cup plus 1/4 cup kirsch".
+ *
+ * Recipes write this when a measurement is awkward in one unit. It is one
+ * ingredient with one total, and without handling it the whole tail — "plus 2
+ * teaspoons baking powder" — became the name.
+ *
+ * The two amounts are summed when they convert to the same base, which is the
+ * common case since the reason for writing it this way is that the amount
+ * doesn't divide neatly. When they don't convert the second is dropped: a
+ * slightly low amount on a correctly-named row beats an exact amount on a row
+ * called "plus 2 teaspoons baking powder".
+ */
+const PLUS_REGEX = /^plus\s+/i;
+
+const round = (n: number) => Math.round(n * 1e4) / 1e4;
+
+const readPlusAmount: Stage = (r) => {
+  if (r.quantity <= 0 || !PLUS_REGEX.test(r.rest)) return r;
+
+  const afterPlus = r.rest.replace(PLUS_REGEX, '').trim();
+  const second = matchLeadingQuantity(afterPlus);
+  if (!second) return r;
+
+  const afterQuantity = afterPlus.slice(second.length).trim();
+  const word = afterQuantity.match(ONE_WORD_UNIT_REGEX);
+  const secondUnit = word && canonicalUnit(word[1]);
+  if (!word || !secondUnit) return r;
+
+  const rest = eatFiller(afterQuantity.slice(word[0].length).trim());
+  if (!rest) return r;
+
+  // Same unit needs no conversion, and shouldn't get one: a round trip
+  // through base units turns 1/3 + 1/4 into something with a tail on it.
+  if (secondUnit === r.unit) {
+    return { ...r, rest, quantity: round(r.quantity + second.value) };
+  }
+
+  const here = toBase(r.quantity, r.unit);
+  const there = toBase(second.value, secondUnit);
+  const perUnit = toBase(1, r.unit);
+  if (!here || !there || !perUnit || here.baseUnit !== there.baseUnit) {
+    return { ...r, rest };
+  }
+  // Back into the unit the line opened with, which is the one the cook wrote.
+  // Rounded because our conversion constants aren't exact multiples of each
+  // other — 3 tsp is 14.78676 mL and a tablespoon is 14.7868 — and a quantity
+  // with fourteen decimal places on it helps nobody.
+  return { ...r, rest, quantity: round((here.quantity + there.quantity) / perUnit.quantity) };
+};
+
 /** The same amount restated in the other system — see `eatEcho`. */
 const readEcho: Stage = (r) => (r.quantity > 0 ? { ...r, rest: eatEcho(r.rest, r.unit) } : r);
 
@@ -564,6 +628,8 @@ const STAGES: Stage[] = [
   readUnit,
   readParenthetical,
   readEcho,
+  readPlusAmount,
+  readOpenEnded,
   splitNotes,
   readAlternative,
   truncateAtInstruction,
