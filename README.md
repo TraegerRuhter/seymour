@@ -138,6 +138,11 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
+Working on the code rather than running it? [`CLAUDE.md`](CLAUDE.md) is the handoff
+document: the branch-to-merge workflow, how the ingredient parser's corpus/invariants/
+benchmark fit together, the conventions that are load-bearing, and the mistakes that have
+already been paid for once.
+
 Production:
 
 ```bash
