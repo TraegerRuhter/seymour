@@ -182,6 +182,23 @@ cilantro (or parsley)	0		cilantro
 1 cup water combine with the cornstarch	1	cup	water
 1 cup rice rinse until the water runs clear	1	cup	rice
 
+# --- how much it comes to once it's prepared -------------------------------
+# "to yield 1 tablespoon" restates the amount after chopping. You buy the two
+# sprigs, so the count on the row is already right and the clause is a note.
+# Left in the name it also fed readTrailingUnit the *yield's* unit: the ginger
+# line below used to come out measured in tablespoons with no amount at all.
+2 sprigs fresh oregano to yield 1 tablespoon chopped	2	sprig	oregano
+1 small red onion to yield 1/4 cup chopped	1		red onion
+6 or 7 sprigs marjoram to make about 2 teaspoons finely chopped	6.5	sprig	marjoram
+1 bunch parsley to equal 1/2 cup chopped	1	bunch	parsley
+Fresh ginger to yield 1 tablespoon, coarsely grated	0		ginger
+# "Enough" is a hedge, not a name. Without stripping it, the alternation below
+# read as two two-word options and confidently kept "enough fresh".
+Enough fresh or frozen ginger to yield 1 tablespoon grated	0		ginger
+# No amount after the clause means it says what the flour is *for*, not how
+# much it comes to. Cutting there would cut the point of the line.
+1 tablespoon flour to make a roux	1	tbsp	flour to make a roux
+
 # --- verbs that are part of a name and must survive ------------------------
 1 cup whipping cream	1	cup	whipping cream
 2 tbsp cooking oil	2	tbsp	cooking oil

@@ -113,13 +113,13 @@ name `lemon, thinly`, which is nobody's ingredient.
 First run, at `f6061d2` plus the corrections engine — all ten items of
 `docs/shopping-parser.md` shipped:
 
-| field | first run | after the first pass of fixes |
-|---|---|---|
-| quantity | 93.0% | 93.5% |
-| unit | 91.8% | 92.0% |
-| name | 69.5% | 70.6% |
-| all three | 63.3% | 63.6% |
-| **satisfies our own invariants** | 97.3% | **98.1%** |
+| field | first run | after the first pass of fixes | after the yield clause |
+|---|---|---|---|
+| quantity | 93.0% | 93.5% | 93.5% |
+| unit | 91.8% | 92.0% | 92.0% |
+| name | 69.5% | 70.6% | 70.7% |
+| all three | 63.3% | 63.6% | 63.7% |
+| **satisfies our own invariants** | 97.3% | 98.1% | **98.2%** |
 
 The last row is the one worth watching. Agreement with NYT is partly a
 measure of whose house style you prefer; "does this row break the rules we
@@ -143,3 +143,11 @@ What that first run surfaced, in order of how often it happens:
 
 Note that (2) and (3) are exactly the class of thing the golden corpus could
 never have found on its own: nobody hit them, so nobody wrote them down.
+
+And a fifth, which the second run surfaced and which is now fixed — **"2 sprigs
+fresh oregano to yield 1 tablespoon chopped"**. 276 lines state how much the
+ingredient comes to once it's prepared, and the clause stayed in the name.
+Worse, `readTrailingUnit` then took the *yield's* unit as the row's own, so
+"Fresh ginger to yield 1 tablespoon, coarsely grated" was measured in
+tablespoons with no amount at all. 143 of those lines broke an invariant; 10
+still do, and they are the parenthesised form, which is a different shape.

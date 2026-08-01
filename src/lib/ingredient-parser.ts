@@ -54,9 +54,14 @@ const PAREN_REGEX = /^\(([^)]*)\)\s*/;
  * single place, right after the unit, which meant the parenthetical branch
  * below could eat "(14 oz) cans" and expose a fresh "of" that nothing removed:
  * "2 (14 oz) cans of tomatoes" came out named "of tomato".
+ *
+ * "enough" is here for the same reason as "about" — "Enough fresh ginger to
+ * yield 1 tablespoon" is a hedge in front of an ingredient, not part of its
+ * name. Leaving it on also broke `chooseOption`, which saw "Enough fresh or
+ * frozen ginger" as two two-word options and confidently kept "enough fresh".
  */
 const FILLER_REGEX =
-  /^(?:of\s+the|of|about|approx\.?|approximately|around|roughly|scant|generous|heaping|heaped|rounded)\s+/i;
+  /^(?:of\s+the|of|about|approx\.?|approximately|around|roughly|scant|generous|heaping|heaped|rounded|enough)\s+/i;
 const eatFiller = (s: string) => s.replace(FILLER_REGEX, '').trim();
 
 /**
@@ -528,6 +533,55 @@ const splitNotes: Stage = (r) => {
 };
 
 /**
+ * A clause restating how much the ingredient comes to once it's prepared:
+ * "2 sprigs fresh oregano to yield 1 tablespoon chopped", "1 small red onion
+ * to yield 1/4 cup chopped", "Grated zest of 2 oranges to make 3 tablespoons".
+ *
+ * You buy the two sprigs, not the tablespoon, so the count already on the row
+ * is the right one and the clause is a note about it. Without this the whole
+ * clause stayed in the name — and worse, `readTrailingUnit` then took the
+ * *yield's* unit as the row's unit: "Fresh ginger to yield 1 tablespoon,
+ * coarsely grated" came out measured in tablespoons with no amount at all,
+ * which is a `unit-without-amount` row on the shopping list.
+ *
+ * Whitespace before the "to" rather than `\b`, which a hyphen satisfies.
+ */
+const YIELD_CLAUSE_REGEX = /(?:^|\s)to\s+(?:yield|make|equal)(?:\s+|$)/i;
+
+/**
+ * Cuts the yield clause off the name, with the same timidity as
+ * `truncateAtInstruction` — getting this wrong deletes something you needed
+ * to buy:
+ *
+ *   - **not at the first word.** Nothing before it means nothing to keep.
+ *   - **an amount has to follow.** That is what makes it a restatement rather
+ *     than a purpose: "1 tablespoon flour to make a roux" says what the flour
+ *     is *for*, and cutting there would be cutting the point of the line. Only
+ *     "to make 3 tablespoons" restates a measurement.
+ *   - **never down to a joining word**, which `parseIngredientLines` would
+ *     then drop as a row that names nothing.
+ *
+ * Runs before `readAlternative` so the alternation is chosen from a clean
+ * name: "Fresh or frozen ginger to yield 1 tablespoon" has to reach it as
+ * "Fresh or frozen ginger" for "fresh ginger" to be recognizable as the food.
+ */
+const truncateAtYield: Stage = (r) => {
+  const match = r.name.match(YIELD_CLAUSE_REGEX);
+  if (!match || match.index === undefined || match.index === 0) return r;
+
+  // eatFiller first: "to make about 2 teaspoons finely chopped" is still a
+  // restatement, and the hedge sits between the clause and its number.
+  const after = eatFiller(r.name.slice(match.index + match[0].length).trim());
+  if (!matchLeadingQuantity(after)) return r;
+
+  const name = r.name.slice(0, match.index).trim().replace(TRAILING_CONNECTIVE, '').trim();
+  if (!name || JOINING_WORD_ONLY.test(name)) return r;
+
+  const dropped = r.name.slice(match.index).trim();
+  return { ...r, name, notes: r.notes ? `${dropped}; ${r.notes}` : dropped };
+};
+
+/**
  * An alternative the recipe offered. The first option is what goes on the list
  * — you buy one of them, not a hybrid — and the rest becomes a note so the
  * choice survives. The full line is shown verbatim on the recipe, in cook mode
@@ -777,6 +831,7 @@ const STAGES: Stage[] = [
   readPlusAmount,
   readOpenEnded,
   splitNotes,
+  truncateAtYield,
   readAlternative,
   truncateAtInstruction,
   readTrailingUnit,
