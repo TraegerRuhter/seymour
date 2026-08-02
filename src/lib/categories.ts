@@ -137,6 +137,9 @@ const KEYWORDS: Record<Exclude<Category, 'Other'>, string[]> = {
     'scallop',
     'mussel',
     'clam',
+    // Safe alongside "oyster sauce" in the condiments list: LOOKUP is sorted
+    // longest-first, so the sauce still wins for its own name.
+    'oyster',
     'crab',
     'lobster',
     'steak',
@@ -191,6 +194,8 @@ const KEYWORDS: Record<Exclude<Category, 'Other'>, string[]> = {
     'bagel',
     'english muffin',
     'brioche',
+    // Longer than "oyster", so oyster crackers stay out of the meat aisle.
+    'cracker',
   ],
   Frozen: ['frozen'],
   Pantry: [

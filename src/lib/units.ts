@@ -120,6 +120,12 @@ const UNIT_ALIASES: Record<string, string> = {
   boxes: 'box',
   carton: 'carton',
   cartons: 'carton',
+  // A tub of oysters, sour cream, yoghurt. Kept distinct from a carton, which
+  // in a recipe almost always means the milk/cream shape.
+  container: 'container',
+  containers: 'container',
+  tub: 'container',
+  tubs: 'container',
   dozen: 'dozen',
   dozens: 'dozen',
   slice: 'slice',
@@ -332,6 +338,7 @@ export function displayUnit(unit: string, quantity: number): string {
     bag: 'bags',
     box: 'boxes',
     carton: 'cartons',
+    container: 'containers',
     slice: 'slices',
     stick: 'sticks',
     stalk: 'stalks',
