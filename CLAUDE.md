@@ -98,7 +98,8 @@ it shipped. What follows is how the machinery fits together.
 const STAGES: Stage[] = [
   readLeadingFiller, readDerived, readQuantity, readSize, readBareUnit, readUnit,
   readParenthetical, readEcho, readPlusAmount, readOpenEnded, splitNotes,
-  readAlternative, truncateAtInstruction, readTrailingUnit, normalizeName, readQualifier,
+  truncateAtYield, readAlternative, truncateAtInstruction, readTrailingUnit,
+  normalizeName, readQualifier,
 ];
 ```
 
@@ -181,15 +182,15 @@ gate — it's a measurement.
 `npm run benchmark` scores **every** CSV/TSV/TXT in that directory — drop a file
 in and it gets scored, no adapter to write.
 
-Current numbers, at `addd1a2`:
+Current numbers:
 
 | field | score |
 | --- | --- |
 | quantity | 93.5% |
 | unit | 92.0% |
-| name | 70.6% |
-| **satisfies our own invariants** | **98.1%** |
-| ingredients our vocabulary doesn't recognize | 25.4% |
+| name | 70.7% |
+| **satisfies our own invariants** | **98.2%** |
+| ingredients our vocabulary doesn't recognize | 25.5% |
 
 **The name figure is not an error rate, and chasing it will make the app
 worse.** A large part of the gap is house style — NYT strips every descriptor
@@ -276,9 +277,26 @@ row in the shop; you can't recover a wrong one.
 
 - **`pkill -f "next dev"` kills the shell** (exit 144) — the pattern matches the
   heredoc running it. Use a different port instead of killing anything.
-- **Playwright**: Chromium is pre-installed at `/opt/pw-browsers/chromium`.
-  Never run `playwright install`. `@axe-core/playwright` needs
-  `browser.newContext()`, not `newPage()` directly.
+- **Playwright**: Chromium is pre-installed under `/opt/pw-browsers`. Never run
+  `playwright install`. `@axe-core/playwright` needs `browser.newContext()`,
+  not `newPage()` directly.
+- **`npm run e2e` fails outright in this sandbox**, and it is not your change.
+  The pre-installed browsers are build `1194`; `@playwright/test` 1.61 asks for
+  `1228` and for `chrome-headless-shell`, which isn't there at all — every test
+  dies with "Executable doesn't exist". Run the suite against the build that is
+  installed, with a throwaway config you do **not** commit:
+
+  ```ts
+  // playwright.local.ts — delete before committing
+  import base from './playwright.config';
+  export default { ...base, projects: [{ name: 'chromium', use: {
+    ...base.projects![0].use,
+    launchOptions: { executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' },
+  } }] };
+  ```
+
+  `npx playwright test -c playwright.local.ts` — all 99 pass that way. CI has
+  matching browsers, so don't "fix" the committed config.
 - **The dev server caches stale bundles after a `git mv`.** If a rename produces
   impossible errors, restart it.
 - **The outbound proxy blocks nearly every host.** It reaches
@@ -329,7 +347,14 @@ These are not negotiable and not summarizable.
 **Good next moves**, roughly in order of value per hour:
 
 1. Run the benchmark, take the top disagreement shape, fix it, add the case to
-   the corpus. That loop has produced every parser gain so far.
+   the corpus. That loop has produced every parser gain so far. The last pass
+   took the yield clause ("2 sprigs oregano to yield 1 tablespoon chopped",
+   276 lines). The biggest remaining shape under `name-holds-a-measurement` is
+   a *second ingredient* joined to the first — "1 egg yolk beaten with 1
+   teaspoon cold water", "1/4 pound butter cut into 12 slices" — where the
+   whole clause stays in the name. Note this is a harder call than the yield
+   clause: the second ingredient is often something you genuinely have to buy,
+   so cutting is not obviously right and splitting may be the better shape.
 2. Promote `~1 cup sugar plus 2 tbsp butter` — a `plus` *after* the name still
    leaves the second amount in the name. It's the only remaining known gap.
 3. Mine `parser_reports` once real corrections accumulate; `asCorpusLine`

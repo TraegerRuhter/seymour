@@ -55,6 +55,10 @@ half-and-half	0		half-and-half
 1 6-ounce can tomato paste	1	can	tomato paste
 1 6-inch white-corn tortilla	1		white-corn tortilla
 2 3-inch cinnamon sticks	2	stick	cinnamon
+# The size is unhyphenated here, and the shelf-word is "container" — which was
+# not in the unit list, so the whole tail stayed in the name. You take one
+# container off the shelf, which is the same reason "2 28-ounce cans" is 2 cans.
+1 16 ounce container of fresh raw oysters in liquid	1	container	oysters in liquid
 
 # --- parentheticals (item 1) ----------------------------------------------
 1 (15 oz) can black beans, drained and rinsed	1	can	black bean
@@ -182,6 +186,23 @@ cilantro (or parsley)	0		cilantro
 1 cup water combine with the cornstarch	1	cup	water
 1 cup rice rinse until the water runs clear	1	cup	rice
 
+# --- how much it comes to once it's prepared -------------------------------
+# "to yield 1 tablespoon" restates the amount after chopping. You buy the two
+# sprigs, so the count on the row is already right and the clause is a note.
+# Left in the name it also fed readTrailingUnit the *yield's* unit: the ginger
+# line below used to come out measured in tablespoons with no amount at all.
+2 sprigs fresh oregano to yield 1 tablespoon chopped	2	sprig	oregano
+1 small red onion to yield 1/4 cup chopped	1		red onion
+6 or 7 sprigs marjoram to make about 2 teaspoons finely chopped	6.5	sprig	marjoram
+1 bunch parsley to equal 1/2 cup chopped	1	bunch	parsley
+Fresh ginger to yield 1 tablespoon, coarsely grated	0		ginger
+# "Enough" is a hedge, not a name. Without stripping it, the alternation below
+# read as two two-word options and confidently kept "enough fresh".
+Enough fresh or frozen ginger to yield 1 tablespoon grated	0		ginger
+# No amount after the clause means it says what the flour is *for*, not how
+# much it comes to. Cutting there would cut the point of the line.
+1 tablespoon flour to make a roux	1	tbsp	flour to make a roux
+
 # --- verbs that are part of a name and must survive ------------------------
 1 cup whipping cream	1	cup	whipping cream
 2 tbsp cooking oil	2	tbsp	cooking oil
@@ -216,3 +237,21 @@ juice of 2 limes	2		lime juice
 # A "plus" after the name is the same shape and is still a gap: the second
 # amount stays in the name.
 ~1 cup sugar plus 2 tbsp butter	1	cup	sugar
+
+# The same amount stated twice with nothing between the two — what a recipe
+# plugin emits when the page shows both units ("1 stick" in black, "1/2 cup of
+# butter" in grey) and the JSON-LD flattens them into one string.
+#
+# This is a gap on purpose, not an oversight. The shape is exactly the shape of
+# an *additive* compound amount:
+#
+#     1 pound 2 ounces ground beef   — 1 lb PLUS 2 oz, one and a bit pounds
+#     1 stick 1/2 cup of butter      — 1 stick IS 1/2 cup, one amount twice
+#
+# Nothing structural separates them, and `stick` is deliberately non-convertible
+# (a cinnamon stick is not half a cup), so no conversion test can settle it
+# either. 23 lines in 179,000 have this shape. Guessing would turn a correct
+# "1 lb 2 oz" into a wrong one to fix a rarer case, which is the wrong trade —
+# the row draws an invariant flag as it is, and "This is wrong" fixes it for
+# good.
+~1 stick 1/2 cup of butter	1	stick	butter
