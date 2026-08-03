@@ -113,11 +113,12 @@ Zustand (persisted to IndexedDB via localforage) · nanoid · Supabase (optional
 Two documents drive how this looks and how it talks, and they're worth reading before
 changing either:
 
-- **[`docs/design-prospectus.md`](docs/design-prospectus.md)** — the diagnosis and the plan.
-  It starts from a specific complaint (the app worked, but felt like a calculator), names
-  what makes generated interfaces look generated, picks a direction — *the recipe box:
-  material, tactile, worn* — and lists the interventions with a status column so it's clear
-  what's been done.
+- **[`docs/design-prospectus.md`](docs/design-prospectus.md)** — the diagnosis, and the
+  record of what was done about it. It starts from a specific complaint (the app worked, but
+  felt like a calculator), names what makes generated interfaces look generated, and picks a
+  direction — *a creature you keep alive, on surfaces that are material, tactile, worn*. The
+  last section is the one to read before changing anything visual: it's a list of refusals,
+  and they still hold.
 - **[`docs/voice.md`](docs/voice.md)** — how Seymour talks, and more importantly *where he's
   allowed to*. The rule is **personality at the thresholds, never on the work surfaces**:
   empty states and a finished shopping list get a remark; the recipe form, an ingredient
@@ -193,6 +194,20 @@ shopping list, archived plans, and pantry staples follow you to another device.
 4. Sign in from Settings → Account. Sign-in is passwordless (a magic link emailed to you) —
    no password to set or lose.
 
+**Keeping the project awake.** A free-tier Supabase project is paused after 7 days with no
+activity, and it does not come back on its own — restoring it is a manual click, and sync is
+broken for everyone until someone notices.
+[`.github/workflows/supabase-keepalive.yml`](.github/workflows/supabase-keepalive.yml) runs
+one real query a day to stop the clock. It needs two repository secrets, `SUPABASE_URL` and
+`SUPABASE_ANON_KEY` (Settings → Secrets and variables → Actions); without them the workflow
+fails loudly rather than passing while doing nothing.
+
+One caveat worth knowing, because it defeats keepalives of this kind quietly: **GitHub
+disables scheduled workflows in a repository after 60 days with no commits.** A repo that
+goes quiet loses its keepalive, and the project pauses a week later. GitHub emails the repo
+admins when it happens. If this project is going to sit untouched for months at a time, the
+ping belongs somewhere not tied to repo activity.
+
 **How sync works.** Each record — a recipe, a shopping-list item, a day of the meal plan,
 an archived plan — syncs independently, tagged with a server-set `updated_at`. That means
 editing a recipe on your phone and checking off a shopping-list item on your laptop at the
@@ -223,8 +238,9 @@ For the full pre-merge validation suite, run:
 npm run check
 ```
 
-That command runs the unit tests, TypeScript type checking, and a production
-Next.js build. The same command runs in GitHub Actions for pushes to `main` and
+That command runs the unit tests, TypeScript type checking, ESLint, a Prettier
+formatting check, and a production Next.js build — in that order, stopping at the
+first failure. The same command runs in GitHub Actions for pushes to `main` and
 pull requests.
 
 End-to-end tests (Playwright, under `e2e/`) drive a real browser through the
