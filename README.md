@@ -113,11 +113,12 @@ Zustand (persisted to IndexedDB via localforage) · nanoid · Supabase (optional
 Two documents drive how this looks and how it talks, and they're worth reading before
 changing either:
 
-- **[`docs/design-prospectus.md`](docs/design-prospectus.md)** — the diagnosis and the plan.
-  It starts from a specific complaint (the app worked, but felt like a calculator), names
-  what makes generated interfaces look generated, picks a direction — *the recipe box:
-  material, tactile, worn* — and lists the interventions with a status column so it's clear
-  what's been done.
+- **[`docs/design-prospectus.md`](docs/design-prospectus.md)** — the diagnosis, and the
+  record of what was done about it. It starts from a specific complaint (the app worked, but
+  felt like a calculator), names what makes generated interfaces look generated, and picks a
+  direction — *a creature you keep alive, on surfaces that are material, tactile, worn*. The
+  last section is the one to read before changing anything visual: it's a list of refusals,
+  and they still hold.
 - **[`docs/voice.md`](docs/voice.md)** — how Seymour talks, and more importantly *where he's
   allowed to*. The rule is **personality at the thresholds, never on the work surfaces**:
   empty states and a finished shopping list get a remark; the recipe form, an ingredient
@@ -237,8 +238,9 @@ For the full pre-merge validation suite, run:
 npm run check
 ```
 
-That command runs the unit tests, TypeScript type checking, and a production
-Next.js build. The same command runs in GitHub Actions for pushes to `main` and
+That command runs the unit tests, TypeScript type checking, ESLint, a Prettier
+formatting check, and a production Next.js build — in that order, stopping at the
+first failure. The same command runs in GitHub Actions for pushes to `main` and
 pull requests.
 
 End-to-end tests (Playwright, under `e2e/`) drive a real browser through the

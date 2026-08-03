@@ -10,9 +10,9 @@ Read this first, then whichever of these the task touches:
 | Document | When to read it |
 | --- | --- |
 | [`README.md`](README.md) | What the app does, how to run it, how sync and deployment work |
-| [`docs/design-prospectus.md`](docs/design-prospectus.md) | Anything visual. It's the diagnosis and the plan, with a status column |
+| [`docs/design-prospectus.md`](docs/design-prospectus.md) | Anything visual. The diagnosis, the direction chosen, and the refusals |
 | [`docs/voice.md`](docs/voice.md) | Anything with words in it |
-| [`docs/shopping-parser.md`](docs/shopping-parser.md) | The ingredient parser. Ten items, all shipped |
+| [`docs/shopping-parser.md`](docs/shopping-parser.md) | Why the parser makes the calls it does |
 | [`benchmark/README.md`](benchmark/README.md) | Measuring the parser against outside data |
 
 ---
@@ -86,8 +86,8 @@ bump and a migration, or existing users silently reset to defaults.
 ## The parser, in depth
 
 This is the largest and most-worked-on subsystem, and the one most likely to be
-what you're here for. `docs/shopping-parser.md` is ten for ten — every item on
-it shipped. What follows is how the machinery fits together.
+what you're here for. `docs/shopping-parser.md` records why it makes the calls
+it does; what follows is how the machinery fits together.
 
 ### The pipeline
 
@@ -325,8 +325,8 @@ These are not negotiable and not summarizable.
 
 ## Where things stand
 
-`main` is at `addd1a2`. 425 unit tests, all passing. All ten items of
-`docs/shopping-parser.md` shipped.
+425 unit tests, all passing. All ten items of `docs/shopping-parser.md` shipped,
+and all twelve of `docs/design-prospectus.md`.
 
 **Waiting on the user, not on code:**
 
@@ -334,9 +334,11 @@ These are not negotiable and not summarizable.
   `parser_reports`; without it the Share toggle fails quietly. Safe to re-run —
   everything is `if not exists`.
 - **Settings → Ingredient lines → Re-read ingredients.** Parser improvements
-  only reach recipes you already saved through that button.
-- A stale remote branch `fix/dashboard-meal-keys` needs deleting from the GitHub
-  UI.
+  only reach recipes you already saved through that button. Worth pressing after
+  every parser change, and easy to forget — a fix can look like it did nothing.
+- **Two repository secrets** for the Supabase keepalive workflow, `SUPABASE_URL`
+  and `SUPABASE_ANON_KEY`. Without them the scheduled run fails rather than
+  passing quietly.
 
 **Deliberately not built:**
 
@@ -356,6 +358,8 @@ These are not negotiable and not summarizable.
    clause: the second ingredient is often something you genuinely have to buy,
    so cutting is not obviously right and splitting may be the better shape.
 2. Promote `~1 cup sugar plus 2 tbsp butter` — a `plus` *after* the name still
-   leaves the second amount in the name. It's the only remaining known gap.
+   leaves the second amount in the name. One of two known gaps; the other,
+   `~1 stick 1/2 cup of butter`, is marked deliberate and the comment above it
+   explains why guessing there would cost more than it buys.
 3. Mine `parser_reports` once real corrections accumulate; `asCorpusLine`
    already formats them for the corpus.
