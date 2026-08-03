@@ -193,6 +193,20 @@ shopping list, archived plans, and pantry staples follow you to another device.
 4. Sign in from Settings → Account. Sign-in is passwordless (a magic link emailed to you) —
    no password to set or lose.
 
+**Keeping the project awake.** A free-tier Supabase project is paused after 7 days with no
+activity, and it does not come back on its own — restoring it is a manual click, and sync is
+broken for everyone until someone notices.
+[`.github/workflows/supabase-keepalive.yml`](.github/workflows/supabase-keepalive.yml) runs
+one real query a day to stop the clock. It needs two repository secrets, `SUPABASE_URL` and
+`SUPABASE_ANON_KEY` (Settings → Secrets and variables → Actions); without them the workflow
+fails loudly rather than passing while doing nothing.
+
+One caveat worth knowing, because it defeats keepalives of this kind quietly: **GitHub
+disables scheduled workflows in a repository after 60 days with no commits.** A repo that
+goes quiet loses its keepalive, and the project pauses a week later. GitHub emails the repo
+admins when it happens. If this project is going to sit untouched for months at a time, the
+ping belongs somewhere not tied to repo activity.
+
 **How sync works.** Each record — a recipe, a shopping-list item, a day of the meal plan,
 an archived plan — syncs independently, tagged with a server-set `updated_at`. That means
 editing a recipe on your phone and checking off a shopping-list item on your laptop at the

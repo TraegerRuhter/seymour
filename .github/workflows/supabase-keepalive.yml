@@ -1,0 +1,117 @@
+# Keeps the Supabase project from being paused.
+#
+# Free-tier projects are paused after 7 days with no activity, and a paused
+# project does not wake up on its own — restoring it is a manual click in the
+# dashboard, and sync is broken for everyone until someone notices. This runs a
+# real query once a day so the clock never gets close.
+#
+# Daily rather than every few days on purpose. GitHub's scheduled runs are
+# best-effort: they are queued, they can be delayed by tens of minutes under
+# load, and they are sometimes dropped entirely. At a 2–3 day interval two
+# skipped runs put you past the deadline; at one day, six would have to fail in
+# a row. The job takes seconds, so the margin is close to free.
+#
+# ---------------------------------------------------------------------------
+# THE TRAP, which defeats every keepalive of this kind if you don't know it:
+#
+#   GitHub automatically disables scheduled workflows in a repository after 60
+#   days with no commit activity.
+#
+# So a repo that goes quiet — exactly the repo whose Supabase project is most
+# likely to idle out — loses its keepalive silently, and the project pauses a
+# week later. GitHub emails the repo admins when it does this. If this project
+# is going to sit untouched for two months at a time, this workflow is not
+# enough on its own and the ping wants to live somewhere that isn't tied to
+# repo activity (an external cron, or a Supabase scheduled function).
+# ---------------------------------------------------------------------------
+#
+# Setup — two repository secrets (Settings → Secrets and variables → Actions):
+#
+#   SUPABASE_URL        https://<project-ref>.supabase.co
+#   SUPABASE_ANON_KEY   the anon/publishable key
+#
+# The anon key is the same one already shipped to every browser in
+# NEXT_PUBLIC_SUPABASE_ANON_KEY, and it is safe there only because every table
+# has an owner-only RLS policy. It is kept in a secret here anyway: there is no
+# reason to paste a project's identity into a public file, and a secret is the
+# thing you rotate if that assumption ever changes.
+#
+# Verify it with Actions → Supabase keepalive → Run workflow before trusting
+# the schedule.
+
+name: Supabase keepalive
+
+on:
+  schedule:
+    # 04:17 UTC daily. Deliberately not on the hour — GitHub queues every
+    # cron-triggered job in the fleet at once, and the top of the hour is the
+    # worst-served slot.
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+# Nothing here reads or writes the repository.
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Query the database
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
+            echo "::error::Set the SUPABASE_URL and SUPABASE_ANON_KEY repository secrets (see the comment at the top of this file)."
+            exit 1
+          fi
+
+          # Trailing slashes are easy to paste in and would produce "//rest".
+          base="${SUPABASE_URL%/}"
+
+          # A real select against a real table, not the PostgREST root. The
+          # root serves a cached schema description and can be answered without
+          # touching Postgres, which is exactly the request that would let the
+          # project idle out while the workflow reported success every day.
+          #
+          # RLS is owner-only and this is the anon role, so the query matches no
+          # rows and returns "[]" with HTTP 200. An empty result is the expected
+          # answer — the point is that Postgres executed the query.
+          url="$base/rest/v1/recipes?select=id&limit=1"
+
+          for attempt in 1 2 3; do
+            # Truncate first. When curl cannot connect at all it never writes
+            # the file, and the error report below would otherwise print the
+            # body of a *previous* attempt — which reads as a real answer from
+            # a server that was never reached.
+            : > /tmp/ping-body
+
+            status=$(curl -sS --max-time 30 -o /tmp/ping-body -w '%{http_code}' \
+              -H "apikey: $SUPABASE_ANON_KEY" \
+              -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+              -H "Accept: application/json" \
+              "$url") || status="000"
+
+            if [ "$status" = "200" ]; then
+              echo "HTTP 200 — database queried, project is awake."
+              exit 0
+            fi
+
+            echo "Attempt $attempt: HTTP $status"
+            if [ "$attempt" -lt 3 ]; then sleep 15; fi
+          done
+
+          # Only the response body — it never contains the key we sent.
+          echo "::error::Supabase ping failed after 3 attempts (last status: $status)."
+          echo "Response body:"
+          cat /tmp/ping-body || true
+          echo
+          echo "HTTP 401/403 usually means the anon key was rotated; update the SUPABASE_ANON_KEY secret."
+          echo "A connection failure (000) or 503 can mean the project is already paused — a paused"
+          echo "project cannot be woken by a request and has to be restored from the dashboard."
+          exit 1
