@@ -270,6 +270,57 @@ row in the shop; you can't recover a wrong one.
 - **`0.7` alpha is the AA floor on this palette.** `tests/palette.test.ts` pins
   it and greps `src/` for `text-*/60` and below. Verified to fire by putting a
   `/60` back.
+- **A mechanical substitution matches the helper you just wrote.** Replacing
+  five copies of an idiom with a call to a new `syncDay()` also rewrote
+  `syncDay`'s own body, leaving `syncDay(i) { syncDay(i); }` — infinite
+  recursion that typechecks, lints clean, and passes every test that doesn't
+  reach it. Count the call sites afterwards; the number you expect and the
+  number you get are the cheapest check there is.
+- **A hardcoded colour that should track a token will drift, and only half of
+  it will.** The PWA chrome sat a shade off `--color-bg` for months. What
+  identified it as a mistake rather than a choice was the asymmetry — the dark
+  value matched its token exactly and the light one didn't. When two things are
+  supposed to agree, pin them in a test rather than trusting the next person to
+  update both.
+
+---
+
+## Things that look wrong and aren't
+
+A repo sweep keeps rediscovering the same handful of suspicious-looking things.
+Each of these was investigated and deliberately left alone; changing one would
+make the codebase worse, not better.
+
+- **`link-safety.ts` duplicates `url-safety.ts`.** It doesn't. `link-safety` is
+  client-safe and answers "is this href safe to render"; `url-safety` does the
+  SSRF checks and imports Node's `dns`. Merging them drags `dns` into the
+  browser bundle. The comment at the top of `link-safety.ts` says so — believe
+  it.
+- **`.recipe-sheet` is defined three times at the top level of `globals.css`.**
+  One of those is a *grouped* selector shared with `.index-card` (the paper
+  tokens). Another is a one-property block holding `--rs-head-h`, sitting
+  beside the `::after` that consumes it and under the comment explaining why
+  it's a variable at all. Merging them separates the value from its only reader.
+- **~25 symbols are exported but used only inside their own file.** Nearly all
+  are types naming an exported function's parameter or return, which callers
+  need to be able to name. Un-exporting them is churn for a cosmetic win.
+- **The `pull*` functions in `sync.ts` are exported but only called by
+  `pullAll`.** Same category. Left as-is.
+
+The sweep that found these is worth repeating rather than reinventing: scan
+every exported symbol against every reference in `src`, `tests`, `e2e` and
+`benchmark` — and split "referenced nowhere at all" from "referenced only in
+its own file", because they mean different things. Then the cheap ones: custom
+CSS classes against the components, files in `public/` against everything,
+declared dependencies against imports, file paths mentioned in comments against
+the filesystem, and every command in the docs against `package.json`. The first
+pass of that turned up three dead functions, one dead CSS rule, and two README
+claims that contradicted the code.
+
+**When you add a checker, verify it against the real artifact, not a synthetic
+string.** Break the real `schema.sql`, or the real `manifest.json`, watch the
+test fail, then put it back and confirm an empty diff. A checker that only ever
+sees its own fixtures is the same failure as one that can't fail at all.
 
 ---
 
@@ -331,6 +382,12 @@ These are not negotiable and not summarizable.
   restricts it to `auth.uid()`. That is the only reason it's safe, so **never
   add a table without an RLS policy.**
 
+  `tests/schema-rls.test.ts` now enforces this against the real `schema.sql`, so
+  a table added without one fails the build rather than shipping quietly. It
+  also rejects a policy that doesn't mention `auth.uid()`: `using (true)` is RLS
+  in name only, and it satisfies any check that merely asks whether a policy
+  exists.
+
 ---
 
 ## Where things stand
@@ -371,5 +428,23 @@ and all twelve of `docs/design-prospectus.md`.
    leaves the second amount in the name. One of two known gaps; the other,
    `~1 stick 1/2 cup of butter`, is marked deliberate and the comment above it
    explains why guessing there would cost more than it buys.
-3. Mine `parser_reports` once real corrections accumulate; `asCorpusLine`
+3. **Five confirmed defects in the JSON-LD scraper**, all found by probing
+   `extractRecipeFromHtml` with realistic shapes and none yet fixed. Each makes
+   some site's import fall through to the AI fallback — an OpenAI call and a
+   worse parse — or fail outright with "No structured recipe data found":
+
+   | shape | cause |
+   | --- | --- |
+   | two `Recipe` nodes in one `@graph`, a stub before the real one | `findRecipeNode` returns the *first* match, then `extractRecipeFromHtml` moves to the next script *block* and never revisits that graph |
+   | `recipeIngredient` holding objects rather than strings | `asText` returns `''` for objects, `.filter(Boolean)` empties the array, and an empty array reads as "not a recipe" |
+   | `@type: "https://schema.org/Recipe"` | `isRecipeNode` tests `=== 'recipe'`; the fully-qualified URL form is valid JSON-LD |
+   | a Recipe nested more than six levels deep | `findRecipeNode` gives up at `depth > 6` |
+   | JSON-LD wrapped in `//<![CDATA[ … ]]>` | `JSON.parse` chokes; the cleanup pass only strips trailing commas |
+
+   The first is the one to take first — it's the exact scenario the microdata
+   fallback's own comment describes (a stub node carrying just
+   name/image/aggregateRating), and it's what an SEO plugin emits alongside the
+   recipe plugin's real node.
+
+4. Mine `parser_reports` once real corrections accumulate; `asCorpusLine`
    already formats them for the corpus.
