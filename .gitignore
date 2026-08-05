@@ -29,6 +29,11 @@ next-env.d.ts
 /playwright-report/
 /test-results/
 /blob-report/
+# The throwaway config for running the suite against this sandbox's older
+# pre-installed browsers — see "Environment traps" in CLAUDE.md. Ignored rather
+# than merely "remember to delete it", because forgetting silently pins CI to a
+# browser path that only exists here.
+/playwright.local.ts
 
 # Benchmark corpus: ~20 MB, fetched on demand (npm run benchmark:fetch), never committed.
 benchmark/data/

@@ -153,3 +153,56 @@ test('no text colour is dimmed below the AA floor', () => {
   }
   assert.deepEqual(offenders, []);
 });
+
+/**
+ * The PWA chrome — the browser's address-bar tint and the installed app's
+ * splash background — is written as a hex string in two files outside the
+ * stylesheet, so nothing keeps it honest but this.
+ *
+ * It has already drifted once. Before the repalette (#73) all four values were
+ * `#FAF7F2`, exactly matching `--color-bg: 250 247 242`. That commit moved the
+ * token to bone and set the chrome to `#F2F0E8` — which is the bone used in the
+ * *icon artwork*, not the page. The dark half was updated correctly, so the
+ * mismatch was light-only: the splash and address bar sat one shade lighter
+ * than the app behind them, which reads as a seam on launch.
+ */
+const hex = ([r, g, b]: [number, number, number]) =>
+  '#' +
+  [r, g, b]
+    .map((n) => n.toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase();
+
+test('the PWA chrome colours match the page background in both themes', () => {
+  const light = hex(tokens(':root')['bg']);
+  const dark = hex(tokens('.dark')['bg']);
+
+  const layout = readFileSync(new URL('../src/app/layout.tsx', import.meta.url), 'utf8');
+  const themeColors = [
+    ...layout.matchAll(/prefers-color-scheme:\s*(light|dark)\)',\s*color:\s*'(#[0-9A-Fa-f]{6})'/g),
+  ];
+  assert.equal(themeColors.length, 2, 'expected a light and a dark themeColor in layout.tsx');
+  for (const [, scheme, value] of themeColors) {
+    const expected = scheme === 'light' ? light : dark;
+    assert.equal(
+      value.toUpperCase(),
+      expected,
+      `layout.tsx themeColor (${scheme}) should be --color-bg`,
+    );
+  }
+
+  const manifest = JSON.parse(
+    readFileSync(new URL('../public/manifest.json', import.meta.url), 'utf8'),
+  );
+  // The manifest has no dark variant, so both of its colours track the light bg.
+  assert.equal(
+    manifest.theme_color.toUpperCase(),
+    light,
+    'manifest theme_color should be --color-bg',
+  );
+  assert.equal(
+    manifest.background_color.toUpperCase(),
+    light,
+    'manifest background_color should be --color-bg',
+  );
+});

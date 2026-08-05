@@ -585,6 +585,19 @@ function refillCurrentPlan(shouldRefill: (slot: MealSlot) => boolean): void {
   if (stampedConfig && stampedPlan) void pushMealPlan(stampedConfig, stampedPlan);
 }
 
+/**
+ * Pushes a day after something has changed it.
+ *
+ * The read-back is the point: the store owns the merge, so the value worth
+ * syncing is the one that exists *after* the mutation, not the one the caller
+ * had in hand. Every function below that touches a day ends with this, and
+ * naming it is what stops the sixth one from forgetting.
+ */
+function syncDay(dayIndex: number): void {
+  const day = usePlanStore.getState().plan?.[dayIndex];
+  if (day) void pushMealPlanDay(dayIndex, day);
+}
+
 /** Sets one slot's servings multiplier and re-derives the shopping list from it. */
 export function setSlotScale(dayIndex: number, mealIndex: number, scale: number): void {
   const clamped = Math.min(10, Math.max(0.25, scale));
@@ -592,8 +605,7 @@ export function setSlotScale(dayIndex: number, mealIndex: number, scale: number)
     scale: clamped === 1 ? undefined : clamped,
   });
   regenerateShoppingList();
-  const day = usePlanStore.getState().plan?.[dayIndex];
-  if (day) void pushMealPlanDay(dayIndex, day);
+  syncDay(dayIndex);
 }
 
 /** Pins or unpins one slot; pinned slots survive a shuffle untouched. */
@@ -601,15 +613,13 @@ export function togglePinSlot(dayIndex: number, mealIndex: number): void {
   const slot = usePlanStore.getState().plan?.[dayIndex]?.meals[mealIndex];
   if (!slot) return;
   usePlanStore.getState().patchSlot(dayIndex, mealIndex, { pinned: !slot.pinned });
-  const day = usePlanStore.getState().plan?.[dayIndex];
-  if (day) void pushMealPlanDay(dayIndex, day);
+  syncDay(dayIndex);
 }
 
 /** Adds an empty slot of the given meal type to a day. */
 export function addMealToDay(dayIndex: number, type: MealType): void {
   usePlanStore.getState().addMeal(dayIndex, { type, recipeId: '', id: nanoid() });
-  const day = usePlanStore.getState().plan?.[dayIndex];
-  if (day) void pushMealPlanDay(dayIndex, day);
+  syncDay(dayIndex);
 }
 
 /**
@@ -661,15 +671,13 @@ export function ensureMealIds(): void {
 export function removeMealFromDay(dayIndex: number, mealIndex: number): void {
   usePlanStore.getState().removeMeal(dayIndex, mealIndex);
   regenerateShoppingList();
-  const day = usePlanStore.getState().plan?.[dayIndex];
-  if (day) void pushMealPlanDay(dayIndex, day);
+  syncDay(dayIndex);
 }
 
 export function pickSlotRecipe(dayIndex: number, mealIndex: number, recipeId: string): void {
   usePlanStore.getState().setSlot(dayIndex, mealIndex, recipeId);
   regenerateShoppingList();
-  const day = usePlanStore.getState().plan?.[dayIndex];
-  if (day) void pushMealPlanDay(dayIndex, day);
+  syncDay(dayIndex);
 }
 
 /** Swaps a single filled (or empty) slot for a different, randomly chosen eligible recipe. */

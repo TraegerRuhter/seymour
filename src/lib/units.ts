@@ -3,7 +3,7 @@
  * and human-readable formatting of aggregated totals.
  */
 
-export type UnitKind = 'volume' | 'weight' | 'other';
+type UnitKind = 'volume' | 'weight' | 'other';
 
 interface UnitDef {
   canonical: string;
@@ -168,10 +168,6 @@ const DEFS_BY_CANONICAL = new Map(UNIT_DEFS.map((d) => [d.canonical, d]));
 export function canonicalUnit(raw: string): string | null {
   const key = raw.toLowerCase().replace(/\.$/, '').trim();
   return UNIT_ALIASES[key] ?? null;
-}
-
-export function unitKind(canonical: string): UnitKind {
-  return DEFS_BY_CANONICAL.get(canonical)?.kind ?? 'other';
 }
 
 /**

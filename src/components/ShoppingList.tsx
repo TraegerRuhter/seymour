@@ -275,7 +275,6 @@ function Row({
   // obvious once pointed at and easy to scroll past otherwise. They cannot
   // catch a parse that is wrong but tidy, which is what the menu item is for.
   const suspicious = shoppingListViolations([item]).length > 0;
-  const [fixed, setFixed] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [expanded, setExpanded] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);

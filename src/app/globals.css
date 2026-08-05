@@ -761,12 +761,6 @@ h1 {
 .rs-section + .rs-section {
   margin-top: 2rem;
 }
-.rs-qty {
-  font-family: theme('fontFamily.typewriter');
-  font-size: 0.78rem;
-  color: var(--pen);
-  font-variant-numeric: tabular-nums;
-}
 .rs-step-n {
   font-family: theme('fontFamily.typewriter');
   font-size: 0.8rem;
