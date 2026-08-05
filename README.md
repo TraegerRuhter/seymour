@@ -268,8 +268,8 @@ via `npx playwright install --with-deps chromium` first.
   `timesCooked` counter, which is what makes union-merging two devices correct instead of
   lossy. `src/lib/cook-log.ts` is pure and dependency-free; everything that reacts to
   cooking (wear, remarks, tallies) derives from it rather than storing its own copy.
-- **Parsing pipeline** — the prospectus suggested the `recipe-scraper` npm package; it is
-  unmaintained, so the same mechanism it used is implemented natively in
+- **Parsing pipeline** — the obvious dependency here would be the `recipe-scraper` npm
+  package; it is unmaintained, so the same mechanism it used is implemented natively in
   `src/lib/scrape.ts`: fetch the page and read the schema.org `Recipe` JSON-LD that
   virtually all recipe sites publish (it's required for Google rich results). The OpenAI
   fallback covers the rest, and manual entry covers everything else.
@@ -282,11 +282,12 @@ via `npx playwright install --with-deps chromium` first.
 
 ## Deployment
 
-Seymour is a standard Next.js app with one server-side API route (`/api/parse`
-for URL scraping + the optional AI fallback), so it needs a host that runs
-Node — **Vercel** is the path of least resistance. A purely static host (e.g.
-GitHub Pages) can serve everything else, but the "paste a URL to import"
-feature won't work there because it has no server to run the parser.
+Seymour is a standard Next.js app with four server-side routes (`/api/parse`,
+`/api/parse-text`, `/api/discover`, and the Supabase auth callback), so it
+needs a host that runs Node — **Vercel** is the path of least resistance. A
+purely static host (e.g. GitHub Pages) can serve everything else, but importing
+a recipe from a URL or from pasted page text, Discover, and signing in all need
+a server.
 
 ### Deploy to Vercel
 
