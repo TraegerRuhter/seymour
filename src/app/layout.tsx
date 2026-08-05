@@ -71,7 +71,10 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F2F0E8' },
+    // Both must track --color-bg in globals.css, or the browser chrome and the
+    // PWA splash sit a shade off the page behind them. tests/palette.test.ts
+    // pins them to the real tokens.
+    { media: '(prefers-color-scheme: light)', color: '#EBE8DD' },
     { media: '(prefers-color-scheme: dark)', color: '#111614' },
   ],
   width: 'device-width',
