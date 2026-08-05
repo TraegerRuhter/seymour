@@ -45,7 +45,7 @@ Commands worth knowing:
 
 ```bash
 npm run dev                 # localhost:3000
-npm test                    # 425 unit tests, node:test via tsx, ~14s
+npm test                    # 431 unit tests, node:test via tsx, ~14s
 npm run e2e                 # Playwright, against `next dev` on port 3100
 npm run e2e:sw              # service worker suite, needs a production build
 npm run benchmark:fetch     # once — 20 MB into gitignored benchmark/data/
@@ -135,7 +135,7 @@ wrong; check the other direction first.
 
 ### The invariants
 
-`src/lib/invariants.ts` — eleven rules a shopping row must never violate
+`src/lib/invariants.ts` — twelve rules a shopping row must never violate
 (`name-empty`, `name-holds-a-measurement`, `unit-without-amount`,
 `row-redundant`, …). They're used in four places:
 
@@ -299,6 +299,16 @@ row in the shop; you can't recover a wrong one.
   matching browsers, so don't "fix" the committed config.
 - **The dev server caches stale bundles after a `git mv`.** If a rename produces
   impossible errors, restart it.
+- **Never run `npm run check` while the e2e suite is running.** `check` ends in
+  `next build`, which rewrites `.next/` underneath the `next dev` server
+  Playwright is driving. Every test then fails on a page that says
+  `Internal Server Error`, and the real cause is buried in the HTML:
+  `Cannot find module './992.js'` from `.next/server/webpack-runtime.js`. It
+  reads exactly like a component you just broke. Run one, then the other, and
+  `rm -rf .next` before re-running if you've already crossed them.
+- **Editing source mid-run invalidates an e2e run**, for the same reason in
+  reverse: `next dev` hot-reloads, so the suite finishes against a tree that
+  never existed. Let it finish, or kill it and start again.
 - **The outbound proxy blocks nearly every host.** It reaches
   `raw.githubusercontent.com` and little else. When something is blocked,
   **report the blocked host — never retry it or route around it.**
@@ -325,7 +335,7 @@ These are not negotiable and not summarizable.
 
 ## Where things stand
 
-425 unit tests, all passing. All ten items of `docs/shopping-parser.md` shipped,
+431 unit tests, all passing. All ten items of `docs/shopping-parser.md` shipped,
 and all twelve of `docs/design-prospectus.md`.
 
 **Waiting on the user, not on code:**
