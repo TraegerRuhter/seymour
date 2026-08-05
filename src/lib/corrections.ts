@@ -51,12 +51,6 @@ export interface ParsedFields {
   unit: string;
 }
 
-export const parsedFieldsOf = (ing: Ingredient): ParsedFields => ({
-  name: ing.name,
-  quantity: ing.quantity,
-  unit: ing.unit,
-});
-
 /** Match keys are compared loosely — a recipe's capitalisation isn't meaningful. */
 const keyOf = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
 
