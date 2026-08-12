@@ -21,6 +21,50 @@ having**, because the invariants don't need an answer key to say a row is
 broken. A file of ten Filipino adobo lines found `pcs` — twice in ten lines,
 and NYT's 178,000 American ones contain none of it.
 
+### Your own corrections
+
+```
+npm run corrections:mine -- seymour-backup.json
+npm run corrections:mine -- seymour-backup.json --write
+```
+
+Every "This is wrong" in the app is a line the parser read wrongly with the
+right answer attached — the cleanest labelled data this project has, because
+someone looked at the row and said so. This turns an export into golden-corpus
+rows, and with `--write` into `benchmark/data/corrections.tsv`, which the
+scorer then picks up like any other file.
+
+**It runs entirely on your machine.** The input is the JSON that Settings →
+Export all data already writes; there's no server and no network call. Reading
+*other people's* shared corrections is a different job — `parser_reports` is
+`select using (auth.uid() = user_id)`, so no client can read another user's
+rows however it asks, and that pool is reachable only from the Supabase SQL
+editor.
+
+It sorts what it finds rather than dumping it:
+
+| | |
+|---|---|
+| **new line cases** | printed in corpus syntax, ready to paste |
+| **already in the corpus** | counted, not repeated — `~`-marked gaps included |
+| **the parser now agrees** | it improved since; the override can be withdrawn |
+| **superseded** | the same target corrected twice; the newest wins |
+| **name corrections** | reported apart, and deliberately kept out of the benchmark |
+
+That last row is the one worth understanding. A `name` correction says "wherever
+the parser produces X it should produce Y" — a statement about
+`normalizeIngredientName`, not about reading a line. Its `match` is a name, and
+the quantity beside it belongs to whichever aggregated row it was attached to
+(a real one came out as `21 cup`, the week's total sugar). Scored as a corpus
+line it would read 0% on every field while saying nothing true. Those belong in
+`normalize.ts`, usually as a `NEVER_DROPPABLE` descriptor or a bad synonym.
+
+**Why bother at the handful-of-corrections scale?** Because they're worth more
+as a *measurement* than as fixtures. The NYT set is 178,000 lines but a large
+part of its name gap is house style you don't want to close. Corrections have
+no house style in them at all, so a few dozen make a better eval set than they
+do a training set — and eval is the thing that's actually missing.
+
 ### Harvesting your own
 
 ```

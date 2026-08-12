@@ -45,11 +45,12 @@ Commands worth knowing:
 
 ```bash
 npm run dev                 # localhost:3000
-npm test                    # 431 unit tests, node:test via tsx, ~14s
+npm test                    # 438 unit tests, node:test via tsx, ~14s
 npm run e2e                 # Playwright, against `next dev` on port 3100
 npm run e2e:sw              # service worker suite, needs a production build
 npm run benchmark:fetch     # once — 20 MB into gitignored benchmark/data/
 npm run benchmark           # scores every file in benchmark/data/
+npm run corrections:mine    # an export's corrections -> golden-corpus rows
 ```
 
 ---
@@ -392,7 +393,7 @@ These are not negotiable and not summarizable.
 
 ## Where things stand
 
-431 unit tests, all passing. All ten items of `docs/shopping-parser.md` shipped,
+438 unit tests, all passing. All ten items of `docs/shopping-parser.md` shipped,
 and all twelve of `docs/design-prospectus.md`.
 
 **Waiting on the user, not on code:**
@@ -446,5 +447,16 @@ and all twelve of `docs/design-prospectus.md`.
    name/image/aggregateRating), and it's what an SEO plugin emits alongside the
    recipe plugin's real node.
 
-4. Mine `parser_reports` once real corrections accumulate; `asCorpusLine`
-   already formats them for the corpus.
+4. Mine corrections. `npm run corrections:mine -- <export.json>` turns the
+   backup Settings writes into corpus rows, entirely offline — it sorts new
+   cases from ones already covered, from ones the parser has since learned on
+   its own (those mean an override can be withdrawn). `name` corrections are
+   reported apart on purpose: they're statements about `normalizeIngredientName`
+   rather than about reading a line, so they belong in `normalize.ts` and would
+   score 0% on every field if they reached the benchmark.
+
+   The shared pool in `parser_reports` is the other half and still manual:
+   `select using (auth.uid() = user_id)` means no client can read another
+   user's rows, so it's reachable only from the Supabase SQL editor. Paste a
+   `select` result straight into the miner — it takes a bare JSON array as well
+   as a bundle.

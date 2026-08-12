@@ -1,3 +1,7 @@
+// `import type` is erased at compile time, so this doesn't create a runtime
+// cycle even though corrections.ts imports `Ingredient` back from here.
+import type { Correction } from './corrections';
+
 // --- Recipe Domain ---
 
 export interface Ingredient {
@@ -213,4 +217,14 @@ export interface ExportBundle {
   archivedPlans?: ArchivedPlan[];
   /** Normalized ingredient names the user already has on hand ("spice rack"), excluded from the shopping list. Optional (added later). */
   pantryStaples?: string[];
+  /**
+   * Parser corrections ("This is wrong"). Optional (added later).
+   *
+   * In the bundle because they're the only user data that has value outside
+   * the account that made it: every one is a real line the parser read wrongly,
+   * with the right answer attached. `npm run corrections:mine` turns an export
+   * into golden-corpus rows without anything leaving the machine — see
+   * `benchmark/README.md`.
+   */
+  corrections?: Correction[];
 }

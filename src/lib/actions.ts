@@ -788,6 +788,7 @@ export function exportBundle(): ExportBundle {
   const { config, plan, archivedPlans } = usePlanStore.getState();
   const { items } = useShoppingStore.getState();
   const { staples } = usePantryStore.getState();
+  const { corrections } = useCorrectionStore.getState();
   return {
     version: CURRENT_BUNDLE_VERSION,
     exportedAt: new Date().toISOString(),
@@ -797,6 +798,7 @@ export function exportBundle(): ExportBundle {
     shoppingList: items,
     archivedPlans,
     pantryStaples: staples,
+    corrections,
   };
 }
 
@@ -845,6 +847,7 @@ function migrateBundle(bundle: ExportBundle): ExportBundle {
     shoppingList: bundle.shoppingList,
     archivedPlans: bundle.archivedPlans ?? [],
     pantryStaples: bundle.pantryStaples ?? [],
+    corrections: bundle.corrections ?? [],
   };
 }
 
@@ -857,4 +860,5 @@ export function importBundle(bundle: ExportBundle): void {
     .replaceAll(migrated.mealPlanConfig, migrated.mealPlan, migrated.archivedPlans ?? []);
   useShoppingStore.getState().replaceAll(migrated.shoppingList);
   usePantryStore.getState().replaceAll(migrated.pantryStaples ?? []);
+  useCorrectionStore.getState().replaceAll(migrated.corrections ?? []);
 }
