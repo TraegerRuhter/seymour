@@ -364,8 +364,23 @@ sees its own fixtures is the same failure as one that can't fail at all.
 - **The outbound proxy blocks nearly every host.** It reaches
   `raw.githubusercontent.com` and little else. When something is blocked,
   **report the blocked host — never retry it or route around it.**
-- **The git proxy 403s on ref deletion.** Remote branches have to be deleted
-  from the GitHub UI.
+- **The git proxy 403s on ref deletion**, but you won't need to delete a branch:
+  this repo has GitHub's auto-delete-on-merge turned on. Every squash-merge in
+  the last session removed the remote branch by itself.
+
+  What that leaves behind is a **stale remote-tracking ref**, and it produces a
+  convincing false alarm. After merging, the local
+  `refs/remotes/origin/<branch>` still points at the last commit you pushed, so
+  `git status` reports the branch as ahead of a remote that no longer has it —
+  "N unpushed commits" when `git log origin/main..HEAD` is empty. Clear it with
+  `git fetch --prune origin`, **with no refspec**: `git fetch origin main
+  --prune` scopes the prune to `main` and silently leaves the branch ref alone,
+  which is a second way to think you've fixed it and haven't.
+
+  Its cousin: GitHub stamps its own identity on a squash commit, so after
+  merging and resetting onto `main` the tip commit is authored by
+  `GitHub <noreply@github.com>`. Anything checking committer identity flags it,
+  and it is not yours to amend — it's already public on `main`.
 - A script that's also imported needs an entry-point guard:
   `import.meta.url === pathToFileURL(process.argv[1]).href`. Without it,
   importing `harvest.ts` runs `main()` and exits the test runner.
