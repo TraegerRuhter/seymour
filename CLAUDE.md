@@ -364,8 +364,23 @@ sees its own fixtures is the same failure as one that can't fail at all.
 - **The outbound proxy blocks nearly every host.** It reaches
   `raw.githubusercontent.com` and little else. When something is blocked,
   **report the blocked host — never retry it or route around it.**
-- **The git proxy 403s on ref deletion.** Remote branches have to be deleted
-  from the GitHub UI.
+- **The git proxy 403s on ref deletion**, but you won't need to delete a branch:
+  this repo has GitHub's auto-delete-on-merge turned on. Every squash-merge in
+  the last session removed the remote branch by itself.
+
+  What that leaves behind is a **stale remote-tracking ref**, and it produces a
+  convincing false alarm. After merging, the local
+  `refs/remotes/origin/<branch>` still points at the last commit you pushed, so
+  `git status` reports the branch as ahead of a remote that no longer has it —
+  "N unpushed commits" when `git log origin/main..HEAD` is empty. Clear it with
+  `git fetch --prune origin`, **with no refspec**: `git fetch origin main
+  --prune` scopes the prune to `main` and silently leaves the branch ref alone,
+  which is a second way to think you've fixed it and haven't.
+
+  Its cousin: GitHub stamps its own identity on a squash commit, so after
+  merging and resetting onto `main` the tip commit is authored by
+  `GitHub <noreply@github.com>`. Anything checking committer identity flags it,
+  and it is not yours to amend — it's already public on `main`.
 - A script that's also imported needs an entry-point guard:
   `import.meta.url === pathToFileURL(process.argv[1]).href`. Without it,
   importing `harvest.ts` runs `main()` and exits the test runner.
@@ -404,9 +419,11 @@ and all twelve of `docs/design-prospectus.md`.
 - **Settings → Ingredient lines → Re-read ingredients.** Parser improvements
   only reach recipes you already saved through that button. Worth pressing after
   every parser change, and easy to forget — a fix can look like it did nothing.
-- **Two repository secrets** for the Supabase keepalive workflow, `SUPABASE_URL`
-  and `SUPABASE_ANON_KEY`. Without them the scheduled run fails rather than
-  passing quietly.
+- **The Supabase keepalive is switched off** (manual-only). It failed on every
+  scheduled run because `SUPABASE_URL` and `SUPABASE_ANON_KEY` were never added
+  as repository secrets, and each failure emailed the owner. Until it's turned
+  back on (steps in the workflow file), a free-tier project pauses after 7 days
+  idle.
 
 **Deliberately not built:**
 
