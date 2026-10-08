@@ -419,9 +419,11 @@ and all twelve of `docs/design-prospectus.md`.
 - **Settings → Ingredient lines → Re-read ingredients.** Parser improvements
   only reach recipes you already saved through that button. Worth pressing after
   every parser change, and easy to forget — a fix can look like it did nothing.
-- **Two repository secrets** for the Supabase keepalive workflow, `SUPABASE_URL`
-  and `SUPABASE_ANON_KEY`. Without them the scheduled run fails rather than
-  passing quietly.
+- **The Supabase keepalive is switched off** (manual-only). It failed on every
+  scheduled run because `SUPABASE_URL` and `SUPABASE_ANON_KEY` were never added
+  as repository secrets, and each failure emailed the owner. Until it's turned
+  back on (steps in the workflow file), a free-tier project pauses after 7 days
+  idle.
 
 **Deliberately not built:**
 

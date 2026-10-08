@@ -41,12 +41,21 @@
 
 name: Supabase keepalive
 
+# The schedule is OFF. It ran daily until the two secrets above turned out never
+# to have been added, at which point every run failed and GitHub emailed the
+# owner each time. With no secrets there is nothing for it to do, so it is
+# manual-only until they exist.
+#
+# To turn it back on: add the secrets, run it once by hand, then restore
+#
+#   schedule:
+#     - cron: '17 4 * * *'
+#
+# under `on:`. Off the hour on purpose — GitHub queues every cron-triggered job
+# in the fleet at once, and the top of the hour is the worst-served slot.
+#
+# Cost of leaving it off: a free-tier project pauses after 7 days of no activity.
 on:
-  schedule:
-    # 04:17 UTC daily. Deliberately not on the hour — GitHub queues every
-    # cron-triggered job in the fleet at once, and the top of the hour is the
-    # worst-served slot.
-    - cron: '17 4 * * *'
   workflow_dispatch:
 
 # Nothing here reads or writes the repository.

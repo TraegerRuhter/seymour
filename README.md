@@ -197,16 +197,15 @@ shopping list, archived plans, and pantry staples follow you to another device.
 **Keeping the project awake.** A free-tier Supabase project is paused after 7 days with no
 activity, and it does not come back on its own — restoring it is a manual click, and sync is
 broken for everyone until someone notices.
-[`.github/workflows/supabase-keepalive.yml`](.github/workflows/supabase-keepalive.yml) runs
-one real query a day to stop the clock. It needs two repository secrets, `SUPABASE_URL` and
-`SUPABASE_ANON_KEY` (Settings → Secrets and variables → Actions); without them the workflow
-fails loudly rather than passing while doing nothing.
+[`.github/workflows/supabase-keepalive.yml`](.github/workflows/supabase-keepalive.yml) can run
+one real query a day to stop the clock, but **it is currently switched off** (manual-only): it
+needs two repository secrets, `SUPABASE_URL` and `SUPABASE_ANON_KEY`, and without them every
+scheduled run failed and sent a failure email. The file explains how to turn it back on.
 
-One caveat worth knowing, because it defeats keepalives of this kind quietly: **GitHub
-disables scheduled workflows in a repository after 60 days with no commits.** A repo that
-goes quiet loses its keepalive, and the project pauses a week later. GitHub emails the repo
-admins when it happens. If this project is going to sit untouched for months at a time, the
-ping belongs somewhere not tied to repo activity.
+If you do, one caveat defeats keepalives of this kind quietly: **GitHub disables scheduled
+workflows in a repository after 60 days with no commits.** A repo that goes quiet loses its
+keepalive, and the project pauses a week later. If this project is going to sit untouched for
+months at a time, the ping belongs somewhere not tied to repo activity.
 
 **How sync works.** Each record — a recipe, a shopping-list item, a day of the meal plan,
 an archived plan — syncs independently, tagged with a server-set `updated_at`. That means
