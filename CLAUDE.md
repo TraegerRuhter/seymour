@@ -45,7 +45,7 @@ Commands worth knowing:
 
 ```bash
 npm run dev                 # localhost:3000
-npm test                    # 438 unit tests, node:test via tsx, ~14s
+npm test                    # 447 unit tests, node:test via tsx, ~14s
 npm run e2e                 # Playwright, against `next dev` on port 3100
 npm run e2e:sw              # service worker suite, needs a production build
 npm run benchmark:fetch     # once — 20 MB into gitignored benchmark/data/
@@ -413,7 +413,7 @@ These are not negotiable and not summarizable.
 
 ## Where things stand
 
-438 unit tests, all passing. All ten items of `docs/shopping-parser.md` shipped,
+447 unit tests, all passing. All ten items of `docs/shopping-parser.md` shipped,
 and all twelve of `docs/design-prospectus.md`.
 
 **Waiting on the user, not on code:**
@@ -451,25 +451,7 @@ and all twelve of `docs/design-prospectus.md`.
    leaves the second amount in the name. One of two known gaps; the other,
    `~1 stick 1/2 cup of butter`, is marked deliberate and the comment above it
    explains why guessing there would cost more than it buys.
-3. **Five confirmed defects in the JSON-LD scraper**, all found by probing
-   `extractRecipeFromHtml` with realistic shapes and none yet fixed. Each makes
-   some site's import fall through to the AI fallback — an OpenAI call and a
-   worse parse — or fail outright with "No structured recipe data found":
-
-   | shape | cause |
-   | --- | --- |
-   | two `Recipe` nodes in one `@graph`, a stub before the real one | `findRecipeNode` returns the *first* match, then `extractRecipeFromHtml` moves to the next script *block* and never revisits that graph |
-   | `recipeIngredient` holding objects rather than strings | `asText` returns `''` for objects, `.filter(Boolean)` empties the array, and an empty array reads as "not a recipe" |
-   | `@type: "https://schema.org/Recipe"` | `isRecipeNode` tests `=== 'recipe'`; the fully-qualified URL form is valid JSON-LD |
-   | a Recipe nested more than six levels deep | `findRecipeNode` gives up at `depth > 6` |
-   | JSON-LD wrapped in `//<![CDATA[ … ]]>` | `JSON.parse` chokes; the cleanup pass only strips trailing commas |
-
-   The first is the one to take first — it's the exact scenario the microdata
-   fallback's own comment describes (a stub node carrying just
-   name/image/aggregateRating), and it's what an SEO plugin emits alongside the
-   recipe plugin's real node.
-
-4. Mine corrections. `npm run corrections:mine -- <export.json>` turns the
+3. Mine corrections. `npm run corrections:mine -- <export.json>` turns the
    backup Settings writes into corpus rows, entirely offline — it sorts new
    cases from ones already covered, from ones the parser has since learned on
    its own (those mean an override can be withdrawn). `name` corrections are
