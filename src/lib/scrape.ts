@@ -197,10 +197,11 @@ function extractJsonLdBlocks(html: string): unknown[] {
     try {
       blocks.push(JSON.parse(raw));
     } catch {
-      // Some sites embed invalid JSON (trailing commas, HTML comments); try a
-      // light cleanup before giving up on the block.
+      // Some sites embed invalid JSON (trailing commas, a CDATA or HTML-comment
+      // wrapper left over from XHTML templates); try a light cleanup before
+      // giving up on the block.
       try {
-        blocks.push(JSON.parse(raw.replace(INVALID_JSON_CLEANUP_REGEX, '$1')));
+        blocks.push(JSON.parse(stripScriptWrappers(raw).replace(INVALID_JSON_CLEANUP_REGEX, '$1')));
       } catch {
         /* skip block */
       }
@@ -209,29 +210,66 @@ function extractJsonLdBlocks(html: string): unknown[] {
   return blocks;
 }
 
-function isRecipeNode(node: unknown): node is Record<string, unknown> {
-  if (typeof node !== 'object' || node === null) return false;
-  const t = (node as Record<string, unknown>)['@type'];
-  if (typeof t === 'string') return t.toLowerCase() === 'recipe';
-  if (Array.isArray(t)) return t.some((x) => typeof x === 'string' && x.toLowerCase() === 'recipe');
-  return false;
+/**
+ * The wrappers XHTML-era templates put around inline script content so the
+ * page validates: `//<![CDATA[ … //]]>`, the same in block comments, and
+ * `<!-- … -->`. Only at the very start and end — a "-->" inside a recipe's
+ * text is content.
+ */
+function stripScriptWrappers(raw: string): string {
+  return raw
+    .replace(/^\s*(?:\/\/\s*<!\[CDATA\[|\/\*\s*<!\[CDATA\[\s*\*\/|<!\[CDATA\[|<!--)\s*/, '')
+    .replace(/\s*(?:\/\/\s*\]\]>|\/\*\s*\]\]>\s*\*\/|\]\]>|-->)\s*$/, '');
 }
 
-/** Walks JSON-LD (including @graph and arrays) looking for a Recipe node. */
-function findRecipeNode(data: unknown, depth = 0): Record<string, unknown> | null {
-  if (depth > 6 || data === null || typeof data !== 'object') return null;
-  if (isRecipeNode(data)) return data;
-  if (Array.isArray(data)) {
-    for (const item of data) {
-      const found = findRecipeNode(item, depth + 1);
-      if (found) return found;
-    }
-    return null;
-  }
-  const obj = data as Record<string, unknown>;
-  if (obj['@graph']) return findRecipeNode(obj['@graph'], depth + 1);
-  if (obj.mainEntity) return findRecipeNode(obj.mainEntity, depth + 1);
-  return null;
+/**
+ * `Recipe`, however the page spelled it. JSON-LD allows the bare term, the
+ * full IRI (`https://schema.org/Recipe`, with or without the `s`), and a
+ * prefixed form (`schema:Recipe`); all three are the same type.
+ */
+function isRecipeType(t: unknown): boolean {
+  if (typeof t !== 'string') return false;
+  return (
+    t
+      .trim()
+      .toLowerCase()
+      .replace(/^(?:https?:\/\/schema\.org\/|schema:)/, '') === 'recipe'
+  );
+}
+
+function isRecipeNode(node: unknown): node is Record<string, unknown> {
+  if (typeof node !== 'object' || node === null || Array.isArray(node)) return false;
+  const t = (node as Record<string, unknown>)['@type'];
+  return Array.isArray(t) ? t.some(isRecipeType) : isRecipeType(t);
+}
+
+/**
+ * JSON.parse can't produce a cycle, so this is not loop protection — it only
+ * keeps a pathologically nested document from exhausting the stack. Real pages
+ * nest a Recipe a handful of levels down; the old limit of 6 was close enough
+ * to that to cut real ones off.
+ */
+const MAX_JSON_LD_DEPTH = 32;
+
+/**
+ * Every Recipe node in a JSON-LD document, in document order.
+ *
+ * All of them, not the first: an SEO plugin routinely emits a stub Recipe
+ * (name, image, aggregateRating) into the same `@graph` as the recipe plugin's
+ * real one, and stopping at the stub meant the real node was never looked at.
+ * The caller picks the first that actually has ingredients.
+ *
+ * And under any key, not just `@graph` and `mainEntity`: a Recipe hangs off
+ * `mainEntityOfPage`, `hasPart`, `about`, `subjectOf` and whatever a theme
+ * author thought of. A node found this way still has to carry ingredients to
+ * be used, which is what keeps a passing mention from being mistaken for the
+ * page's recipe.
+ */
+function recipeNodesIn(data: unknown, depth = 0): Record<string, unknown>[] {
+  if (depth > MAX_JSON_LD_DEPTH || data === null || typeof data !== 'object') return [];
+  if (Array.isArray(data)) return data.flatMap((item) => recipeNodesIn(item, depth + 1));
+  const here = isRecipeNode(data) ? [data] : [];
+  return [...here, ...Object.values(data).flatMap((value) => recipeNodesIn(value, depth + 1))];
 }
 
 const NAMED_ENTITIES: Record<string, string> = {
@@ -277,6 +315,19 @@ function asText(value: unknown): string {
   if (typeof value === 'string') return decodeEntities(value);
   if (typeof value === 'number') return String(value);
   return '';
+}
+
+/**
+ * One ingredient as a line of text. Almost always a string already; a few
+ * sites publish each as an object (`HowToSupply`, or a bare `{ name }`), and
+ * reading those as empty made a complete recipe look like it had none.
+ */
+function ingredientText(value: unknown): string {
+  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    const obj = value as Record<string, unknown>;
+    return asText(obj.text) || asText(obj.name);
+  }
+  return asText(value);
 }
 
 function extractImage(value: unknown): string | undefined {
@@ -327,17 +378,16 @@ function decodeEntitiesMultiline(s: string): string {
  * Attempts structured-data extraction from a page's HTML.
  * Returns null when no usable schema.org Recipe is present.
  *
- * Exits early after finding the first valid recipe to avoid parsing
- * unnecessary JSON-LD blocks.
+ * Takes the first Recipe node that actually carries ingredients, across every
+ * JSON-LD block on the page — a stub with only a name and a rating is skipped,
+ * wherever the real one sits relative to it.
  */
 export function extractRecipeFromHtml(html: string, sourceUrl: string): ParsedRecipeData | null {
-  for (const block of extractJsonLdBlocks(html)) {
-    const node = findRecipeNode(block);
-    if (!node) continue;
-
+  const nodes = extractJsonLdBlocks(html).flatMap((block) => recipeNodesIn(block));
+  for (const node of nodes) {
     const rawIngredients = node.recipeIngredient ?? node.ingredients;
     const ingredientLines = Array.isArray(rawIngredients)
-      ? rawIngredients.map(asText).filter(Boolean)
+      ? rawIngredients.map(ingredientText).filter(Boolean)
       : [];
     if (ingredientLines.length === 0) continue;
 

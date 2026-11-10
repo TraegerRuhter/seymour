@@ -79,6 +79,124 @@ const MICRODATA_HTML = `
   </div>
 </div>`;
 
+// --- JSON-LD shapes that used to fall through --------------------------------
+//
+// Each of these is valid structured data that the scraper read as "no recipe
+// here", sending the import to the AI fallback or failing it outright. They
+// were found by probing with realistic shapes, not from bug reports — a failed
+// import just looks like a site that doesn't work.
+
+const ld = (data: unknown) => `<script type="application/ld+json">${JSON.stringify(data)}</script>`;
+const lines = (html: string) =>
+  extractRecipeFromHtml(html, 'https://example.com/r')?.ingredientLines;
+
+test('extractRecipeFromHtml: a stub Recipe ahead of the real one in the same @graph', () => {
+  // What an SEO plugin emits next to the recipe plugin's node. The walk used to
+  // return the stub, find no ingredients, and move on to the next *script
+  // block* — never looking at the second node in this one.
+  const html = ld({
+    '@context': 'https://schema.org',
+    '@graph': [
+      { '@type': 'WebPage', name: 'Oyster Stew' },
+      { '@type': 'Recipe', name: 'Oyster Stew', aggregateRating: { ratingValue: 4.8 } },
+      {
+        '@type': 'Recipe',
+        name: 'Oyster Stew',
+        recipeIngredient: ['1 pint oysters', '2 cups milk'],
+      },
+    ],
+  });
+  assert.deepEqual(lines(html), ['1 pint oysters', '2 cups milk']);
+});
+
+test('extractRecipeFromHtml: ingredients published as objects rather than strings', () => {
+  const html = ld({
+    '@type': 'Recipe',
+    name: 'Stew',
+    recipeIngredient: [
+      { '@type': 'HowToSupply', name: '1 pint oysters' },
+      { text: '2 cups milk' },
+      '1 tsp salt',
+    ],
+  });
+  assert.deepEqual(lines(html), ['1 pint oysters', '2 cups milk', '1 tsp salt']);
+});
+
+test('extractRecipeFromHtml: @type written as a full IRI or with a prefix', () => {
+  for (const type of [
+    'https://schema.org/Recipe',
+    'http://schema.org/Recipe',
+    'schema:Recipe',
+    ['Article', 'https://schema.org/Recipe'],
+  ]) {
+    const html = ld({ '@type': type, name: 'Stew', recipeIngredient: ['2 cups milk'] });
+    assert.deepEqual(lines(html), ['2 cups milk'], `@type ${JSON.stringify(type)}`);
+  }
+  // Not everything ending in "recipe" is one.
+  assert.equal(
+    lines(ld({ '@type': 'https://example.com/NotARecipe', recipeIngredient: ['2 cups milk'] })),
+    undefined,
+  );
+});
+
+test('extractRecipeFromHtml: a Recipe under a key other than @graph or mainEntity', () => {
+  const html = ld({
+    '@type': 'WebPage',
+    mainEntityOfPage: {
+      '@type': 'Article',
+      hasPart: [{ '@type': 'Recipe', name: 'Stew', recipeIngredient: ['2 cups milk'] }],
+    },
+  });
+  assert.deepEqual(lines(html), ['2 cups milk']);
+});
+
+test('extractRecipeFromHtml: a Recipe nested deeper than the old limit of six', () => {
+  let node: unknown = { '@type': 'Recipe', name: 'Stew', recipeIngredient: ['2 cups milk'] };
+  for (let i = 0; i < 10; i++) node = { '@graph': [node] };
+  assert.deepEqual(lines(ld(node)), ['2 cups milk']);
+});
+
+test('extractRecipeFromHtml: absurd nesting is refused rather than overflowing the stack', () => {
+  let node: unknown = { '@type': 'Recipe', name: 'Stew', recipeIngredient: ['2 cups milk'] };
+  for (let i = 0; i < 500; i++) node = { a: node };
+  assert.equal(lines(ld(node)), undefined);
+});
+
+test('extractRecipeFromHtml: JSON-LD inside a CDATA or HTML-comment wrapper', () => {
+  const json = JSON.stringify({
+    '@type': 'Recipe',
+    name: 'Stew',
+    recipeIngredient: ['2 cups milk'],
+  });
+  for (const wrapped of [
+    `//<![CDATA[\n${json}\n//]]>`,
+    `/*<![CDATA[*/\n${json}\n/*]]>*/`,
+    `<![CDATA[${json}]]>`,
+    `<!--\n${json}\n-->`,
+  ]) {
+    const html = `<script type="application/ld+json">${wrapped}</script>`;
+    assert.deepEqual(lines(html), ['2 cups milk'], wrapped.slice(0, 14));
+  }
+});
+
+test('extractRecipeFromHtml: a rating-only Recipe inside a Review is not taken for the recipe', () => {
+  // Walking every key reaches nodes like this one. It is still skipped,
+  // because a node has to carry ingredients to be used.
+  const html = ld({
+    '@type': 'Review',
+    itemReviewed: { '@type': 'Recipe', name: "Someone else's stew" },
+  });
+  assert.equal(lines(html), undefined);
+});
+
+test('extractRecipeFromHtml: the first Recipe with ingredients wins across blocks', () => {
+  const html =
+    ld({ '@type': 'Recipe', name: 'Main', recipeIngredient: ['1 pint oysters'] }) +
+    ld({ '@type': 'Recipe', name: 'Related', recipeIngredient: ['2 eggs'] });
+  const result = extractRecipeFromHtml(html, 'https://example.com/r');
+  assert.equal(result?.title, 'Main');
+});
+
 test('extractRecipeFromMicrodata: reads title, ingredients, image, and instructions from a real recipe-card fixture', () => {
   const result = extractRecipeFromMicrodata(
     MICRODATA_HTML,
