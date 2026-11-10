@@ -1,9 +1,13 @@
-# Keeps the Supabase project from being paused.
+# Keeps the Supabase project from being paused — when it is switched on.
+#
+# IT IS CURRENTLY OFF: this workflow has no schedule and only runs when someone
+# presses "Run workflow". See the note above `on:` for why, and how to restore it.
 #
 # Free-tier projects are paused after 7 days with no activity, and a paused
 # project does not wake up on its own — restoring it is a manual click in the
-# dashboard, and sync is broken for everyone until someone notices. This runs a
-# real query once a day so the clock never gets close.
+# dashboard, and sync is broken for everyone until someone notices. With the
+# schedule restored, this runs a real query once a day so the clock never gets
+# close.
 #
 # Daily rather than every few days on purpose. GitHub's scheduled runs are
 # best-effort: they are queued, they can be delayed by tens of minutes under
@@ -36,7 +40,7 @@
 # reason to paste a project's identity into a public file, and a secret is the
 # thing you rotate if that assumption ever changes.
 #
-# Verify it with Actions → Supabase keepalive → Run workflow before trusting
+# Verify it with Actions → Supabase keepalive → Run workflow before restoring
 # the schedule.
 
 name: Supabase keepalive
@@ -112,11 +116,20 @@ jobs:
             fi
 
             echo "Attempt $attempt: HTTP $status"
+
+            # Only a failed connection or a server error can come good on a
+            # second try. A 401, 403 or 404 is the same answer every time — a
+            # wrong key or a missing table — so retrying it just delays the
+            # diagnosis below by half a minute.
+            case "$status" in
+              000 | 5??) ;;
+              *) break ;;
+            esac
             if [ "$attempt" -lt 3 ]; then sleep 15; fi
           done
 
           # Only the response body — it never contains the key we sent.
-          echo "::error::Supabase ping failed after 3 attempts (last status: $status)."
+          echo "::error::Supabase ping failed after $attempt attempt(s) (last status: $status)."
           echo "Response body:"
           cat /tmp/ping-body || true
           echo

@@ -199,8 +199,9 @@ activity, and it does not come back on its own — restoring it is a manual clic
 broken for everyone until someone notices.
 [`.github/workflows/supabase-keepalive.yml`](.github/workflows/supabase-keepalive.yml) can run
 one real query a day to stop the clock, but **it is currently switched off** (manual-only): it
-needs two repository secrets, `SUPABASE_URL` and `SUPABASE_ANON_KEY`, and without them every
-scheduled run failed and sent a failure email. The file explains how to turn it back on.
+needs two repository secrets, `SUPABASE_URL` and `SUPABASE_ANON_KEY` (added under Settings →
+Secrets and variables → Actions), and without them every scheduled run failed and sent a
+failure email. The file explains how to turn it back on.
 
 If you do, one caveat defeats keepalives of this kind quietly: **GitHub disables scheduled
 workflows in a repository after 60 days with no commits.** A repo that goes quiet loses its

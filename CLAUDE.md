@@ -29,7 +29,7 @@ npm run format        # prettier writes; format:check in CI only reads
 npm run check         # tests + typecheck + lint + format:check + build
 npm run e2e           # anything touching a component or a page
 git commit && git push -u origin <branch>
-# open a PR, wait for CI green, squash-merge, sync main, delete the branch
+# open a PR, wait for CI green, squash-merge, sync main (GitHub deletes the branch)
 ```
 
 - **Small PRs.** One idea each. Fifteen shipped in the last session; none took
@@ -365,14 +365,19 @@ sees its own fixtures is the same failure as one that can't fail at all.
   `raw.githubusercontent.com` and little else. When something is blocked,
   **report the blocked host — never retry it or route around it.**
 - **The git proxy 403s on ref deletion**, but you won't need to delete a branch:
-  this repo has GitHub's auto-delete-on-merge turned on. Every squash-merge in
-  the last session removed the remote branch by itself.
+  the repository setting `delete_branch_on_merge` is `true` (read it with
+  `gh api repos/TraegerRuhter/seymour --jq .delete_branch_on_merge`), so GitHub
+  removes the remote branch on every merge. If that setting is ever turned off,
+  branches have to be deleted from the GitHub UI.
 
-  What that leaves behind is a **stale remote-tracking ref**, and it produces a
-  convincing false alarm. After merging, the local
-  `refs/remotes/origin/<branch>` still points at the last commit you pushed, so
-  `git status` reports the branch as ahead of a remote that no longer has it —
-  "N unpushed commits" when `git log origin/main..HEAD` is empty. Clear it with
+  What auto-delete leaves behind is a **stale remote-tracking ref**, and it
+  produces a convincing false alarm. After merging, the local
+  `refs/remotes/origin/<branch>` still points at the last commit you pushed.
+  `git status` won't show it once the branch is reset onto `origin/main` — it
+  compares against the upstream, which is now `main`. What trips is anything
+  that compares the branch with `origin/<branch>` directly, which is what this
+  environment's stop hook does: it reports "N unpushed commits" while
+  `git log origin/main..HEAD` is empty. Clear it with
   `git fetch --prune origin`, **with no refspec**: `git fetch origin main
   --prune` scopes the prune to `main` and silently leaves the branch ref alone,
   which is a second way to think you've fixed it and haven't.
